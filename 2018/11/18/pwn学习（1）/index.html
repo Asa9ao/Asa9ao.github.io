@@ -86,7 +86,7 @@
 <meta property="og:site_name" content="Asa9ao">
 <meta property="og:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/upload_image/11FDD1EFF0F00D0D1CE349397041DDCE.jpg">
+<meta property="og:image" content="http://immortalgeisha.com/wiki/images/3/3d/Motif_asagao_01.jpg">
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/599815984716155E2BE05C3E382F8527">
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/68004FA2F70EDD00388BFBA1F70BF451">
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/8E26F44EAA63D952DFB8A609B7B9A6F5">
@@ -100,11 +100,11 @@
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/43D11E7109ABF4959A3FAB53FCCF4502">
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/FD38B3C5B4F89D637D8D8CB66CE1CA42">
 <meta property="og:image" content="http://yoursite.com/upload_image/resources/BC04C30F504185D196EABE1739C31329">
-<meta property="og:updated_time" content="2018-11-18T09:56:49.932Z">
+<meta property="og:updated_time" content="2018-11-18T09:59:53.664Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="pwn学习（1）">
 <meta name="twitter:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
-<meta name="twitter:image" content="http://yoursite.com/upload_image/11FDD1EFF0F00D0D1CE349397041DDCE.jpg">
+<meta name="twitter:image" content="http://immortalgeisha.com/wiki/images/3/3d/Motif_asagao_01.jpg">
 
 
 
@@ -360,7 +360,7 @@
 <h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
 <p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
 <p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
-<p><img src="/upload_image/11FDD1EFF0F00D0D1CE349397041DDCE.jpg" alt=""></p>
+<p><img src="http://immortalgeisha.com/wiki/images/3/3d/Motif_asagao_01.jpg" alt=""></p>
 <p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
 <p>紧接着我们用ida打开简单分析一下程序</p>
 <p><img src="/upload_image/resources/599815984716155E2BE05C3E382F8527" alt=""></p>
