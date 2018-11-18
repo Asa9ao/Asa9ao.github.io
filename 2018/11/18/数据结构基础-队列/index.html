@@ -79,33 +79,21 @@
 
 
 
-<meta name="description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
+<meta name="description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（1）">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（1）/index.html">
+<meta property="og:title" content="数据结构基础--队列">
+<meta property="og:url" content="http://yoursite.com/2018/11/18/数据结构基础-队列/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
+<meta property="og:description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1330921.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a970040d.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg">
-<meta property="og:updated_time" content="2018-11-18T11:20:23.783Z">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/">
+<meta property="og:updated_time" content="2018-11-18T12:33:28.302Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（1）">
-<meta name="twitter:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
-<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
+<meta name="twitter:title" content="数据结构基础--队列">
+<meta name="twitter:description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/">
 
 
 
@@ -135,13 +123,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
 
 
 
 
 
-  <title>pwn学习（1） | Asa9ao</title>
+  <title>数据结构基础--队列 | Asa9ao</title>
   
 
 
@@ -268,7 +256,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -285,7 +273,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（1）</h1>
+          <h1 class="post-title" itemprop="name headline">数据结构基础--队列</h1>
         
 
         <div class="post-meta">
@@ -297,7 +285,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T17:36:37+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
                 2018-11-18
               </time>
             
@@ -320,8 +308,8 @@
               
               
                 <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
                   </a>
                 </span>
 
@@ -357,44 +345,37 @@
       
 
       
-        <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
-<h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
-<p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
-<p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf138f88b893.jpg" alt=""></p>
-<p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
-<p>紧接着我们用ida打开简单分析一下程序</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg" alt="2.jpg"></p>
-<p>很显然gets这里存在栈溢出漏洞，我们可以通过s对于ebp的偏移值直接计算出来我们的ret的地址，当然也可以使用peda中的工具，这里为了熟练一下工具的使用我就用一下工具吧</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg" alt="3.jpg"></p>
-<p>通过peda的pattern create xxx可以生成xxx个随机字符，我们就尝试用这个来溢出函数进而找到函数的返回地址（因为返回地址被我们的垃圾数据覆盖了，所以函数无法正常返回，我们就可以通过这一步的错误确定返回地址相对于我们的s的偏移量）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg" alt="4.jpg"></p>
-<p>使用pattern offset xxx可以查看到相对于xxx的偏移量，当然由于这里算出来的是ebp的，对于堆栈结构已经不陌生的我们就知道了，加4（64位程序+8）也就是我们的返回地址</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg" alt="5.jpg"></p>
-<p>我们在ida中查看到了程序中自带了system(“/bin/sh”/)函数，那我们直接拿这玩意的地址去填充原来函数的返回地址就好了，那我们就来写exp了</p>
-<p>successful</p>
-<h2 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h2><p>在知道了ret2text的原理后这个就很好理解了，之前我们是借助程序提供的可以拿到shell的函数来实现pwn的，那万一程序中没有提供咋办？其实也很简单，我们可以在恰当的位置放上自己的shellcode然后去执行它，当然我们要提前知道我们可以布置shellcode的位置，毕竟我们是要运行这段shellcode，所以起码你放的地方得有执行的权限，比如上面那个题目，开启了NX，你要是把shellcode布置在栈上就完蛋了。</p>
-<p>前期的操作就不再赘述了，我们用ida打开程序进行一下简单的分析</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1330921.jpg" alt="6.jpg"></p>
-<p>主要函数部分如图所示，可以看懂栈溢出很明显，但更有趣的是下边的一句，它将我们的输入的0x64个字符复制到了buf2，我们点进去看看buf2是个什么东西</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg" alt="7.jpg"></p>
-<p>可以看到buf2是bss段的一个数组，但按照我们上面说的，我们需要把shellcode布置在有执行权限的地方，而这里是否有执行权限呢？我们可以通过peda的vmmap来看一看</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg" alt="8.jpg"></p>
-<p>果然这一段是可执行的，那接下来的任务就简单了，只要我们输入shellcode，并且通过最后的返回地址返回到buf2的位置就可以实现pwn，下面是exp</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg" alt="9.jpg"></p>
-<p>successful</p>
-<h2 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h2><p>因为有逆向的基础，所以这个说起来也并不难，主要就是控制程序执行系统调用，关于什么是系统调用就不再提了，可以简单的看做是一个信号弹，这个信号一来系统就知道有事要干了，但具体干什么就由信号弹的颜色啊、声响啊等等各个方面综合决定了。linux中的这个信号弹就是int 80h，基本过程如下图所示</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg" alt="10.jpg"></p>
-<p>而pwn一般都是要去执行/bin/sh的，那就需要用系统调用号为0xb的execve了，这个函数有三个参数，分别用ebx、ecx和edx保存，其中第一个是字符串/bin/sh，其余两个是0。</p>
-<p>那我们如何去控制这几个寄存器的值呢？那就要用到gadgets了，我们利用一个个片段去拼凑出来我们需要的东西，比如，改变eax的值，我们可以用pop eax的方式去实现，只要栈上的值我们提前设置好就成了，那如何找到这些gadgets呢？我们可以利用ROPgadget这个工具</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg" alt="11.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a970040d.jpg" alt="12.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg" alt="13.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg" alt="14.jpg"></p>
-<p>万事具备，只欠脚本！</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg" alt="15.jpg"></p>
-<p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
-<p>successful</p>
+        <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
+<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
+<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
+<p>在循环队列中，front的值和rear的值有三种情况</p>
+<ul>
+<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
+</ul>
+<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
+<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
+<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
+<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
+<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
+<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
+<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
+<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
+<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
+<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
+<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
+<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
+<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
+<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
+<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
+<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
+<ul>
+<li>size进行标记判断是否队列已满</li>
+<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
+</ul>
+<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
+<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
 
       
     </div>
@@ -419,15 +400,15 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
+              <a href="/2018/11/18/pwn学习（3）ROP-Emporium32位练习/" rel="next" title="pwn学习（3）ROP Emporium32位练习">
+                <i class="fa fa-chevron-left"></i> pwn学习（3）ROP Emporium32位练习
+              </a>
+            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/18/pwn学习（二）/" rel="prev" title="pwn学习（二）">
-                pwn学习（二） <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -550,7 +531,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2text"><span class="nav-number">1.</span> <span class="nav-text">ret2text</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2shellcode"><span class="nav-number">2.</span> <span class="nav-text">ret2shellcode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2syscall"><span class="nav-number">3.</span> <span class="nav-text">ret2syscall</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#数据结构复习—队列"><span class="nav-number">1.</span> <span class="nav-text">数据结构复习—队列</span></a></li></ol></div>
             
 
           </div>
