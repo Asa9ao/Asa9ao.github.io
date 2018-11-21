@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="pwn formatString,">
 
 
 
@@ -80,6 +80,7 @@
 
 
 <meta name="description" content="昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。 覆盖任意地址首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？ 当然可以了，这就是我们内存覆盖的第二个方面—任">
+<meta name="keywords" content="pwn formatString">
 <meta property="og:type" content="article">
 <meta property="og:title" content="pwn学习（5）格式化字符串漏洞2">
 <meta property="og:url" content="http://yoursite.com/2018/11/20/pwn学习（5）格式化字符串漏洞2/index.html">
@@ -89,7 +90,7 @@
 <meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg">
 <meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxexaabnswj30wm0ekq5s.jpg">
 <meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxexeowvb4j30cy06m74u.jpg">
-<meta property="og:updated_time" content="2018-11-20T15:12:38.572Z">
+<meta property="og:updated_time" content="2018-11-21T11:23:20.380Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="pwn学习（5）格式化字符串漏洞2">
 <meta name="twitter:description" content="昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。 覆盖任意地址首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？ 当然可以了，这就是我们内存覆盖的第二个方面—任">
@@ -449,6 +450,12 @@ p.interactive()
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/pwn-formatString/" rel="tag"># pwn formatString</a>
+          
+        </div>
+      
 
       
       
@@ -467,6 +474,10 @@ p.interactive()
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/11/21/pwn学习（6）花式栈溢出1/" rel="prev" title="pwn学习（6）花式栈溢出1">
+                pwn学习（6）花式栈溢出1 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -543,7 +554,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -560,6 +571,15 @@ p.interactive()
               </div>
             
 
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
             
 
           </nav>
