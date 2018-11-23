@@ -79,33 +79,16 @@
 
 
 
-<meta name="description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
-<meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（1）">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（1）/index.html">
+<meta name="description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Asa9ao">
+<meta property="og:url" content="http://yoursite.com/page/2/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
+<meta property="og:description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1330921.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a970040d.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg">
-<meta property="og:updated_time" content="2018-11-18T11:20:23.783Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（1）">
-<meta name="twitter:description" content="虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧 ret2text原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的">
-<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf138f88b893.jpg">
+<meta name="twitter:title" content="Asa9ao">
+<meta name="twitter:description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
 
 
 
@@ -135,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+  <link rel="canonical" href="http://yoursite.com/page/2/">
 
 
 
 
 
-  <title>pwn学习（1） | Asa9ao</title>
+  <title>Asa9ao</title>
   
 
 
@@ -160,7 +143,8 @@
     
   
 
-  <div class="container sidebar-position-left page-post-detail">
+  <div class="container sidebar-position-left 
+  page-home">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
@@ -253,9 +237,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-
-  <div id="posts" class="posts-expand">
+  <section id="posts" class="posts-expand">
     
+      
 
   
 
@@ -285,7 +269,9 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（1）</h1>
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/pwn学习（1）/" itemprop="url">pwn学习（1）</a></h1>
         
 
         <div class="post-meta">
@@ -357,7 +343,9 @@
       
 
       
-        <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
+        
+          
+            <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
 <h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
 <p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
 <p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
@@ -396,6 +384,8 @@
 <p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
 <p>successful</p>
 
+          
+        
       
     </div>
     
@@ -412,28 +402,12 @@
       
 
       
-      
+
       
 
       
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-          </div>
-
-          <span class="post-nav-divider"></span>
-
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/18/pwn学习（二）/" rel="prev" title="pwn学习（二）">
-                pwn学习（二） <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
       
-
-      
+        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -443,11 +417,14 @@
   </article>
 
 
+    
+  </section>
 
-    <div class="post-spread">
-      
-    </div>
-  </div>
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
+  </nav>
+
 
 
           </div>
@@ -455,10 +432,6 @@
 
 
           
-
-  
-
-
 
         </div>
         
@@ -479,17 +452,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -549,22 +513,6 @@
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2text"><span class="nav-number">1.</span> <span class="nav-text">ret2text</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2shellcode"><span class="nav-number">2.</span> <span class="nav-text">ret2shellcode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ret2syscall"><span class="nav-number">3.</span> <span class="nav-text">ret2syscall</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
@@ -698,10 +646,6 @@
   
 
   
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
-
 
   
 
