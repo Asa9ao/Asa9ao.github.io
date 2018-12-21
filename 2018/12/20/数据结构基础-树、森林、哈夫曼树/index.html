@@ -79,21 +79,17 @@
 
 
 
-<meta name="description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
+<meta name="description" content="今天上了一天的数电。。。明明本来没那么多课的，结果硬生生加了好几节。。。估计今天更不了排序了，先把树这部分搞完吧 1-1对于一个有N个结点、K条边的森林，不能确定它共有几棵树。 答案是F，这个其实是可以算出来的，我们在图中说过树是边最少的一种连通图了，其边数（下文中边数用e数代替）== 结点数（下文中用v数代替）-1，所以我们就知道了， N - K的差值就是树的个数了 1-2对N（≥2）个权值均不">
 <meta property="og:type" content="article">
-<meta property="og:title" content="数据结构基础--队列">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/数据结构基础-队列/index.html">
+<meta property="og:title" content="数据结构基础--树、森林、哈夫曼树">
+<meta property="og:url" content="http://yoursite.com/2018/12/20/数据结构基础-树、森林、哈夫曼树/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
+<meta property="og:description" content="今天上了一天的数电。。。明明本来没那么多课的，结果硬生生加了好几节。。。估计今天更不了排序了，先把树这部分搞完吧 1-1对于一个有N个结点、K条边的森林，不能确定它共有几棵树。 答案是F，这个其实是可以算出来的，我们在图中说过树是边最少的一种连通图了，其边数（下文中边数用e数代替）== 结点数（下文中用v数代替）-1，所以我们就知道了， N - K的差值就是树的个数了 1-2对N（≥2）个权值均不">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/">
-<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/">
-<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/">
-<meta property="og:updated_time" content="2018-11-18T12:33:28.302Z">
+<meta property="og:updated_time" content="2018-12-21T10:09:40.439Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="数据结构基础--队列">
-<meta name="twitter:description" content="数据结构复习—队列 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分) 可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号 1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分) 在循环队列中，front的值和rear的">
-<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/">
+<meta name="twitter:title" content="数据结构基础--树、森林、哈夫曼树">
+<meta name="twitter:description" content="今天上了一天的数电。。。明明本来没那么多课的，结果硬生生加了好几节。。。估计今天更不了排序了，先把树这部分搞完吧 1-1对于一个有N个结点、K条边的森林，不能确定它共有几棵树。 答案是F，这个其实是可以算出来的，我们在图中说过树是边最少的一种连通图了，其边数（下文中边数用e数代替）== 结点数（下文中用v数代替）-1，所以我们就知道了， N - K的差值就是树的个数了 1-2对N（≥2）个权值均不">
 
 
 
@@ -123,13 +119,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
+  <link rel="canonical" href="http://yoursite.com/2018/12/20/数据结构基础-树、森林、哈夫曼树/">
 
 
 
 
 
-  <title>数据结构基础--队列 | Asa9ao</title>
+  <title>数据结构基础--树、森林、哈夫曼树 | Asa9ao</title>
   
 
 
@@ -256,7 +252,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/20/数据结构基础-树、森林、哈夫曼树/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Asa9ao">
@@ -273,7 +269,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">数据结构基础--队列</h1>
+          <h1 class="post-title" itemprop="name headline">数据结构基础--树、森林、哈夫曼树</h1>
         
 
         <div class="post-meta">
@@ -285,8 +281,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
-                2018-11-18
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-20T17:10:41+08:00">
+                2018-12-20
               </time>
             
 
@@ -345,37 +341,63 @@
       
 
       
-        <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
-<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
-<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
-<p>在循环队列中，front的值和rear的值有三种情况</p>
+        <p>今天上了一天的数电。。。明明本来没那么多课的，结果硬生生加了好几节。。。估计今天更不了排序了，先把树这部分搞完吧</p>
+<p><strong>1-1对于一个有N个结点、K条边的森林，不能确定它共有几棵树。</strong></p>
+<p>答案是F，这个其实是可以算出来的，我们在图中说过树是边最少的一种连通图了，其边数（下文中边数用e数代替）== 结点数（下文中用v数代替）-1，所以我们就知道了， N - K的差值就是树的个数了</p>
+<p><strong>1-2对N（≥2）个权值均不相同的字符构造哈夫曼树，则树中任一非叶结点的权值一定不小于下一层任一结点的权值。</strong></p>
+<p>这个是对的因为构造哈夫曼树的时候就是每次拿出最小的来一层层搭建的，而且每一次搭建的上一层都是下边两个的和，所以其实非叶结点的权值都是要大于等于下一层结点的值的</p>
+<p><strong>2-1具有1102个结点的完全二叉树一定有__个叶子结点。</strong></p>
+<p>这个之前也用过了，就是2n（2n是总的v数）/2个，至于为啥，我们拿1到2n依照层序遍历好所有的v，自然最后一层的最后一个也就是2n，而由于是完全二叉树，最后一层的结点数除以2也就是之前一层的结点数，也就是说上一层v的最后一个就是n，那么最后一层的第一个就是n+1……一直到2n，就是n个。</p>
+<p><strong>2-2若森林F有15条边、25个结点，则F包含树的个数是：</strong></p>
+<p>上面说过了，就是v-e</p>
+<p><strong>2-3将森林转换为对应的二叉树，若在二叉树中，结点u是结点v的父结点的父结点，则在原来的森林中，u和v可能具有的关系是： (3分)</strong></p>
+<ol>
+<li><strong>父子关系； 2. 兄弟关系； 3. u的父结点与v的父结点是兄弟关系</strong></li>
+</ol>
+<p>答案是1和3，首先我们要知道森林是怎么变成二叉树的，这里也顺便详细总结一下几种常见的转换吧</p>
 <ul>
-<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
+<li><p>树转换为二叉树，简单说就是三步，加线、去线、转圈。首先把所有的兄弟结点都加上线，接着把非叶结点只保留与第一个孩子的结点，其他全部去掉，然后调整到一个比较好看的角度就完了</p>
+</li>
+<li><p>森林转换为二叉树，这个也很简单，首先把所有的树都变成二叉树，然后下一棵树都变成上一棵树的右儿子就完事了</p>
+</li>
 </ul>
-<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
-<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
-<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
-<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
-<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
-<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
-<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
-<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
-<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
-<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
-<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
-<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
-<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
-<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
-<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
-<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
+<p><strong>2-4对于一个有N个结点、K条边的森林，共有几棵树？</strong></p>
+<p>N-K，上面详细说过了。</p>
+<p><strong>2-5设森林F中有三棵树，第一、第二、第三棵树的结点个数分别为M1，M2和M3。则与森林F对应的二叉树根结点的右子树上的结点个数是：</strong></p>
+<p>这个就是上面提到的那个森林变二叉树的过程，实际上是M3成了M2的右子树，M2成了M1的右子树，所以右子树的结点个数应该是M2+M3</p>
+<p><strong>2-6由若干个二叉树组成的森林F中，叶结点总个数为N，度为2的结点总个数为M，则该集合中二叉树的个数为：</strong></p>
+<p>设有x个二叉树，度为1的结点为v，边数为e，根据之前推出来的结论有 x = n + m + v - e，对于边数e还有e = 2*m + v，连立得x = n - m</p>
+<p><strong>2-7已知一棵完全二叉树的第6层（设根为第1层）有8个叶结点，则该完全二叉树的结点个数最多是</strong></p>
+<p><strong>附加题 已知一棵完全二叉树的第6层（设根为第1层）有8个叶结点，则该完全二叉树的结点个数最少是</strong></p>
+<p>对于题目中的完全二叉树来说，最起码前五层都是满的，所以就是上次总结的等比数列求和公式2的五次方-1除以2-1，也就是31，而第六层就有故事了（因为完全二叉树的叶结点只有可能出现在最后一层和倒数第二层）</p>
 <ul>
-<li>size进行标记判断是否队列已满</li>
-<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
+<li><p>第六层就是最后一层，那就是31 + 8 = 39了，也就是最少的情况</p>
+</li>
+<li><p>第六层是倒数第二层，那么就是有8个结点到头了，往下不能延伸了，但剩下的2的五次方-8个顶点还是可以继续往下走的，所以就是第七层还有48个结点，加起来就是最多的情况了</p>
+</li>
 </ul>
-<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
-<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
+<p><strong>2-8在一个用数组表示的完全二叉树中，如果根结点下标为1，那么下标为17和19这两个结点的最近公共祖先结点在哪里（数组下标）？ （注：两个结点的“公共祖先结点”是指同时都是这两个结点祖先的结点）</strong></p>
+<p>来看一下二叉树在数组中常见的几种查找。设结点的序列为index（假设根结点为0），那么他的左儿子也就是2*index+1，他的右儿子也就是2*index+2，而他的父亲就是(index-1)/2。</p>
+<p>题目中因为根结点是1，我们提前一格，所求的就是16和18，根据公式得7和8，再求一次得3，因为我们index提前了一格，所以再加1，答案就是4了</p>
+<p><strong>2-9具有65个结点的完全二叉树其深度为（根的深度为1）</strong></p>
+<p>记住公式就完事了，深度k =[log~2~N] + 1（注意要向下取整）</p>
+<p><strong>2-10对N（N≥2）个权值均不相同的字符构造哈夫曼树。下列关于该哈夫曼树的叙述中，错误的是：</strong></p>
+<p>当一棵具有n 个叶子结点的二叉树的WPL 值为最小时，称其树为哈夫曼树，其二叉树的形状是唯一的</p>
+<blockquote>
+<p>哈夫曼树的形态不是唯一的，但是它的带权路径长度WPL是唯一的。 </p>
+<p>如：3，5，6 </p>
+<p>可以构造出 </p>
+<p>​        14</p>
+<p>​      8          6</p>
+<p>3    5</p>
+<p>或   </p>
+<p>​       14</p>
+<p>​     6         8 </p>
+<p>​              3    5</p>
+<p>这两种形态，所以哈夫曼树形态不唯一。</p>
+</blockquote>
+<p><strong>2-18(neuDS)在哈夫曼树中，任何一个结点它的度都是（ ）</strong></p>
+<p>0或者2，因为，这很好想吧，因为我们都是拿两个结点拼起来的</p>
 
       
     </div>
@@ -400,8 +422,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/11/18/数据结构基础-链表/" rel="next" title="数据结构基础--链表">
-                <i class="fa fa-chevron-left"></i> 数据结构基础--链表
+              <a href="/2018/12/18/数据结构基础-查找/" rel="next" title="数据结构基础--查找">
+                <i class="fa fa-chevron-left"></i> 数据结构基础--查找
               </a>
             
           </div>
@@ -410,8 +432,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2018/11/19/数据结构基础-顺序表/" rel="prev" title="数据结构基础--顺序表">
-                数据结构基础--顺序表 <i class="fa fa-chevron-right"></i>
+              <a href="/2018/12/29/数据结构基础-二叉树/" rel="prev" title="数据结构基础--二叉树">
+                数据结构基础--二叉树 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -464,17 +486,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -534,22 +547,6 @@
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#数据结构复习—队列"><span class="nav-number">1.</span> <span class="nav-text">数据结构复习—队列</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
