@@ -87,7 +87,7 @@
 <meta property="og:description" content="1-1对N个记录进行堆排序，需要的额外空间为O(N)。 这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表  1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。 这个对的，选择排序的时间基本都浪费在比较上了。。。 1-3希尔排序是稳定的算法。 (1分) 最不稳定的还差不多 1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。 上面">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNbRwly1fyejgnvnd4j310z0u0dsf.jpg">
-<meta property="og:updated_time" content="2018-12-21T12:55:05.320Z">
+<meta property="og:updated_time" content="2018-12-23T06:59:25.702Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="数据结构基础--排序">
 <meta name="twitter:description" content="1-1对N个记录进行堆排序，需要的额外空间为O(N)。 这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表  1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。 这个对的，选择排序的时间基本都浪费在比较上了。。。 1-3希尔排序是稳定的算法。 (1分) 最不稳定的还差不多 1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。 上面">
@@ -392,6 +392,14 @@
 <li>i=2 处填上base值46<br>此时 40， 38，46，56，79，84<br>选C</li>
 </ol>
 </blockquote>
+<p><strong>2-13对于序列{ 49，38，65，97，76，13，27，50 }，按由小到大进行排序，下面哪一个是初始步长为4的希尔排序法第一趟的结果？</strong></p>
+<p>希尔排序应该说是亲民的一种排序了。。。代码亲民，选择做起来也不难。下面来简单说一下希尔排序的过程。</p>
+<p>首先选择len/2作为增了，然后前len/2个分别和后len/2个一一对应算是一组，然后这俩组成的一组进行比较交换。</p>
+<p>第二步让增量/2得到新的增量，然后重复上面的操作，直至增量为1，进行最后一次排序</p>
+<p><strong>2-14给定初始待排序列{ 15，9，7，8，20，-1，4 }。如果希尔排序第一趟结束后得到序列为{ 15，-1，4，8，20，9，7 }，则该趟增量为</strong></p>
+<p>会了希尔排序之后这个就很简单了</p>
+<p><strong>2-16对于10个数的简单选择排序，最坏情况下需要交换元素的次数为：</strong></p>
+<p>就是每两个都得交换，也就是9次</p>
 
       
     </div>
@@ -426,8 +434,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2018/12/29/数据结构基础-二叉树/" rel="prev" title="数据结构基础--二叉树">
-                数据结构基础--二叉树 <i class="fa fa-chevron-right"></i>
+              <a href="/2018/12/25/windows礼包/" rel="prev" title="windows礼包">
+                windows礼包 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -496,7 +504,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-count">20</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -507,7 +515,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

