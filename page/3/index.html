@@ -79,24 +79,16 @@
 
 
 
-<meta name="description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
-<meta property="og:type" content="article">
-<meta property="og:title" content="pwn学习（二）">
-<meta property="og:url" content="http://yoursite.com/2018/11/18/pwn学习（二）/index.html">
+<meta name="description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Asa9ao">
+<meta property="og:url" content="http://yoursite.com/page/3/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
+<meta property="og:description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d799d6b0.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d79dd2f6.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a55c91.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a315ee.jpg">
-<meta property="og:image" content="https://i.loli.net/2018/11/18/5bf14d7a36b5a.jpg">
-<meta property="og:updated_time" content="2018-11-19T11:38:52.315Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="pwn学习（二）">
-<meta name="twitter:description" content="昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干 Ret2ilbc首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。 下面就来看ctf wiki给出的三个例题吧，首">
-<meta name="twitter:image" content="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg">
+<meta name="twitter:title" content="Asa9ao">
+<meta name="twitter:description" content="It&apos;s not who I am underneath, but it&apos;s what I do that defines me">
 
 
 
@@ -126,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2018/11/18/pwn学习（二）/">
+  <link rel="canonical" href="http://yoursite.com/page/3/">
 
 
 
 
 
-  <title>pwn学习（二） | Asa9ao</title>
+  <title>Asa9ao</title>
   
 
 
@@ -151,7 +143,8 @@
     
   
 
-  <div class="container sidebar-position-left page-post-detail">
+  <div class="container sidebar-position-left 
+  page-home">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
@@ -244,9 +237,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-
-  <div id="posts" class="posts-expand">
+  <section id="posts" class="posts-expand">
     
+      
 
   
 
@@ -276,7 +269,9 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">pwn学习（二）</h1>
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/pwn学习（二）/" itemprop="url">pwn学习（二）</a></h1>
         
 
         <div class="post-meta">
@@ -348,7 +343,9 @@
       
 
       
-        <p>昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干</p>
+        
+          
+            <p>昨天算是把栈溢出最基础的题目做了做，今天继续，打算将ctf wiki里面关于ret2libc的题目做完，话不多说，直接开干</p>
 <h2 id="Ret2ilbc"><a href="#Ret2ilbc" class="headerlink" title="Ret2ilbc"></a>Ret2ilbc</h2><p>首先来简单的看一下原理，所谓的ret2libc也就是控制函数去执行libc的函数，也就是我们将返回地址设置为某个函数的plt位置或者是具体位置（即函数对应的GOT表项），当然，通过这种方式可以绕过NX的保护机制。</p>
 <p>下面就来看ctf wiki给出的三个例题吧，首先是第一个</p>
 <p><img src="https://i.loli.net/2018/11/18/5bf14d7ab0691.jpg" alt="1.jpg"></p>
@@ -419,6 +416,8 @@ p.interactive()
 <p>这里用到了新的工具—LibcSearcher，这个工具主要是能够帮助我们轻松的利用已有的got表的泄漏快速找到我们想要的东西，用法也很简单LibcSeacher(‘函数名’,地址)得到了libc，之后libc.dump()就可以得到偏移了，之后按照之前的方法构造payload就好了。要注意这里我们的pad要-8，因为我们是在main函数里又调用了main函数。</p>
 <p>successful</p>
 
+          
+        
       
     </div>
     
@@ -435,32 +434,12 @@ p.interactive()
       
 
       
-      
+
       
 
       
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2018/11/18/pwn学习（1）/" rel="next" title="pwn学习（1）">
-                <i class="fa fa-chevron-left"></i> pwn学习（1）
-              </a>
-            
-          </div>
-
-          <span class="post-nav-divider"></span>
-
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2018/11/18/pwn学习（3）ROP-Emporium32位练习/" rel="prev" title="pwn学习（3）ROP Emporium32位练习">
-                pwn学习（3）ROP Emporium32位练习 <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
       
-
-      
+        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -470,11 +449,193 @@ p.interactive()
   </article>
 
 
+    
+      
 
-    <div class="post-spread">
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/pwn学习（1）/" itemprop="url">pwn学习（1）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T17:36:37+08:00">
+                2018-11-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
+<h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
+<p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
+<p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf138f88b893.jpg" alt=""></p>
+<p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
+<p>紧接着我们用ida打开简单分析一下程序</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg" alt="2.jpg"></p>
+<p>很显然gets这里存在栈溢出漏洞，我们可以通过s对于ebp的偏移值直接计算出来我们的ret的地址，当然也可以使用peda中的工具，这里为了熟练一下工具的使用我就用一下工具吧</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg" alt="3.jpg"></p>
+<p>通过peda的pattern create xxx可以生成xxx个随机字符，我们就尝试用这个来溢出函数进而找到函数的返回地址（因为返回地址被我们的垃圾数据覆盖了，所以函数无法正常返回，我们就可以通过这一步的错误确定返回地址相对于我们的s的偏移量）</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg" alt="4.jpg"></p>
+<p>使用pattern offset xxx可以查看到相对于xxx的偏移量，当然由于这里算出来的是ebp的，对于堆栈结构已经不陌生的我们就知道了，加4（64位程序+8）也就是我们的返回地址</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg" alt="5.jpg"></p>
+<p>我们在ida中查看到了程序中自带了system(“/bin/sh”/)函数，那我们直接拿这玩意的地址去填充原来函数的返回地址就好了，那我们就来写exp了</p>
+<p>successful</p>
+<h2 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h2><p>在知道了ret2text的原理后这个就很好理解了，之前我们是借助程序提供的可以拿到shell的函数来实现pwn的，那万一程序中没有提供咋办？其实也很简单，我们可以在恰当的位置放上自己的shellcode然后去执行它，当然我们要提前知道我们可以布置shellcode的位置，毕竟我们是要运行这段shellcode，所以起码你放的地方得有执行的权限，比如上面那个题目，开启了NX，你要是把shellcode布置在栈上就完蛋了。</p>
+<p>前期的操作就不再赘述了，我们用ida打开程序进行一下简单的分析</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a1330921.jpg" alt="6.jpg"></p>
+<p>主要函数部分如图所示，可以看懂栈溢出很明显，但更有趣的是下边的一句，它将我们的输入的0x64个字符复制到了buf2，我们点进去看看buf2是个什么东西</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg" alt="7.jpg"></p>
+<p>可以看到buf2是bss段的一个数组，但按照我们上面说的，我们需要把shellcode布置在有执行权限的地方，而这里是否有执行权限呢？我们可以通过peda的vmmap来看一看</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg" alt="8.jpg"></p>
+<p>果然这一段是可执行的，那接下来的任务就简单了，只要我们输入shellcode，并且通过最后的返回地址返回到buf2的位置就可以实现pwn，下面是exp</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg" alt="9.jpg"></p>
+<p>successful</p>
+<h2 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h2><p>因为有逆向的基础，所以这个说起来也并不难，主要就是控制程序执行系统调用，关于什么是系统调用就不再提了，可以简单的看做是一个信号弹，这个信号一来系统就知道有事要干了，但具体干什么就由信号弹的颜色啊、声响啊等等各个方面综合决定了。linux中的这个信号弹就是int 80h，基本过程如下图所示</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg" alt="10.jpg"></p>
+<p>而pwn一般都是要去执行/bin/sh的，那就需要用系统调用号为0xb的execve了，这个函数有三个参数，分别用ebx、ecx和edx保存，其中第一个是字符串/bin/sh，其余两个是0。</p>
+<p>那我们如何去控制这几个寄存器的值呢？那就要用到gadgets了，我们利用一个个片段去拼凑出来我们需要的东西，比如，改变eax的值，我们可以用pop eax的方式去实现，只要栈上的值我们提前设置好就成了，那如何找到这些gadgets呢？我们可以利用ROPgadget这个工具</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg" alt="11.jpg"></p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a970040d.jpg" alt="12.jpg"></p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg" alt="13.jpg"></p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg" alt="14.jpg"></p>
+<p>万事具备，只欠脚本！</p>
+<p><img src="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg" alt="15.jpg"></p>
+<p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
+<p>successful</p>
+
+          
+        
       
     </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
   </div>
+  
+  
+  
+  </article>
+
+
+    
+  </section>
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+  </nav>
+
 
 
           </div>
@@ -482,10 +643,6 @@ p.interactive()
 
 
           
-
-  
-
-
 
         </div>
         
@@ -506,17 +663,8 @@ p.interactive()
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -576,22 +724,6 @@ p.interactive()
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Ret2ilbc"><span class="nav-number">1.</span> <span class="nav-text">Ret2ilbc</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
@@ -725,10 +857,6 @@ p.interactive()
   
 
   
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
-
 
   
 

