@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="#tcache源代码浅析与漏洞利用方法 tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内">
+<meta name="description" content="tcache源代码浅析与漏洞利用方法tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内容影">
 <meta property="og:type" content="article">
 <meta property="og:title" content="tcache浅析">
 <meta property="og:url" content="http://yoursite.com/2019/03/02/tcache浅析/index.html">
 <meta property="og:site_name" content="Asa9ao">
-<meta property="og:description" content="#tcache源代码浅析与漏洞利用方法 tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内">
+<meta property="og:description" content="tcache源代码浅析与漏洞利用方法tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内容影">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://ws4.sinaimg.cn/large/006tKfTcly1g0opfg21v1j30nh0cin02.jpg">
-<meta property="og:updated_time" content="2019-03-03T06:47:28.309Z">
+<meta property="og:updated_time" content="2019-03-05T13:18:24.128Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="tcache浅析">
-<meta name="twitter:description" content="#tcache源代码浅析与漏洞利用方法 tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内">
+<meta name="twitter:description" content="tcache源代码浅析与漏洞利用方法tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内容影">
 <meta name="twitter:image" content="https://ws4.sinaimg.cn/large/006tKfTcly1g0opfg21v1j30nh0cin02.jpg">
 
 
@@ -321,10 +321,8 @@
       
 
       
-        <p>#tcache源代码浅析与漏洞利用方法</p>
-<p>tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内容影响不大。</p>
-<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>###结构体</p>
-<p>首先看看新的两个结构体，分别是tcache_entry和tcache_perthread_struct</p>
+        <h1 id="tcache源代码浅析与漏洞利用方法"><a href="#tcache源代码浅析与漏洞利用方法" class="headerlink" title="tcache源代码浅析与漏洞利用方法"></a>tcache源代码浅析与漏洞利用方法</h1><p>tcache是libc2.26（ubuntu 17.10）中引入的一种新技术，其主要功能是为了提高堆管理的性能，但因为性能而放弃了很多的安全检查，导致出现了大量的新的利用方式。本文采用的是libc2.26的相关代码，在ubuntu18.04只中libc更新到了2.27，但主要改进是用了SINGLE_THREAD_P变量来优化线程方面的处理逻辑，对本文所述的内容影响不大。</p>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><h3 id="结构体"><a href="#结构体" class="headerlink" title="结构体"></a>结构体</h3><p>首先看看新的两个结构体，分别是tcache_entry和tcache_perthread_struct</p>
 <ul>
 <li><strong>tcache_entry</strong></li>
 </ul>
@@ -365,8 +363,7 @@
 <li><strong>tcache_put()</strong></li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Caller must ensure that we know tc_idx is valid and there's room</span></span><br><span class="line"><span class="comment">   for more chunks.  */</span></span><br><span class="line"><span class="keyword">static</span> __<span class="function">always_inline <span class="keyword">void</span> <span class="title">tcache_put</span> <span class="params">(mchunkptr chunk, <span class="keyword">size_t</span> tc_idx)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  tcache_entry *e = (tcache_entry *) chunk2mem (chunk);	<span class="comment">//拿到相应的entry</span></span><br><span class="line">  assert (tc_idx &lt; TCACHE_MAX_BINS);					<span class="comment">//判断index是否合法		</span></span><br><span class="line">  e-&gt;next = tcache-&gt;entries[tc_idx];					<span class="comment">//e的next为index对应的entry</span></span><br><span class="line">  tcache-&gt;entries[tc_idx] = e;							<span class="comment">//index对应的entry设置为了e</span></span><br><span class="line">  ++(tcache-&gt;counts[tc_idx]);							<span class="comment">//该index对应的count的数量加1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>###概括</p>
-<p>以上就是所有涉及到的相关函数，简单梳理一下逻辑大概如下所示：</p>
+<h3 id="概括"><a href="#概括" class="headerlink" title="概括"></a>概括</h3><p>以上就是所有涉及到的相关函数，简单梳理一下逻辑大概如下所示：</p>
 <ul>
 <li>第一次malloc时，会首先malloc空间来存放tcache_perthread_struct    </li>
 <li><p>free时，转换size，如果size在fastbins和smallbins的话，根据size计算出index</p>
@@ -383,8 +380,7 @@
 </ul>
 </li>
 </ul>
-<p>##漏洞分析</p>
-<p>对比起libc2.23时代，tcache的引入大大减少了_int_malloc()的使用次数，所以原有的安全检查机制几乎发挥不了作用，而tcache优先级极高，其相关操作本身又没有太多的check，所以就有了许多新的利用方式。</p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>对比起libc2.23时代，tcache的引入大大减少了_int_malloc()的使用次数，所以原有的安全检查机制几乎发挥不了作用，而tcache优先级极高，其相关操作本身又没有太多的check，所以就有了许多新的利用方式。</p>
 <h3 id="tcache-poisoning"><a href="#tcache-poisoning" class="headerlink" title="tcache poisoning"></a>tcache poisoning</h3><p>参考how2heap，代码如下</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">size_t</span> stack_var;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"The address we want malloc() to return is %p.\n"</span>, (<span class="keyword">char</span> *)&amp;stack_var);</span><br><span class="line">	<span class="keyword">intptr_t</span> *a = <span class="built_in">malloc</span>(<span class="number">128</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"malloc(128): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line">	a[<span class="number">0</span>] = (<span class="keyword">intptr_t</span>)&amp;stack_var;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(128): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">128</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the tcache list has [ %p ].\n"</span>, &amp;stack_var);</span><br><span class="line">	<span class="keyword">intptr_t</span> *b = <span class="built_in">malloc</span>(<span class="number">128</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(128): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We got the control\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>所谓的tcache poisoning实际上就是fastbin dup into stack的简化版，原理很简单，首先malloc一个size在tcache内的chunk，然后free使其进入entry的链表，最后就是覆盖next指针成为你想要的地址，这样就会让系统产生一个错觉，认为entry的链表如下所示</p>
@@ -569,7 +565,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#源码分析"><span class="nav-number">1.</span> <span class="nav-text">源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#函数"><span class="nav-number">1.1.</span> <span class="nav-text">函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcache-poisoning"><span class="nav-number">1.2.</span> <span class="nav-text">tcache poisoning</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcache-dup"><span class="nav-number">1.3.</span> <span class="nav-text">tcache dup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#house-of-spirit"><span class="nav-number">1.4.</span> <span class="nav-text">house of spirit</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#tcache源代码浅析与漏洞利用方法"><span class="nav-number">1.</span> <span class="nav-text">tcache源代码浅析与漏洞利用方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源码分析"><span class="nav-number">1.1.</span> <span class="nav-text">源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#结构体"><span class="nav-number">1.1.1.</span> <span class="nav-text">结构体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#函数"><span class="nav-number">1.1.2.</span> <span class="nav-text">函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#概括"><span class="nav-number">1.1.3.</span> <span class="nav-text">概括</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞分析"><span class="nav-number">1.2.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tcache-poisoning"><span class="nav-number">1.2.1.</span> <span class="nav-text">tcache poisoning</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcache-dup"><span class="nav-number">1.2.2.</span> <span class="nav-text">tcache dup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#house-of-spirit"><span class="nav-number">1.2.3.</span> <span class="nav-text">house of spirit</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
