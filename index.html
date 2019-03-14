@@ -252,224 +252,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/格蠹汇编实验/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/10/格蠹汇编实验/" itemprop="url">格蠹汇编实验</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T15:28:41+08:00">
-                2019-03-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="格蠹汇编总结和实验（上）"><a href="#格蠹汇编总结和实验（上）" class="headerlink" title="格蠹汇编总结和实验（上）"></a>格蠹汇编总结和实验（上）</h1><p>最近在帮老师弄点东西，无意间看见了格蠹汇编这本书，很适合windows调试入门，特意整理了一下几个实验内容和一些自己觉得有意思的地方</p>
-<h2 id="从堆里抢救丢失的博客"><a href="#从堆里抢救丢失的博客" class="headerlink" title="从堆里抢救丢失的博客"></a>从堆里抢救丢失的博客</h2><p>实验给了一个dump文件，作者弄丢了在浏览器上编写的博客，于是利用windbg调试进程，任务就是找到内存里面作者的博客</p>
-<p>由于我们已经知道了博客的内容开头是“当年在交大”，所以我们直接利用以下命令来搜索</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s -u 0 L800000 &quot;当年在交大&quot;</span><br></pre></td></tr></table></figure>
-<p>其中s是search memory的意思，u是unicode编码，0则是开始位置，L800000是range，最后就是我们要搜索的字符串了</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g0xrnd300uj30uq05e75m.jpg" alt="image-20190310161248686"></p>
-<p>可以看到搜索出了不少结果，我们先试试第一个，运行如下命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">du 001b5942 L1000</span><br></pre></td></tr></table></figure>
-<p>d是display memory的意思，u还是unicode，跟的是地址和大小，可以看到我们确实已经找到了博客</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tKfTcly1g0xt9gi75xj30ys05i77g.jpg" alt="image-20190310170838616"></p>
-<p>此时我们注意到博客是按照html的格式写的，也就是说我们少了开始的</p><p>标签，所以我们在往前找几个字节来看看是否能够找到</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g0xtatr7g7j31660cktcg.jpg" alt="image-20190310171000686"></p>
-<p>很显然我们找到了</p><p>标签，那么剩下的工作就是提取出来了，这里我们使用如下的指令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">eb 001b593a ff fe</span><br><span class="line">.writemem c:\learn_gedu\1.txt 001b593a L2000</span><br></pre></td></tr></table></figure>
-<p>e的意思是enter value，也就是写入值的意思，b我们上面已经用过了，是byte的意思，ff fe则是unicode编码的txt文件的header</p>
-<p>.writemem则是从内存中的某个地址开始，读取2000个字节，写入某个路径的文件</p>
-<p>当然还有个问题，就是我们如何去定位到底有多少个字节，其实也很简单，s搜索一下文章的结尾，做个简单的减法就好了，这里就不再演示</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0xtfiv6bhj30jc08c452.jpg" alt="image-20190310171430703"></p>
-<p>可以看到我们已经成功了</p>
-<h2 id="调试笔记之侦查广告插件"><a href="#调试笔记之侦查广告插件" class="headerlink" title="调试笔记之侦查广告插件"></a>调试笔记之侦查广告插件</h2><p>首先我们要windbg设置为windows的JIT（just in time）调试器，最简单的方法是在管理员权限下cmd进入windbg所在的目录，直接运行下边的命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WinDbg -I</span><br></pre></td></tr></table></figure>
-<p>当然如今这种命令一步实现的可能性不大……因为我们大部分人的pc都是64位的windows10，并且还都装了vs，这种情况下我们会有x86和x64两种JIT默认，且默认都为vs的调试器，我们上面的操作仅仅是注册了其中的一种而已，这个时候我们就需要修改注册表了</p>
-<p>我们进入regedit后找到下面的两个路径（分别是64位和32位的）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug</span><br><span class="line">HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug</span><br></pre></td></tr></table></figure>
-<p>里面有Auto和debuger两项，Auto的意思是在程序出错时是否会调用调试器，而Debuger则是保存了我们指定的调试器的路径，这里直接删除掉就好，接着分别在x86和x64的windbg目录下运行上面的命令就好了</p>
-<p>再次打开程序发现直接打开了windbg</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tKfTcly1g0yzbgb18wj315k072q4n.jpg" alt="image-20190311172343208"></p>
-<p>我们可以看到Access violation，意思是访问违例，而下面的汇编代码就是具体的情况。可以看到执行的指令是将0赋予ecx的地址，当然只看这里我们还是看不出什么问题，接下来就进入正题了</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.symfix 你的符号路径</span><br></pre></td></tr></table></figure>
-<p>set symbol store path的意思，也就是从微软那边将需要的符号信息下载到你指定的路径，便于调试</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kPL</span><br></pre></td></tr></table></figure>
-<p>k是用来展示给定的线程的栈帧并展示相关的信息，P能够显示每一个函数的所有的参数，包括参数的数据类型、名称和值，L的意思是隐藏source lines（源文件路径的意思），注意<strong>它们是大小写敏感的</strong></p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z32tvxr8j30po06k75m.jpg" alt="image-20190311193351960"></p>
-<h2 id="修复因误杀而瘫痪的系统"><a href="#修复因误杀而瘫痪的系统" class="headerlink" title="修复因误杀而瘫痪的系统"></a>修复因误杀而瘫痪的系统</h2><p>这一章节没有实验，但有一些很重要的知识点，简单总结一下</p>
-<p>作者的朋友电脑出了问题，最开始是菜单不见了，再之后仅仅是进入启动界面几秒就黑屏了，通过双机调试得到了以下的错误信息：</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g10z9pmlg9j30zi02wgng.jpg" alt="image-20190313105313024"></p>
-<p>第一串数字是Stop code（停止码，可通过帮助文档查询），大括号中第一串是有关进程的信息，第二串是错误码，可以通过!error指令查询。在这里Stop Code的意思是系统进程终止，错误码的意思是对象不存在，也就是说尝试bug的原因是因为有些必要的东西没有了，我们利用db指令来查询一下进程的信息</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g10zh4wr1jj30qc04a40u.jpg" alt="image-20190313110014109"></p>
-<p>发现有windows Logon Process的信息，这是关系到用户登录的一个进程，在windows启动过程中，第一个创建的用户态进程是SMSS.exe（session manager subsystem），之后的进程关系如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SMSS.exe -&gt; winlogon.exe -&gt; explore.exe</span><br><span class="line">		 -&gt; CSRSS.exe</span><br></pre></td></tr></table></figure>
-<p>而最后的explore是资源管理器，开始菜单就是它来维护的，而当SMSS创建这两个进程时，如果创建失败，就会进行bug check，如果有调试器的话就会调用系统中断连接到调试器，没有的话就会蓝屏重启。分析到这里，我们就有理由相信，电脑的重启很有可能是由于winlogon被删除而导致的。</p>
-<p>但winlogon这么容易被删除吗？首先它作为系统文件，是有一定的保护机制的，其次，作为一个一直在运行的程序，它的虚拟内存文件不可能被直接删除。所谓虚拟内存文件是基于虚拟内存机制的一类文件，它有两种，一种是专用的页面文件，一般在磁盘的根目录，文件名叫做pagefile.sys；第二种是文件映射机制加载过的磁盘文件本身，比如用户态的dll文件和exe文件，加载后充当了虚拟内存文件的角色，而之后内存管理器会和文件系统会达成“协议”，不再允许删除该文件。这也就是病毒文件绞尽脑汁也要加载到内存的原因，一旦运行了，拿它在某种程度上就“无敌”了</p>
-<p>作者根据电脑的故障时间进行了文件排查，最终将目光锁定在了一个名字中带有delay的反病毒软件的def文件，正是因为我们上面提到的问题，所以现在很多杀毒软件都支持“延时删除”的策略，但启动过程执行到SMSS.exe时会检查如下的注册表键执行操作</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager PendingFileRenameOperations</span><br></pre></td></tr></table></figure>
-<p>该键的构造为srcFilePath\dstFilePath\0，即移动文件，当我们将dstFilePath设置为0时，也就会将src文件删除了。经过作者修改该文件，也就解决了问题。</p>
-<p>由于书的年代过于久远所以采取了延时删除的策略，实际上在windwos8中已经引入了一种新的技术 – ELAM（Early Launch Anti-Malware），反病毒的驱动在得到微软的特殊数字签名（Microsoft Windows Early Launch Anti-malware Publisher）后可以在系统启动过程中优先加载并扫描接下来加载驱动的数字签名，如果判定为恶意代码的话就会在未启动前直接将其删除。</p>
-<h2 id="徒手战木马"><a href="#徒手战木马" class="headerlink" title="徒手战木马"></a>徒手战木马</h2><p>这章同样没有实验，背景是作者孩子的老师电脑中了病毒。</p>
-<p>启动计算机，开始一切正常，但在桌面没有图标、菜单和任务栏，上一章我们知道到了这些都是explore来负责管理的，我们可以通过直接在任务管理器New File或者是在【运行】中输入explore来开启该进程。下面来具体看一下这个进程的相关信息</p>
-<ul>
-<li><p>winlogon进程负责登录，用户输入账号密码后将相关信息发送给负责安全认证的LSASS.exe</p>
-</li>
-<li><p>LSASS调用验证模块对账号密码进行验证，成功则创建一个访问令牌对象</p>
-</li>
-<li><p>winlogon启动如下注册表中Userinit的程序，默认是C:\Windows\system32\userinit.exe</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>userinit执行登录和初始化脚本，然后启动上述注册表位置的Shell键的程序，默认是explorer.exe</p>
-</li>
-</ul>
-<p>注意，根据约定，winlogon会逐一启动userinit键下的所有程序，如果有一个程序启动成功则成功，所有程序都不能启动就log off</p>
-<p>作者找到了木马修改的Userinit的键并成功更改，解决了问题</p>
-<h2 id="拯救发疯的Windows-7"><a href="#拯救发疯的Windows-7" class="headerlink" title="拯救发疯的Windows 7"></a>拯救发疯的Windows 7</h2><p>题目背景是作者的朋友电脑window7的操作系统崩溃，最后给了个dump出的文件.</p>
-<p>Windbg载入dump文件</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g0y1elp2dej31d003y750.jpg" alt="image-20190310215025587"></p>
-<p>可以很明显的看到报了个stack buffer overrun的提示，也就是说导致系统出问题的很可能是栈溢出，我们利用以下的命令查看一下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kn</span><br></pre></td></tr></table></figure>
-<p>k是用来展示给定的线程的栈帧并展示相关的信息，n是显示栈的编号</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z3ajhkifj30wu0fcn1t.jpg" alt="image-20190311194115824"></p>
-<p>可以看到它调用了Werp开头的几个函数，全称是windows error report，也就是错误报告的意思，往下看有UnhandleExceptionFilter（未处理异常过滤函数），它是处理未处理异常的关键函数，同时也是系统终止掉一个进程前做最后处理的地方，应用程序错误（application error）和我们上面设置的JIT都是从这个函数发起的。根据栈回朔，往下就是引发这个未处理异常的函数了，也就是umpo模块里的某个函数。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lmvm</span><br></pre></td></tr></table></figure>
-<p>lm的意思是list load modules，v显示了详细的信息，m是要进行模块名称的匹配，在这的目的主要是看看是不是正常的（也就是官方的）一个模块，因为它之后就是错误处理了，所以我们有必要检查他一下，可以看到这个模块是没有问题的</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g0z3jshpabj31hi0d6diw.jpg" alt="image-20190311195009786"></p>
-<p>继续看栈回朔，发现了问题，umpo模块中的SendPowerMessage函数的ret地址和其他函数的差距很大，并且windbg提醒我们这个地址不是在任何一个已知的模块中的，很有可能是发生了溢出错误，而report_gsfailure也正是cookie被覆盖所产生的异常处理信息（也就是GS机制，做pwn的应该是很熟悉了，这里不再多说）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dd 009afb30-4</span><br></pre></td></tr></table></figure>
-<p>此处地址为ebp-4，实际上也就是cookie，我们检查一下cookie的内容，cookie和父函数的值都是00640064，明显不正常</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z40pgklzj30kw0283yj.jpg" alt="image-20190311200625444"></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db 009afb30-204 L220</span><br></pre></td></tr></table></figure>
-<p>我们查看该函数的变量空间来看看到底读取了什么导致了发生溢出，这里的204是由两个函数地址之差算出来的，记得还要减去cookie和ebp的大小（注意L要稍大一些，因为溢出了所以要想看到网站的读取信息就要多读几个字节）</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z498c157j30y00q4af1.jpg" alt="image-20190311201435830"></p>
-<p>可以看到确实是溢出了，而产生的原因就是因为c:\users\pictures\Sample Pictures\Desertddddd…d.jpg的文件路径字节数太多所导致的，我们手动改一下文件名就好了</p>
-<p>补充一下，在软件调试一书中有关于UnhandleExceptionFilter的详解，顺便整理在这里</p>
-<h2 id="在调试器中细品CPU"><a href="#在调试器中细品CPU" class="headerlink" title="在调试器中细品CPU"></a>在调试器中细品CPU</h2><p>貌似现在的微软官方没有匹配的winmine.pdb，所以我没有这玩意的符号信息。。。费尽心力找到了份文字版的</p>
-<p>课后给了扫雷的小游戏，任务是最快速过关，我们直接运行attach上去。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lml</span><br></pre></td></tr></table></figure>
-<p>可以看到有了winmine和ntdll，接着在运行一下命令，x是Examine Symbols的意思，而后面则类似正则表达式，意思是所有以winmine!开头的符号信息</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x winmine!*</span><br></pre></td></tr></table></figure>
-<p>考虑到大家大部分没有符号信息，为了大家复现方便，这里我列出所有的符号信息</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br></pre></td><td class="code"><pre><span class="line">01001000 winmine!_imp__RegQueryValueExW = &lt;no type information&gt;</span><br><span class="line">01001004 winmine!_imp__RegSetValueExW = &lt;no type information&gt;</span><br><span class="line">01001008 winmine!_imp__RegOpenKeyExA = &lt;no type information&gt;</span><br><span class="line">0100100c winmine!_imp__RegQueryValueExA = &lt;no type information&gt;</span><br><span class="line">01001010 winmine!_imp__RegCreateKeyExW = &lt;no type information&gt;</span><br><span class="line">01001014 winmine!_imp__RegCloseKey = &lt;no type information&gt;</span><br><span class="line">01001018 winmine!ADVAPI32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">0100101c winmine!_imp__InitCommonControlsEx = &lt;no type information&gt;</span><br><span class="line">01001020 winmine!COMCTL32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">01001024 winmine!_imp__SetROP2 = &lt;no type information&gt;</span><br><span class="line">01001028 winmine!_imp__GetLayout = &lt;no type information&gt;</span><br><span class="line">0100102c winmine!_imp__SetLayout = &lt;no type information&gt;</span><br><span class="line">01001030 winmine!_imp__GetDeviceCaps = &lt;no type information&gt;</span><br><span class="line">01001034 winmine!_imp__DeleteObject = &lt;no type information&gt;</span><br><span class="line">01001038 winmine!_imp__LineTo = &lt;no type information&gt;</span><br><span class="line">0100103c winmine!_imp__CreatePen = &lt;no type information&gt;</span><br><span class="line">01001040 winmine!_imp__CreateCompatibleDC = &lt;no type information&gt;</span><br><span class="line">01001044 winmine!_imp__CreateCompatibleBitmap = &lt;no type information&gt;</span><br><span class="line">01001048 winmine!_imp__SelectObject = &lt;no type information&gt;</span><br><span class="line">0100104c winmine!_imp__SetDIBitsToDevice = &lt;no type information&gt;</span><br><span class="line">01001050 winmine!_imp__DeleteDC = &lt;no type information&gt;</span><br><span class="line">01001054 winmine!_imp__MoveToEx = &lt;no type information&gt;</span><br><span class="line">01001058 winmine!_imp__SetPixel = &lt;no type information&gt;</span><br><span class="line">0100105c winmine!_imp__BitBlt = &lt;no type information&gt;</span><br><span class="line">01001060 winmine!_imp__GetStockObject = &lt;no type information&gt;</span><br><span class="line">01001064 winmine!GDI32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">01001068 winmine!_imp__FindResourceW = &lt;no type information&gt;</span><br><span class="line">0100106c winmine!_imp__OutputDebugStringA = &lt;no type information&gt;</span><br><span class="line">01001070 winmine!_imp__LockResource = &lt;no type information&gt;</span><br><span class="line">01001074 winmine!_imp__LoadResource = &lt;no type information&gt;</span><br><span class="line">01001078 winmine!_imp__lstrlenW = &lt;no type information&gt;</span><br><span class="line">0100107c winmine!_imp__GetPrivateProfileIntW = &lt;no type information&gt;</span><br><span class="line">01001080 winmine!_imp__GetPrivateProfileStringW = &lt;no type information&gt;</span><br><span class="line">01001084 winmine!_imp__GetTickCount = &lt;no type information&gt;</span><br><span class="line">01001088 winmine!_imp__GetModuleFileNameA = &lt;no type information&gt;</span><br><span class="line">0100108c winmine!_imp__GetModuleHandleA = &lt;no type information&gt;</span><br><span class="line">01001090 winmine!_imp__GetStartupInfoA = &lt;no type information&gt;</span><br><span class="line">01001094 winmine!_imp__GetProcAddress = &lt;no type information&gt;</span><br><span class="line">01001098 winmine!_imp__lstrcpyW = &lt;no type information&gt;</span><br><span class="line">0100109c winmine!_imp__LoadLibraryA = &lt;no type information&gt;</span><br><span class="line">010010a0 winmine!KERNEL32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">010010a4 winmine!_imp__ShellAboutW = &lt;no type information&gt;</span><br><span class="line">010010a8 winmine!SHELL32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">010010ac winmine!_imp__LoadIconW = &lt;no type information&gt;</span><br><span class="line">010010b0 winmine!_imp__GetDesktopWindow = &lt;no type information&gt;</span><br><span class="line">010010b4 winmine!_imp__SetTimer = &lt;no type information&gt;</span><br><span class="line">010010b8 winmine!_imp__MessageBoxW = &lt;no type information&gt;</span><br><span class="line">010010bc winmine!_imp__LoadCursorW = &lt;no type information&gt;</span><br><span class="line">010010c0 winmine!_imp__CheckMenuItem = &lt;no type information&gt;</span><br><span class="line">010010c4 winmine!_imp__SetMenu = &lt;no type information&gt;</span><br><span class="line">010010c8 winmine!_imp__GetDlgItemInt = &lt;no type information&gt;</span><br><span class="line">010010cc winmine!_imp__RegisterClassW = &lt;no type information&gt;</span><br><span class="line">010010d0 winmine!_imp__LoadStringW = &lt;no type information&gt;</span><br><span class="line">010010d4 winmine!_imp__LoadMenuW = &lt;no type information&gt;</span><br><span class="line">010010d8 winmine!_imp__ReleaseCapture = &lt;no type information&gt;</span><br><span class="line">010010dc winmine!_imp__PeekMessageW = &lt;no type information&gt;</span><br><span class="line">010010e0 winmine!_imp__MapWindowPoints = &lt;no type information&gt;</span><br><span class="line">010010e4 winmine!_imp__SetCapture = &lt;no type information&gt;</span><br><span class="line">010010e8 winmine!_imp__PtInRect = &lt;no type information&gt;</span><br><span class="line">010010ec winmine!_imp__WinHelpW = &lt;no type information&gt;</span><br><span class="line">010010f0 winmine!_imp__SetDlgItemInt = &lt;no type information&gt;</span><br><span class="line">010010f4 winmine!_imp__EndDialog = &lt;no type information&gt;</span><br><span class="line">010010f8 winmine!_imp__SetDlgItemTextW = &lt;no type information&gt;</span><br><span class="line">010010fc winmine!_imp__wsprintfW = &lt;no type information&gt;</span><br><span class="line">01001100 winmine!_imp__SendMessageW = &lt;no type information&gt;</span><br><span class="line">01001104 winmine!_imp__GetDlgItem = &lt;no type information&gt;</span><br><span class="line">01001108 winmine!_imp__GetDlgItemTextW = &lt;no type information&gt;</span><br><span class="line">0100110c winmine!_imp__GetSystemMetrics = &lt;no type information&gt;</span><br><span class="line">01001110 winmine!_imp__InvalidateRect = &lt;no type information&gt;</span><br><span class="line">01001114 winmine!_imp__SetRect = &lt;no type information&gt;</span><br><span class="line">01001118 winmine!_imp__MoveWindow = &lt;no type information&gt;</span><br><span class="line">0100111c winmine!_imp__GetMenuItemRect = &lt;no type information&gt;</span><br><span class="line">01001120 winmine!_imp__DialogBoxParamW = &lt;no type information&gt;</span><br><span class="line">01001124 winmine!_imp__DefWindowProcW = &lt;no type information&gt;</span><br><span class="line">01001128 winmine!_imp__ReleaseDC = &lt;no type information&gt;</span><br><span class="line">0100112c winmine!_imp__GetDC = &lt;no type information&gt;</span><br><span class="line">01001130 winmine!_imp__PostMessageW = &lt;no type information&gt;</span><br><span class="line">01001134 winmine!_imp__ShowWindow = &lt;no type information&gt;</span><br><span class="line">01001138 winmine!_imp__PostQuitMessage = &lt;no type information&gt;</span><br><span class="line">0100113c winmine!_imp__KillTimer = &lt;no type information&gt;</span><br><span class="line">01001140 winmine!_imp__EndPaint = &lt;no type information&gt;</span><br><span class="line">01001144 winmine!_imp__BeginPaint = &lt;no type information&gt;</span><br><span class="line">01001148 winmine!_imp__DispatchMessageW = &lt;no type information&gt;</span><br><span class="line">0100114c winmine!_imp__TranslateMessage = &lt;no type information&gt;</span><br><span class="line">01001150 winmine!_imp__TranslateAcceleratorW = &lt;no type information&gt;</span><br><span class="line">01001154 winmine!_imp__GetMessageW = &lt;no type information&gt;</span><br><span class="line">01001158 winmine!_imp__UpdateWindow = &lt;no type information&gt;</span><br><span class="line">0100115c winmine!_imp__CreateWindowExW = &lt;no type information&gt;</span><br><span class="line">01001160 winmine!_imp__LoadAcceleratorsW = &lt;no type information&gt;</span><br><span class="line">01001164 winmine!USER32_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">01001168 winmine!_imp__PlaySoundW = &lt;no type information&gt;</span><br><span class="line">0100116c winmine!WINMM_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">01001170 winmine!_imp___controlfp = &lt;no type information&gt;</span><br><span class="line">01001174 winmine!_imp____set_app_type = &lt;no type information&gt;</span><br><span class="line">01001178 winmine!_imp____p__fmode = &lt;no type information&gt;</span><br><span class="line">0100117c winmine!_imp___except_handler3 = &lt;no type information&gt;</span><br><span class="line">01001180 winmine!_imp___adjust_fdiv = &lt;no type information&gt;</span><br><span class="line">01001184 winmine!_imp____setusermatherr = &lt;no type information&gt;</span><br><span class="line">01001188 winmine!_imp___initterm = &lt;no type information&gt;</span><br><span class="line">0100118c winmine!_imp____getmainargs = &lt;no type information&gt;</span><br><span class="line">01001190 winmine!_imp___acmdln = &lt;no type information&gt;</span><br><span class="line">01001194 winmine!_imp__exit = &lt;no type information&gt;</span><br><span class="line">01001198 winmine!_imp____p__commode = &lt;no type information&gt;</span><br><span class="line">0100119c winmine!_imp___cexit = &lt;no type information&gt;</span><br><span class="line">010011a0 winmine!_imp___XcptFilter = &lt;no type information&gt;</span><br><span class="line">010011a4 winmine!_imp___exit = &lt;no type information&gt;</span><br><span class="line">010011a8 winmine!_imp___c_exit = &lt;no type information&gt;</span><br><span class="line">010011ac winmine!_imp__srand = &lt;no type information&gt;</span><br><span class="line">010011b0 winmine!_imp__rand = &lt;no type information&gt;</span><br><span class="line">010011b4 winmine!msvcrt_NULL_THUNK_DATA = &lt;no type information&gt;</span><br><span class="line">010011b8 winmine!__xc_a = &lt;no type information&gt;</span><br><span class="line">010011bc winmine!__xc_z = &lt;no type information&gt;</span><br><span class="line">010011c0 winmine!__xi_a = &lt;no type information&gt;</span><br><span class="line">010011c4 winmine!__xi_z = &lt;no type information&gt;</span><br><span class="line">0100140c winmine!FLocalButton = &lt;no type information&gt;</span><br><span class="line">01001516 winmine!FixMenus = &lt;no type information&gt;</span><br><span class="line">010015a6 winmine!PrefDlgProc = &lt;no type information&gt;</span><br><span class="line">010016ba winmine!SetDText = &lt;no type information&gt;</span><br><span class="line">010016fa winmine!BestDlgProc = &lt;no type information&gt;</span><br><span class="line">0100181f winmine!EnterDlgProc = &lt;no type information&gt;</span><br><span class="line">01001915 winmine!OurGetSystemMetrics = &lt;no type information&gt;</span><br><span class="line">01001950 winmine!AdjustWindow = &lt;no type information&gt;</span><br><span class="line">01001b49 winmine!DoPref = &lt;no type information&gt;</span><br><span class="line">01001b81 winmine!DoEnterName = &lt;no type information&gt;</span><br><span class="line">01001baa winmine!DoDisplayBest = &lt;no type information&gt;</span><br><span class="line">01001bc9 winmine!MainWndProc = &lt;no type information&gt;</span><br><span class="line">010021f0 winmine!WinMain = &lt;no type information&gt;</span><br><span class="line">010023cd winmine!HFindBitmap = &lt;no type information&gt;</span><br><span class="line">010023f1 winmine!CbBitmap = &lt;no type information&gt;</span><br><span class="line">01002414 winmine!FLoadBitmaps = &lt;no type information&gt;</span><br><span class="line">01002607 winmine!FreeBitmaps = &lt;no type information&gt;</span><br><span class="line">0100263c winmine!CleanUp = &lt;no type information&gt;</span><br><span class="line">01002646 winmine!DisplayBlk = &lt;no type information&gt;</span><br><span class="line">010026a7 winmine!DrawGrid = &lt;no type information&gt;</span><br><span class="line">0100272e winmine!DisplayGrid = &lt;no type information&gt;</span><br><span class="line">01002752 winmine!DrawLed = &lt;no type information&gt;</span><br><span class="line">01002785 winmine!DrawBombCount = &lt;no type information&gt;</span><br><span class="line">01002801 winmine!DisplayBombCount = &lt;no type information&gt;</span><br><span class="line">01002825 winmine!DrawTime = &lt;no type information&gt;</span><br><span class="line">010028b5 winmine!DisplayTime = &lt;no type information&gt;</span><br><span class="line">010028d9 winmine!DrawButton = &lt;no type information&gt;</span><br><span class="line">01002913 winmine!DisplayButton = &lt;no type information&gt;</span><br><span class="line">0100293d winmine!SetThePen = &lt;no type information&gt;</span><br><span class="line">01002971 winmine!DrawBorder = &lt;no type information&gt;</span><br><span class="line">01002a22 winmine!DrawBackground = &lt;no type information&gt;</span><br><span class="line">01002ac3 winmine!DrawScreen = &lt;no type information&gt;</span><br><span class="line">01002af0 winmine!DisplayScreen = &lt;no type information&gt;</span><br><span class="line">01002b14 winmine!FInitLocal = &lt;no type information&gt;</span><br><span class="line">01002b27 winmine!ReadInt = &lt;no type information&gt;</span><br><span class="line">01002b80 winmine!ReadSz = &lt;no type information&gt;</span><br><span class="line">01002bc2 winmine!ReadPreferences = &lt;no type information&gt;</span><br><span class="line">01002d55 winmine!WriteInt = &lt;no type information&gt;</span><br><span class="line">01002d7a winmine!WriteSz = &lt;no type information&gt;</span><br><span class="line">01002dab winmine!WritePreferences = &lt;no type information&gt;</span><br><span class="line">01002eab winmine!ChangeBlk = &lt;no type information&gt;</span><br><span class="line">01002ed5 winmine!ClearField = &lt;no type information&gt;</span><br><span class="line">01002f3b winmine!CountBombs = &lt;no type information&gt;</span><br><span class="line">01002f80 winmine!ShowBombs = &lt;no type information&gt;</span><br><span class="line">01002fe0 winmine!DoTimer = &lt;no type information&gt;</span><br><span class="line">01003008 winmine!StepXY = &lt;no type information&gt;</span><br><span class="line">01003084 winmine!StepBox = &lt;no type information&gt;</span><br><span class="line">01003119 winmine!CountMarks = &lt;no type information&gt;</span><br><span class="line">0100316b winmine!PushBoxDown = &lt;no type information&gt;</span><br><span class="line">010031a0 winmine!PopBoxUp = &lt;no type information&gt;</span><br><span class="line">010031d4 winmine!TrackMouse = &lt;no type information&gt;</span><br><span class="line">0100341c winmine!PauseGame = &lt;no type information&gt;</span><br><span class="line">0100344c winmine!ResumeGame = &lt;no type information&gt;</span><br><span class="line">0100346a winmine!UpdateBombCount = &lt;no type information&gt;</span><br><span class="line">0100347c winmine!GameOver = &lt;no type information&gt;</span><br><span class="line">01003512 winmine!StepSquare = &lt;no type information&gt;</span><br><span class="line">010035b7 winmine!StepBlock = &lt;no type information&gt;</span><br><span class="line">0100367a winmine!StartGame = &lt;no type information&gt;</span><br><span class="line">0100374f winmine!MakeGuess = &lt;no type information&gt;</span><br><span class="line">010037e1 winmine!DoButton1Up = &lt;no type information&gt;</span><br><span class="line">010038c2 winmine!FInitTunes = &lt;no type information&gt;</span><br><span class="line">010038d7 winmine!EndTunes = &lt;no type information&gt;</span><br><span class="line">010038ed winmine!PlayTune = &lt;no type information&gt;</span><br><span class="line">01003940 winmine!Rnd = &lt;no type information&gt;</span><br><span class="line">01003950 winmine!ReportErr = &lt;no type information&gt;</span><br><span class="line">010039e7 winmine!LoadSz = &lt;no type information&gt;</span><br><span class="line">01003a12 winmine!ReadIniInt = &lt;no type information&gt;</span><br><span class="line">01003a87 winmine!ReadIniSz = &lt;no type information&gt;</span><br><span class="line">01003ab0 winmine!InitConst = &lt;no type information&gt;</span><br><span class="line">01003cc4 winmine!CheckEm = &lt;no type information&gt;</span><br><span class="line">01003ce5 winmine!SetMenuBar = &lt;no type information&gt;</span><br><span class="line">01003d1d winmine!DoAbout = &lt;no type information&gt;</span><br><span class="line">01003d76 winmine!DoHelp = &lt;no type information&gt;</span><br><span class="line">01003df6 winmine!GetDlgInt = &lt;no type information&gt;</span><br><span class="line">01003e21 winmine!WinMainCRTStartup = &lt;no type information&gt;</span><br><span class="line">01003fe8 winmine!_XcptFilter = &lt;no type information&gt;</span><br><span class="line">01003fee winmine!_initterm = &lt;no type information&gt;</span><br><span class="line">01003ff4 winmine!_setdefaultprecision = &lt;no type information&gt;</span><br><span class="line">01004006 winmine!_matherr = &lt;no type information&gt;</span><br><span class="line">01004006 winmine!_setargv = &lt;no type information&gt;</span><br><span class="line">0100400c winmine!_SEH_prolog = &lt;no type information&gt;</span><br><span class="line">01004045 winmine!_SEH_epilog = &lt;no type information&gt;</span><br><span class="line">01004056 winmine!_controlfp = &lt;no type information&gt;</span><br><span class="line">0100405c winmine!_except_handler3 = &lt;no type information&gt;</span><br><span class="line">01004062 winmine!HtmlHelpA = &lt;no type information&gt;</span><br><span class="line">0100415c winmine!_IMPORT_DESCRIPTOR_msvcrt = &lt;no type information&gt;</span><br><span class="line">01004170 winmine!_IMPORT_DESCRIPTOR_ADVAPI32 = &lt;no type information&gt;</span><br><span class="line">01004184 winmine!_IMPORT_DESCRIPTOR_KERNEL32 = &lt;no type information&gt;</span><br><span class="line">01004198 winmine!_IMPORT_DESCRIPTOR_GDI32 = &lt;no type information&gt;</span><br><span class="line">010041ac winmine!_IMPORT_DESCRIPTOR_USER32 = &lt;no type information&gt;</span><br><span class="line">010041c0 winmine!_IMPORT_DESCRIPTOR_SHELL32 = &lt;no type information&gt;</span><br><span class="line">010041d4 winmine!_IMPORT_DESCRIPTOR_WINMM = &lt;no type information&gt;</span><br><span class="line">010041e8 winmine!_IMPORT_DESCRIPTOR_COMCTL32 = &lt;no type information&gt;</span><br><span class="line">010041fc winmine!_NULL_IMPORT_DESCRIPTOR = &lt;no type information&gt;</span><br><span class="line">01005000 winmine!fStatus = &lt;no type information&gt;</span><br><span class="line">01005004 winmine!rgPrefEditID = &lt;no type information&gt;</span><br><span class="line">01005010 winmine!rgLevelData = &lt;no type information&gt;</span><br><span class="line">01005034 winmine!szXYZZY = &lt;no type information&gt;</span><br><span class="line">010050d0 winmine!rgszPref = &lt;no type information&gt;</span><br><span class="line">01005118 winmine!xCur = &lt;no type information&gt;</span><br><span class="line">0100511c winmine!yCur = &lt;no type information&gt;</span><br><span class="line">01005120 winmine!szIniFile = &lt;no type information&gt;</span><br><span class="line">01005138 winmine!__defaultmatherr = &lt;no type information&gt;</span><br><span class="line">01005140 winmine!fButton1Down = &lt;no type information&gt;</span><br><span class="line">01005144 winmine!fBlock = &lt;no type information&gt;</span><br><span class="line">01005148 winmine!fIgnoreClick = &lt;no type information&gt;</span><br><span class="line">0100514c winmine!fLocalPause = &lt;no type information&gt;</span><br><span class="line">01005150 winmine!idRadCurr = &lt;no type information&gt;</span><br><span class="line">01005154 winmine!iXYZZY = &lt;no type information&gt;</span><br><span class="line">01005158 winmine!hGrayPen = &lt;no type information&gt;</span><br><span class="line">0100515c winmine!fUpdateIni = &lt;no type information&gt;</span><br><span class="line">01005160 winmine!iButtonCur = &lt;no type information&gt;</span><br><span class="line">01005164 winmine!fTimer = &lt;no type information&gt;</span><br><span class="line">01005168 winmine!fOldTimerStatus = &lt;no type information&gt;</span><br><span class="line">0100516c winmine!_dowildcard = &lt;no type information&gt;</span><br><span class="line">01005170 winmine!_newmode = &lt;no type information&gt;</span><br><span class="line">01005174 winmine!_commode = &lt;no type information&gt;</span><br><span class="line">01005178 winmine!_fmode = &lt;no type information&gt;</span><br><span class="line">0100518c winmine!pHtmlHelpW = &lt;no type information&gt;</span><br><span class="line">01005190 winmine!pHtmlHelpA = &lt;no type information&gt;</span><br><span class="line">01005194 winmine!cBombLeft = &lt;no type information&gt;</span><br><span class="line">010051a0 winmine!rgStepX = &lt;no type information&gt;</span><br><span class="line">01005330 winmine!cBombStart = &lt;no type information&gt;</span><br><span class="line">01005334 winmine!xBoxMac = &lt;no type information&gt;</span><br><span class="line">01005338 winmine!yBoxMac = &lt;no type information&gt;</span><br><span class="line">01005340 winmine!rgBlk = &lt;no type information&gt;</span><br><span class="line">010056a0 winmine!Preferences = &lt;no type information&gt;</span><br><span class="line">01005798 winmine!iStepMac = &lt;no type information&gt;</span><br><span class="line">0100579c winmine!cSec = &lt;no type information&gt;</span><br><span class="line">010057a0 winmine!cBoxVisitMac = &lt;no type information&gt;</span><br><span class="line">010057a4 winmine!cBoxVisit = &lt;no type information&gt;</span><br><span class="line">010057c0 winmine!rgStepY = &lt;no type information&gt;</span><br><span class="line">01005950 winmine!g_hReg = &lt;no type information&gt;</span><br><span class="line">01005954 winmine!hResButton = &lt;no type information&gt;</span><br><span class="line">01005958 winmine!hResBlks = &lt;no type information&gt;</span><br><span class="line">0100595c winmine!lpDibLed = &lt;no type information&gt;</span><br><span class="line">01005960 winmine!rgDibButton = &lt;no type information&gt;</span><br><span class="line">01005980 winmine!MemBlkBitmap = &lt;no type information&gt;</span><br><span class="line">010059c0 winmine!rgDibOff = &lt;no type information&gt;</span><br><span class="line">01005a00 winmine!lpDibButton = &lt;no type information&gt;</span><br><span class="line">01005a04 winmine!lpDibBlks = &lt;no type information&gt;</span><br><span class="line">01005a08 winmine!hResLed = &lt;no type information&gt;</span><br><span class="line">01005a20 winmine!MemBlkDc = &lt;no type information&gt;</span><br><span class="line">01005a60 winmine!rgDibLedOff = &lt;no type information&gt;</span><br><span class="line">01005a90 winmine!dxpBorder = &lt;no type information&gt;</span><br><span class="line">01005a94 winmine!hMenu = &lt;no type information&gt;</span><br><span class="line">01005aa0 winmine!szClass = &lt;no type information&gt;</span><br><span class="line">01005ae0 winmine!szTime = &lt;no type information&gt;</span><br><span class="line">01005b20 winmine!dyWindow = &lt;no type information&gt;</span><br><span class="line">01005b24 winmine!hwndMain = &lt;no type information&gt;</span><br><span class="line">01005b28 winmine!hIconMain = &lt;no type information&gt;</span><br><span class="line">01005b2c winmine!dxWindow = &lt;no type information&gt;</span><br><span class="line">01005b30 winmine!hInst = &lt;no type information&gt;</span><br><span class="line">01005b34 winmine!dypMenu = &lt;no type information&gt;</span><br><span class="line">01005b38 winmine!bInitMinimized = &lt;no type information&gt;</span><br><span class="line">01005b40 winmine!szDefaultName = &lt;no type information&gt;</span><br><span class="line">01005b80 winmine!dypCaption = &lt;no type information&gt;</span><br><span class="line">01005b84 winmine!dypBorder = &lt;no type information&gt;</span><br><span class="line">01005b88 winmine!dypAdjust = &lt;no type information&gt;</span><br><span class="line">01005b8c winmine!__onexitend = &lt;no type information&gt;</span><br><span class="line">01005b90 winmine!__onexitbegin = &lt;no type information&gt;</span><br><span class="line">01005b94 winmine!_adjust_fdiv = &lt;no type information&gt;</span><br></pre></td></tr></table></figure>
-<p>我们很明显可以看到GameOver和cBombLeft ，我们d一下看看BombLeft的具体情况，0a恰好是地雷数</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g105uyo2crj30aw02edfr.jpg" alt="image-20190312175537570"></p>
-<p>当然我们不能如此就下定论，我们g一下运行游戏，手动清除一个雷，然后再次断下，查看信息，发现确实变为了09，那我们就基本可以相信它是地雷的个数了，我们用之前的办法修改值，再次g，发现确实雷的数量就会变为0，这里要注意，有可能因为游戏的刷新机制所以地雷数并没有变化，这时我们手动拖拽一下就好了</p>
-<p>当然这还不够，我们想要的是最快速度过关，这就算改了也不够快。接着我们把目光放到了GameOver上，这显然是让游戏结束，但我们并不知道这到底是怎么个结束，所以我们尝试去执行它，反汇编看一下</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g1063e5obzj30ra07et9p.jpg" alt="image-20190312180345659"></p>
-<p>发现它最后ret 4，也就是说add esp 4</p>
-<p>我们用～*来查看一下当前的线程，有四个，3是我们现在处于的线程，而0则是ui线程，能处理操作系统的特定消息，不断接收其他线程的消息</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g1086lpdb2j30qg0a076a.jpg" alt="image-20190312191602900"></p>
-<p>我们使用～0s来切换到0线程,，目的是在ui线程中去使用GameOver函数来达到游戏结束的效果，也就是伪造当前函数的返回栈帧实现篡改ret addr</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">r esp=@esp-8</span><br><span class="line">ed @esp @eip</span><br><span class="line">r eip=0100347c</span><br></pre></td></tr></table></figure>
-<p>之后继续执行程序，发现我们已经是扫雷的世界第一了，任务完成</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/02/tcache浅析/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2148,6 +1930,171 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/16/数据结构基础-图（下）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/数据结构基础-图（下）/" itemprop="url">数据结构基础--图（下）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T21:24:05+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>1-1在一个有权无向图中，若b到a的最短路径距离是12，且c到b之间存在一条权为2的边，则c到a的最短路径距离一定不小于10。</strong><br>这肯定是对的，a-b最小是12的话，假设a-c最小是x，那么x+2>=12（为啥？因为你经过c到b的距离不可能大于最短路径）</p>
+<p><strong>2-1我们用一个有向图来表示航空公司所有航班的航线。下列哪种算法最适合解决找给定两城市间最经济的飞行路线问题？</strong><br>两城市之间最短路径问题用Dijkstra算法喽</p>
+<p><strong>2-2数据结构中Dijkstra算法用来解决哪个问题？</strong><br>重复做题，最为致命。</p>
+<p><strong>2-3若要求在找到从S到其他顶点最短路的同时，还给出不同的最短路的条数，我们可以将Dijkstra算法略作修改，增加一个count数组：count v记录S到顶点V的最短路径有多少条。则count v应该被初始化为：</strong><br>count s=1;对于其他顶点V则令count v=0，很简单嘛，自己和自己的最短路径就不用再考虑了。</p>
+<p><strong>2-4使用迪杰斯特拉（Dijkstra）算法求下图中从顶点1到其他各顶点的最短路径，依次得到的各最短路径的目标顶点是</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fy8x1x0zvgj30k208uabi.jpg" alt=""><br>最好是拿张纸画一画，挺简单。从1点开始有两条路，更新到v2和v5的距离，然后到v5的距离4小于到v2的距离5，所以在从v5开始重复操作，最后等所有的都遍历过来了就完事了，然后看看是谁先变为最短路径的，列出来即可</p>
+<p><strong>2-5在一个有权无向图中，如果顶点b到顶点a的最短路径长度是10，顶点c与顶点b之间存在一条长度为3的边。那么下列说法中有几句是正确的？</strong></p>
+<ul>
+<li>c与a的最短路径长度就是13</li>
+<li>c与a的最短路径长度就是7</li>
+<li>c与a的最短路径长度不超过13</li>
+<li>c与a的最短路径不小于7</li>
+</ul>
+<p>这题和第一个简直是一个模子刻出来的，还是列个不等式先，设a-c为x，那么x+3>=10（为什么前面说过一次了），得到x大于等于7，这是一种情况，那x最大是几呢？因为a-b的最短定了，b-c定了，所以最大就是10 + 3 = 13了，所以这里有两句话正确<br><strong>2-6给定有权无向图的邻接矩阵如下，其最小生成树的总权重是：</strong><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fy8xdnjlq1j30ca088weu.jpg" alt=""><br>呃，千万别还原图，直接画一下最小生成树就好了，什么，不会？Prime算法和Kruskal算法了解一下，这里就选简单的Prime算法说吧<br>首先我们根据邻接矩阵的值取最短的边放入我们的最小生成树，每次都取最小的边，如果和之前的构成回路了就舍弃掉，这样最后连通起来，就得到了最小生成树啦</p>
+<p><strong>2-9给定有权无向图如下。关于其最小生成树，下列哪句是对的？</strong><br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyb16bn7xyj30j60e60xs.jpg" alt=""></p>
+<ul>
+<li>最小生成树不唯一，其总权重为23</li>
+<li>最小生成树唯一，其总权重为20</li>
+<li>边(B, F)一定在树中，树的总权重为23</li>
+<li>边(H, G)一定在树中，树的总权重为20</li>
+</ul>
+<p>会Prime就完事了，怎么判断是不是唯一呢？这个还挺麻烦的，简单说一下吧，当我们在利用Prime遍历边的时候，一旦遇见权值相同而且还不能用到你现在图里的就给你选的那个边做个标记（注意是你用的那个，不是重复的那些），而最后求的的MST如果没有这样的边就说明了生成树唯一，如果有标记了的边，那么就把这些边去了再看看能不能凑出一个MST来。<br>这题判断是否唯一很简单，因为最后一步9的时候就有好几条线可以用，所以一定不唯一</p>
+<p><strong>2-13下图为一个AOV网，其可能的拓扑有序序列为</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fyb1qavg1ij30j608iq4a.jpg" alt=""><br>拓扑有序排列怎么玩呢？很简单，就是不停的删除入度为0的结点和其相关的边就好了。比如在这个题目里，我们先删除的应该是A，然后接着看，删除后B、D的入度变为了0，选择其中一个删除，重复直至所有的顶点都被我们取出来即可。</p>
+<p><strong>2-14若将n个顶点e条弧的有向图采用邻接表存储，则拓扑排序算法的时间复杂度是</strong><br>n+e，记住吧</p>
+<p><strong>2-14若将n个顶点e条弧的有向图采用邻接表存储，则拓扑排序算法的时间复杂度是：</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fyb1x9a76uj30ia06ut9h.jpg" alt=""><br>分享一个技巧，首先一开始只有A没有入度，所以开头一定是A，其次，B没有出度，所以B一定是最后一个，也就是A。。。B，我们删除A、B循环这个思想就完事了。<br>这里删除之后发现有个单独的e和另外一个图，那么e随时都可以插入所以就是3种位置，删除e，剩下的bc只有一种情况。<br>随意就是3种了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2198,7 +2145,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-count">24</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
