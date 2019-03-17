@@ -252,178 +252,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/15/windows调试艺术-LDR调试/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/15/windows调试艺术-LDR调试/" itemprop="url">windows调试艺术-LDR调试</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-15T11:18:06+08:00">
-                2019-03-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>最近想写个自己的壳，但碰上了个大问题，如何定位在内存中各个DLL的加载基址呢？当然可以选择类似爆破的方式，但那未必太傻了，在翻阅了一些资料后发现了LDR链调试的方法，这实际上就是一种利用PEB关系链获得各个模块基址进而实现遍历其导出表的技术，通过这种技术我们可以轻易的在程序运行中获取到动态加载的api的实际地址进而实现各种各样的功能。恰好这又需要PEB、TEB等等的结构知识，就在此一并做个总结</p>
-<p>ps：全过程均是32位程序，64位的offset略有不同</p>
-<p>简单来看利用过程如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">fs寄存器 -&gt; TEB -&gt; PEB -&gt; PEB_LDR_DATA	-&gt; LIST_ENTRY ---&gt;LDR_DATA_TABLE_ENTRY -&gt; dll_base</span><br><span class="line"></span><br><span class="line">// ---&gt;箭头表示并不是直接通过offset找到的</span><br></pre></td></tr></table></figure>
-<p>下面我们就一个一个的详细来分析一下</p>
-<h2 id="fs寄存器"><a href="#fs寄存器" class="headerlink" title="fs寄存器"></a>fs寄存器</h2><p>我们常常可以看到类似这样的语句，从fs中拿到了某个值</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mov 	eax,dowrd ptr fs:[0x30]</span><br></pre></td></tr></table></figure>
-<p>我们可以试着用windbg来打印fs的值试试看它到底是个啥，r命令可以打印寄存器的值，而.formats可以把一个值的二进制啊十进制啊等各种形式都展示出来</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g13kfk9vw7j30lc0a4gml.jpg" alt="image-20190315163632847"></p>
-<p>发现是0x3b，如果你处于内核态，那你会发现fs是0x30，而且不管你怎么试你会发现它就是这俩值，实际上，这是对应到GDTR的一个值，在intel手册中我们可以发现玄机，图中index是对应的GDT或LDT的第几项，RPL是特权级，TI的0和1分别表示为GDTR和LDTR</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tKfTcly1g13kgsj3doj30i607uacp.jpg" alt="image-20190315163744263"></p>
-<p>我们这里就先来看看0x3b的情况，0x3b的16位如下，</p>
-<table>
-<thead>
-<tr>
-<th>0000000000111</th>
-<th>0</th>
-<th>11</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>index  = 7</td>
-<td>TI =0</td>
-<td>RPL = 3</td>
-</tr>
-</tbody>
-</table>
-<p>说明这是个Ring3级别（也就是用户态），要在GDT里找第七项，当然这都是为了分析，实际上windbg为我们提供了dg命令，可以直接帮我们Display Selector</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g13kxd2249j30qg05kq3i.jpg" alt="image-20190315165339569"></p>
-<p>可以看到，7ffdc000实际上就是TEB，说明我们用户态的fs实际上就是TEB了，那刚才的fs:[30]也就是TEB结构体中的某个东西了，这个我们一会在说，先看看内核态的0x30又是什么情况</p>
-<p>过程就不再重复了，只要将windbg切换到内核调试重复上面的过程即可，最后我们可以发现，指向的是一个叫做KPCR的结构，这个不再我们今天的讨论范围之内，只要知道它里面包含有TEB在内的很多重要的结构就行了</p>
-<p>那我们又要想了，Ring3切换到Ring0应该是很常见的，为什么fs的指向会变化呢？实际上，只要是负责进入Ring0的函数，比如KiFastSystemCall、KiFastCallEntry 等等，都会涉及到对fs的操作，这里我们选取一段代码来实际看看</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">808696a1 6a00            push    0</span><br><span class="line">808696a3 55              push    ebp</span><br><span class="line">808696a4 53              push    ebx</span><br><span class="line">808696a5 56              push    esi</span><br><span class="line">808696a6 57              push    edi</span><br><span class="line">808696a7 0fa0            push    fs   //原来的fs压栈保存</span><br><span class="line">808696a9 bb30000000      mov     ebx,30h</span><br><span class="line">808696ae 668ee3          mov     fs,bx   //将fs的值赋为30 </span><br><span class="line">808696b1 64ff3500000000  push    dword ptr fs:[0]</span><br><span class="line">808696b8 64c70500000000ffffffff mov dword ptr fs:[0],0FFFFFFFFh</span><br><span class="line">808696c3 648b3524010000  mov     esi,dword ptr fs:[124h]   </span><br><span class="line">808696ca ffb640010000    push    dword ptr [esi+140h]    </span><br><span class="line">808696d0 83ec48          sub     esp,48h                  </span><br><span class="line">808696d3 8b5c246c        mov     ebx,dword ptr [esp+6Ch]</span><br></pre></td></tr></table></figure>
-<p>退出Ring0时也是类似的，这里选择KiSystemCallExit函数来看看</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">80869945 8d6550          lea     esp,[ebp+50h]</span><br><span class="line">80869948 0fa1            pop     fs 				//恢复之前的fs值</span><br><span class="line">8086994a 8d6554          lea     esp,[ebp+54h]</span><br><span class="line">8086994d 5f              pop     edi</span><br><span class="line">8086994e 5e              pop     esi</span><br><span class="line">8086994f 5b              pop     ebx</span><br><span class="line">80869950 5d              pop     ebp</span><br><span class="line">80869951 66817c24088000  cmp     word ptr [esp+8],80h</span><br></pre></td></tr></table></figure>
-<p>到这里我们对fs段寄存器的探索就到这里了，我们知道了在Ring3下它其实就是TEB，下一步我们就来探究TEB的相关内容</p>
-<h2 id="TEB"><a href="#TEB" class="headerlink" title="TEB"></a>TEB</h2><p>TEB(Thread Environment Block，线程环境块)，说白了就是存放线程信息的一个结构体，每个线程维护着自己的一个TEB，且可以通过FS寄存器直接根据offset提取信息，很是方便</p>
-<p>我们可以用windbg的dt命令来显示TEB的情况，因为内容过多所以就不再一一列举了</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g13n3nz216j30qu0cw0vg.jpg" alt="image-20190315180854908"></p>
-<p>我们来看几个比较重要的内容，首先就是offset为0的TIB</p>
-<h3 id="TIB（Thread-Information-Block，线程信息块）"><a href="#TIB（Thread-Information-Block，线程信息块）" class="headerlink" title="TIB（Thread Information Block，线程信息块）"></a>TIB（Thread Information Block，线程信息块）</h3><p>我们同样可以利用windbg的dt来查看</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g13n5xwqkyj30vm07wabl.jpg" alt="image-20190315181106466"></p>
-<ul>
-<li><p>ExceptionList，即指向_EXCEPTION_REGISTRATION_RECORD结构的指针链表，和SEH相关，涉及到异常处理</p>
-</li>
-<li><p>stackBase，该线程的stack地址</p>
-</li>
-<li>stackLimit，该线程的stack的limit，实际上就是栈的结束位置</li>
-</ul>
-<p>###_CLIENT_ID</p>
-<p>0x20的offset指向了这个结构体，也同样dt查看一下</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g13nxkhgoej30ia03oq3b.jpg" alt="image-20190315183739878"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/02/Unlink实战-2014-HITCON-stkof/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2068,6 +1896,187 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/15/数据结构基础—图（上）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/15/数据结构基础—图（上）/" itemprop="url">数据结构基础—图（上）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-15T16:50:14+08:00">
+                2018-12-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="图的基本概念"><a href="#图的基本概念" class="headerlink" title="图的基本概念"></a>图的基本概念</h2><p>最近因为各种考试（四级怕不是要明年再见了）消失了一段时间，也攒了一堆想要写的东西，不过后面几周还是有一轮接着一轮的考试，所以估计又要不定期鸽了。话说图这一章抄了别人的答案，结果选择题都没及格，唉，还是得自己老老实实做啊</p>
+<p><strong>1-1无向连通图至少有一个顶点的度为1。</strong><br>想个特殊情况，只有一个顶点的图</p>
+<p><strong>1-2用邻接表法存储图，占用的存储空间数只与图中结点个数有关，而与边数无关。</strong><br><strong>1-3用邻接矩阵法存储图，占用的存储空间数只与图中结点个数有关，而与边数无关。</strong><br>图的存储主要就是邻接表和邻接矩阵了，而前者因为要保存顶点和其边的信息所以空间应该为v+e，而后者则是利用矩阵来表示每两个顶点之间的关系所以只和顶点个数有关</p>
+<p><strong>1-4在一个有向图中，所有顶点的入度与出度之和等于所有边之和的2倍。</strong><br>这个很好想吧，一个线有两个度，所以你计算的度要除于2</p>
+<p><strong>1-5在任一有向图中，所有顶点的入度之和等于所有顶点的出度之和。</strong><br>有来有回，来而不往非礼也</p>
+<p><strong>1-6如果无向图G必须进行两次广度优先搜索才能访问其所有顶点，则G中一定有回路。</strong><br>要是那样的话BFS岂不是太弱了，人家本来就是可以找到所有顶点的，这里应该是说明图不连通的……提一下BFS在无向图找回路的问题吧，其实很好想象，如果一个无向图他没有环的话不就是个树嘛，假设我们层序遍历时发现某个顶点竟然还有个边，那不就说明他有回路了嘛。</p>
+<blockquote>
+<p>（1）通过广度遍历（BFS）访问图的所有点，对于每个点，都检测和已访问过的点是否有边（除了和它连接的上层节点）。<br>（1.1）如果有边，说明有回路（有环）。如果对于每个点，都没有和已访问过的点有边，说明从该点出发的当前图没有回路（无环）。<br>（2）如果从任意点开始的BFS，以上操作（1）均说明无回路，则没有回路。</p>
+</blockquote>
+<p><strong>1-7如果无向图G必须进行两次广度优先搜索才能访问其所有顶点，则G一定有2个连通分量。</strong><br>这是对的，唯一可以让BFS断开的就是“没有桥的大陆”，而一个“大陆”就是一个连通分量</p>
+<p><strong>1-8无向连通图所有顶点的度之和为偶数。</strong><br>上面提到了，一个边有两度，所以你的度的和肯定是整数倍啦</p>
+<p><strong>1-9无向连通图边数一定大于顶点个数减1。</strong><br>顶点个数减1这个是不是很眼熟啊？这是树有n个结点的边数，那边没有方向的树是不是图啊？那肯定是啊</p>
+<p><strong>2-1若无向图G =（V，E）中含10个顶点，要保证图G在任何情况下都是连通的，则需要的边数最少是：</strong><br>这题和上面的一样，既然是最少了那就考虑树的形状，n-1即可</p>
+<p><strong>2-2给定一个有向图的邻接表如下图，则该图有?个强连通分量。</strong><br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fy7lykfe1sj30ca08q3z1.jpg" alt=""><br>首先把只有出度的点直接拿走就行了，因为你弄死它它也回不来<br>之后我们就以0作为开始，那么0可以找到5，5可以找到1，1有两个出度所以就要开始分类了<br>走0的话就可以回到之前走过的点了，所以这些点也就一定是一个连通分量里的了，这种情况over。<br>走3的话又可以走两个，再次分开<br>走的是0的话又回到了已经经过的点，所以他们是一个连通分量的，over（此时这组连通分量已经有了0，5，1，3）<br>走的是4的话到头了，所以4单独拿出来成一个连通分量。<br>剩下一个2没有被找到过，所以也是一个连通分量。</p>
+<p><strong>2-3给定有向图的邻接矩阵如下：</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fy7r12jsrbj307g05ydft.jpg" alt=""><br><strong>顶点2（编号从0开始）的出度和入度分别是：</strong><br>横看成岭侧成峰，远近高低…呃，跑题了，这个就是横竖看的问题，因为是2所以我们锁定第三行的时候就是2“出去”的情况，而当我们锁定第三列的时候就是“进入”2的情况了</p>
+<p><strong>2-4下面给出的有向图中，有?个强连通分量。</strong><br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fy7r5ccowqj308e05y74p.jpg" alt=""><br>答案为<em>2 ({1,2,3,4}, {0})</em>又是找强连通分量的题目，唉，真麻烦，思路还是刚才那样，不说了。</p>
+<p><strong>2-5下面给出的有向图中，各个顶点的入度和出度分别是（图片和上面的一一样）：</strong><br>这个查查就行了，不说了</p>
+<p><strong>2-6如果G是一个有36条边的非连通无向图，那么该图顶点个数最少为多少？</strong><br>这个首先考虑一下无向图（先忽略非连通）的最大边数，每个点可以和他之外的所有顶点有边，所以就应该是n*(n-1)条边。令这个等于36，解得n等于9，又因为题目是非连通的，所以我们再加一个点，也就是10</p>
+<p><strong>2-7下面关于图的存储的叙述中，哪一个是正确的？</strong><br>又是关于存储的问题，表是v+e，矩阵是n的平方，不说了</p>
+<p><strong>2-8关于图的邻接矩阵，下列哪个结论是正确的？</strong><br>选项不想放出来，一句话就是无向图矩阵一定对称，有向图不一定对称</p>
+<p><strong>2-9设N个顶点E条边的图用邻接表存储，则求每个顶点入度的时间复杂度为：</strong><br>看见这种题无脑选v+e就对了。。。。很好想，你在表里要先遍历v找到你要的点，然后在v的e域里再找各个边统计一遍，很显然是这个答案</p>
+<p><strong>2-10在一个无向图中，所有顶点的度数之和等于所有边数的多少倍？</strong><br><strong>2-11在一个有向图中，所有顶点的入度与出度之和等于所有边之和的多少倍？</strong><br>一个边俩度，肯定是2倍</p>
+<p><strong>2-13设无向图的顶点个数为N，则该图最多有多少条边？</strong><br>怎么老是这种问题。。。不写了</p>
+<p><strong>2-14下列关于无向连通图特征的叙述中，正确的是：</strong><br><strong> 1   所有顶点的度之和为偶数</strong><br><strong> 2   边数大于顶点个数减1</strong><br><strong> 3   至少有一个顶点的度为1</strong><br>很显然只有1是对的，其实2、3前面也都说过了，2是因为树也是无向连通图，3是特殊情况一个点的时候</p>
+<p><strong>2-15若无向图G =（V，E）中含7个顶点，要保证图G在任何情况下都是连通的，则需要的边数最少是：</strong><br>这个题说实话有点心机boy了，注意它说的是<em>任何情况</em>，还得是<em>最少边数</em>，这咋办呐？其实很简单，任何情况就是说不管边怎么摆你都保证连通，那么为了应对某些熊（chu）孩（ti）子（ren）把所有的边都扔到一两个点这种情况，我们就得保证边的数量足够多。多是多少呢？n乘以n-1除以2？当然不是了，我们只需要“喂饱”前n-1个点就成你了，最后一个点一个边连起来就成了（因为前n个点都吃饱了不可能放得下了，只可能连到最后一个点），所以答案是6乘以5再除以2，最后加1.</p>
+<p><strong>2-16在N个顶点的无向图中，所有顶点的度之和不会超过顶点数的多少倍？ </strong><br>简单了，最多的是边的个数是n乘以n-1除以2，度是边的二倍，也就是n乘以n-1，也就是n-1倍啦</p>
+<p><strong>2-17对于一个具有N个顶点的无向图，要连通所有顶点至少需要多少条边</strong><br>就是树呗，n-1就完事了</p>
+<p><strong>2-18具有N（N>0）个顶点的无向图至多有多少个连通分量？</strong><br>N个呗，所有点都不连通的时候</p>
+<p><strong>2-19一个有N个顶点的强连通图至少有多少条边？</strong><br>强连通也就是是有向图的连通，围个圈不就是最小情况了嘛。</p>
+<p><strong>2-20如果G是一个有28条边的非连通无向图，那么该图顶点个数最少为多少</strong><br>这个眼熟啊，n乘以n-1 = 56呗，算出来是8，再加上个单独的不让它连通的点，也就是9</p>
+<p><strong>2-21对于有向图，其邻接矩阵表示比邻接表表示更易于：</strong><br>唯一的好处就是求入度方便了，求别的都半斤八两</p>
+<p><strong>2-22对于一个具有N个顶点的无向图，若采用邻接矩阵表示，则该矩阵的大小是：</strong><br>太简单了，n的方</p>
+<p><strong>2-23若一个有向图用邻接矩阵表示，则第i个结点的入度就是：</strong><br>第i列的非零元素个数，入度看列，出度看行，over</p>
+<p><strong>2-24下列选项中，不是下图深度优先搜索序列的是：</strong><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fy8med822kj30cw08m0tp.jpg" alt=""><br>这个太简单了，不说了</p>
+<p><strong>2-27已知无向图G含有16条边，其中度为4的顶点个数为3，度为3的顶点个数为4，其他顶点的度均小于3。图G所含的顶点个数至少是：</strong></p>
+<p>16条边也就是32个度，3x4，4x3一共是24度，还剩8度，因为都小于3，所以我们就认为都是2，也就是4个，加起来一共11个</p>
+<p><strong>2-29图的广度优先遍历类似于二叉树的：</strong><br>广度层序，深度中序</p>
+<p><strong>2-33如果从无向图的任一顶点出发进行一次深度优先搜索可访问所有顶点，则该图一定是：</strong><br>连通图呗，你只要连通这两种遍历方法都可以找到所有的顶点</p>
+<p>其他的题目基本上就是以上题目的变形或者是无脑重复，不说了。</p>
+<p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2118,7 +2127,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
