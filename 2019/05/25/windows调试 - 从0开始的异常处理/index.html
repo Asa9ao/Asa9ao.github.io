@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试 – 从0开始的异常处理（上）windows的异常处理一直是大家关心的重点，不管是对操作系统的学习还是windows的漏洞利用，都逃不过异常处理，这篇文章将会从windows异常的基础、维护异常信息的结构、异常的详细处理、SEH和VEH等方面来详细讨论Windows下的异常处理机制并通过《格蠹汇编》一书中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows调试 -- 从0开始的异常处理（上）">
+<meta property="og:url" content="http://yoursite.com/2019/05/25/windows调试 - 从0开始的异常处理/index.html">
+<meta property="og:site_name" content="Asa9ao">
+<meta property="og:description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试 – 从0开始的异常处理（上）windows的异常处理一直是大家关心的重点，不管是对操作系统的学习还是windows的漏洞利用，都逃不过异常处理，这篇文章将会从windows异常的基础、维护异常信息的结构、异常的详细处理、SEH和VEH等方面来详细讨论Windows下的异常处理机制并通过《格蠹汇编》一书中">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tKfTcly1g1ahvf68xrj30to0r2n0p.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tKfTcly1g1bdtjlm13j30kr09lmxd.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g1bq3ehmyaj30my126n0p.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tKfTcly1g0yzbgb18wj315k072q4n.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g0z32tvxr8j30po06k75m.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tKfTcly1g10z9pmlg9j30zi02wgng.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g10zh4wr1jj30qc04a40u.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tKfTcly1g0y1elp2dej31d003y750.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g0z3ajhkifj30wu0fcn1t.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tKfTcly1g0z3jshpabj31hi0d6diw.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g0z40pgklzj30kw0283yj.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tKfTcly1g0z498c157j30y00q4af1.jpg">
+<meta property="og:updated_time" content="2019-06-01T12:42:05.635Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Windows调试 -- 从0开始的异常处理（上）">
+<meta name="twitter:description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试 – 从0开始的异常处理（上）windows的异常处理一直是大家关心的重点，不管是对操作系统的学习还是windows的漏洞利用，都逃不过异常处理，这篇文章将会从windows异常的基础、维护异常信息的结构、异常的详细处理、SEH和VEH等方面来详细讨论Windows下的异常处理机制并通过《格蠹汇编》一书中">
+<meta name="twitter:image" content="https://ws4.sinaimg.cn/large/006tKfTcly1g1ahvf68xrj30to0r2n0p.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/05/25/windows调试 - 从0开始的异常处理/">
+
+
+
+
+
+  <title>Windows调试 -- 从0开始的异常处理（上） | Asa9ao</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Asa9ao</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/25/windows调试 - 从0开始的异常处理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Windows调试 -- 从0开始的异常处理（上）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-25T11:18:06+08:00">
+                2019-05-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows调试艺术/" itemprop="url" rel="index">
+                    <span itemprop="name">Windows调试艺术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。</p>
+<h1 id="Windows调试-–-从0开始的异常处理（上）"><a href="#Windows调试-–-从0开始的异常处理（上）" class="headerlink" title="Windows调试 – 从0开始的异常处理（上）"></a>Windows调试 – 从0开始的异常处理（上）</h1><p>windows的异常处理一直是大家关心的重点，不管是对操作系统的学习还是windows的漏洞利用，都逃不过异常处理，这篇文章将会从windows异常的基础、维护异常信息的结构、异常的详细处理、SEH和VEH等方面来详细讨论Windows下的异常处理机制并通过《格蠹汇编》一书中的几个课后实验来说明异常在调试中的实际应用。</p>
+<h2 id="什么是异常？"><a href="#什么是异常？" class="headerlink" title="什么是异常？"></a>什么是异常？</h2><p>简单来说异常就是对于非预期状况的处理，当我们在运行某个程序时出现了异常状况，就会进入异常处理流程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">发现异常 -&gt; 寻找处理异常的方法 -&gt; 恢复执行或者发生错误</span><br></pre></td></tr></table></figure>
+<p>异常又可以分为软件异常（由操作系统或应用程序引发的）、硬件异常（由cpu产生），其中硬件异常又和中断、系统调用等行为有着密切的联系，下面就来具体讨论一下。</p>
+<h3 id="硬件异常"><a href="#硬件异常" class="headerlink" title="硬件异常"></a>硬件异常</h3><p>硬件异常可以分为三种：</p>
+<ul>
+<li>fault，在处理此类异常时，操作系统会将遭遇异常时的“现场”保存下来（比如EIP、CS等寄存器的值），然后将调用相应的异常处理函数，如果对异常的处理成功了（没成功的情况会在下文中提到），那就恢复到原始现场，继续执行。最经典的fault例子莫过于Page Fault了，在分页机制下，当我们读到某个还未载入到内存的页时，就会触发该异常，操作系统会将该页载入内存，然后重新执行读取该页的指令，这是分页机制实现的重要机制。</li>
+<li>trap，在处理此类异常时，操作系统会将异常的“下文”保存，在处理异常后，直接执行导致异常的指令的下一条指令。我们在调试过程中常用的断点操作就是基于这类异常的，当我们在某处下断点时调试器会将原本此处的指令对应的十六进制保存下来，然后替换第一个字节替换为0xCC的，也就是int 3，造成断点异常，中断（此处的中断用的是break，而我们一般说的中断是interrupt，请读者务必区分清楚）到调试器，程序在运行到此处就会停止等待下一步的指令，而当我们继续执行时调试器就会将该指令替换为原来的指令，程序也就恢复正常执行了。不知道大家有没有注意过，在进行程序调试时经常会看见hex界面显示大量的“烫烫烫”，这其实是0xcc对应的中文字符，因为这些地址的内容程序并不想让我们访问，一旦我们访问这些地址，就会读到0xcc，程序也就“中断”了。</li>
+<li>abort，中止异常，主要是处理严重的硬件错误等，这类异常不会恢复执行，会强制性退出。</li>
+</ul>
+<p>在windows系统中，硬件异常和中断被不加区分的存放在了一个向量表中，也就是我们常说的IDT（interruption descriptor table），我们可以使用windbg（注意要在内核调试状态，笔者打印的是64位的情况）的!idt指令来查看IDT，不过windbg打印出的并不是真正的IDT结构，而是经过“解析”后的，更易于我们查看。表中前面的序号代表着它对应的是第几个中断或异常，后面的函数则是对这种异常或中断的处理函数，也叫做异常处理例程。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">lkd&gt; !idt</span><br><span class="line">Dumping IDT: fffff80743286000</span><br><span class="line">00:	fffff80740dd5100 nt!KiDivideErrorFaultShadow</span><br><span class="line">01:	fffff80740dd5180 nt!KiDebugTrapOrFaultShadow	Stack = 0xFFFFF8074328A9E0</span><br><span class="line">02:	fffff80740dd5200 nt!KiNmiInterruptShadow	Stack = 0xFFFFF8074328A7E0</span><br><span class="line">03:	fffff80740dd5280 nt!KiBreakpointTrapShadow</span><br><span class="line">04:	fffff80740dd5300 nt!KiOverflowTrapShadow</span><br><span class="line">05:	fffff80740dd5380 nt!KiBoundFaultShadow</span><br><span class="line">06:	fffff80740dd5400 nt!KiInvalidOpcodeFaultShadow</span><br><span class="line">07:	fffff80740dd5480 nt!KiNpxNotAvailableFaultShadow</span><br><span class="line">08:	fffff80740dd5500 nt!KiDoubleFaultAbortShadow	Stack = 0xFFFFF8074328A3E0</span><br><span class="line">09:	fffff80740dd5580 nt!KiNpxSegmentOverrunAbortShadow</span><br><span class="line">0a:	fffff80740dd5600 nt!KiInvalidTssFaultShadow</span><br><span class="line">0b:	fffff80740dd5680 nt!KiSegmentNotPresentFaultShadow</span><br><span class="line">0c:	fffff80740dd5700 nt!KiStackFaultShadow</span><br><span class="line">0d:	fffff80740dd5780 nt!KiGeneralProtectionFaultShadow</span><br><span class="line">0e:	fffff80740dd5800 nt!KiPageFaultShadow</span><br><span class="line">0f:	fffff80740dd62f8 nt!KiIsrThunkShadow+0x78</span><br><span class="line">10:	fffff80740dd5880 nt!KiFloatingErrorFaultShadow</span><br><span class="line">11:	fffff80740dd5900 nt!KiAlignmentFaultShadow</span><br><span class="line">12:	fffff80740dd5980 nt!KiMcheckAbortShadow	Stack = 0xFFFFF8074328A5E0</span><br><span class="line">13:	fffff80740dd5a80 nt!KiXmmExceptionShadow</span><br><span class="line">14:	fffff80740dd5b00 nt!KiVirtualizationExceptionShadow</span><br><span class="line">15:	fffff80740dd5b80 nt!KiControlProtectionFaultShadow</span><br></pre></td></tr></table></figure>
+<p>真正的IDT实际上是维护了多个门描述符（GD），每一项大小为8（64位为16），IDRT寄存器中保存着IDT的基地址，我们想具体找某个GD的话直接利用IDTR+8*offset即可。门描述符结构如下：</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g1ahvf68xrj30to0r2n0p.jpg" alt="image-20190321162653680"></p>
+<p>GD大致由segment selector（段选择子）、offset（选定段后的偏移）、DPL（描述符特权级）、P（段是否存在）组成，在上一次的《windows调试艺术》中我已经详细的说明了如何通过该结构寻找GDT/IDT进而找到相应的内容，这里就不再展开说了。</p>
+<p>当windows系统启动时，winLoad会在实模式下分配一块内存，使用CLI指令来禁止中断的使用，利用LIDT（Load IDT）指令将IDT表的位置和长度等信息交给CPU，接着系统恢复保护模式，这时的执行权交还给了入口函数，调用SIDT（set IDT）拿到之前存储的IDT的信息，并将其记录到PCR中，接着其他处理器也会进行初始化的操作，复制并修改自己的IDT，在一切准备就绪后，调用STL指令恢复中断的使用。调用的函数链如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">winLoad -&gt; kiSystemStartup -&gt; kiInitializePcr -&gt;keStartAllProcessors -&gt; kiInitProcessors</span><br></pre></td></tr></table></figure>
+<p>这里的PCR也就是上一次《windows调试艺术》中我们所说的Ring0下fs寄存器，我们可以使用内核调试状态下的windbg来查看相关的内容</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g1bdtjlm13j30kr09lmxd.jpg" alt="image-20190322105218697"></p>
+<ul>
+<li>第一个字段指向的是TIB，上一篇文章具体解释过了，我们重点关注的是第一个，exception的list的地址，也就是异常处理注册链表，是我们后面的重点。</li>
+<li>Prcb是指Process Control Block，实际上在操作系统将IDT的信息交付给PCR的过程中，也会交给它。</li>
+<li>IRQL也就是中断请求级别，0代表当前cpu的IRQL是内核态</li>
+<li>IDT和GDT分别是前面提到的两个表的地址</li>
+<li>TSS是任务段地址</li>
+<li>CurrentThread也就是当前线程的EThread地址</li>
+<li>NextThread是下一个准备执行的线程的地址</li>
+<li>idleThread是一个优先级最低的线程，也可以把它叫做空闲线程，可以简单理解为它是个在“休息”的线程</li>
+</ul>
+<p>在上述过程进行完成之后，实际上我们的异常还是仅仅被“处理了一部分”而已，大多数IDT中记录的函数都只是对异常进行了包装和描述，之后还要采用异常分发机制来进一步进行异常处理。</p>
+<h3 id="软件异常"><a href="#软件异常" class="headerlink" title="软件异常"></a>软件异常</h3><p>软件异常是由操作系统或应用程序产生的，它又包含了windows为我们定义好的异常处理和我们自己写的异常处理（各种编程语言中的try-catch结构）。这类异常追根溯源都是基于RaiseException这个用户态API和NtRaiseException的内核服务建立起来的。RaiseException的函数原型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">RaiseException</span><span class="params">(DWORD dwExceptionCode , DWORD dwExceptionFlags,DWORD nNumberofArguments,<span class="keyword">const</span> DWORD* lpArguments)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>dwException是异常状态码，可以在NtStatus.h中找到，应用程序也可以有自己的异常状态码</li>
+<li>nNumberofArguments和lpArguments是用来定义异常的数据</li>
+</ul>
+<p>函数的功能十分简单，它会将异常的相关信息传入一个维护异常的结构，叫做EXCEPTION_RECORD，然后再去调用RtlRaiseException函数，该结构定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">EXCEPTION_RECORD</span> &#123;</span></span><br><span class="line">  DWORD                    ExceptionCode;</span><br><span class="line">  DWORD                    ExceptionFlags;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> _<span class="title">EXCEPTION_RECORD</span> *<span class="title">ExceptionRecord</span>;</span></span><br><span class="line">  PVOID                    ExceptionAddress;</span><br><span class="line">  DWORD                    NumberParameters;</span><br><span class="line">  ULONG_PTR                ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];</span><br><span class="line">&#125; EXCEPTION_RECORD;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>ExceptionCode为异常状态码，可以在NtStatus.h中找到，RaiseException的dwException就对应此项</li>
+<li>ExceptionFlags为异常的标志，16个bit中有一部分被拿出来当作标志位，包括像是8位的栈错误、1位的异常不可恢复等等，RaiseException的dwExceptionFlags对应此项</li>
+<li>ExceptionRecord是指向下一个异常的指针</li>
+<li>ExceptionAddress保存了异常的发生地址</li>
+<li>NumberParameters是 ExceptionInformation数组中参数的个数，RaiseException的nNumberofArguments对应该项</li>
+<li>ExceptionInformation也就是异常的描述信息，RaiseException的lpArguments对应该项</li>
+</ul>
+<p>之后调用的RltRaiseException会将当前的上下文保存到CONTEXT结构中，此后调用的函数会维护一个TrapFrame（即栈帧的基址）和异常的处理次数的标志，这里不再赘述，调用链如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">用户：RaiseException -&gt; RltRaiseException -&gt; NtRaiseException -&gt; KiRaiseException </span><br><span class="line">内核：RtlRaiseException -&gt; NtRaiseException -&gt; KiRaiseException</span><br></pre></td></tr></table></figure>
+<h2 id="异常的的分发处理"><a href="#异常的的分发处理" class="headerlink" title="异常的的分发处理"></a>异常的的分发处理</h2><p>上面说到了硬件异常会通过IDT去调用异常处理例程（一般为KiTrap系列函数），而软件异常则是通过API的层层调用传递异常的信息，但这都是最基础的处理，实际上最后二者是殊途同归，都会走到KiDispatchException函数来进行异常的分发。</p>
+<p>异常分发的简化流程图如下，笔者绘图能力有限……可以在看完后面的具体分析后大家自己加以完善。</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g1bq3ehmyaj30my126n0p.jpg" alt="image-20190322175655873"></p>
+<p>首先来看看KiDisPatchException函数的函数原型</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KiDispatchException</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    IN PEXCEPTION_RECORD ExceptionRecord,</span></span></span><br><span class="line"><span class="function"><span class="params">    IN PKEXCEPTION_FRAME ExceptionFrame,</span></span></span><br><span class="line"><span class="function"><span class="params">    IN PKTRAP_FRAME TrapFrame,</span></span></span><br><span class="line"><span class="function"><span class="params">    IN KPROCESSOR_MODE PreviousMode,</span></span></span><br><span class="line"><span class="function"><span class="params">    IN BOOLEAN FirstChance</span></span></span><br><span class="line"><span class="function"><span class="params">    )</span></span></span><br></pre></td></tr></table></figure>
+<p>ExceptionRecord也就是前面提的描述异常的结构，TrapFrame指向的结构用来描述发生异常时候的上下文，PreviousMode来说明异常来自Kernel还是User，最后的FirstChance用来表示异常是不是第一次被处理，实际上这些结构的集合就形成了一个虚拟的、完整的“异常”结构，再去进行下面的处理。</p>
+<p>进入上图，首先就要对异常的涞源进行判断，右边是内核的异常，右边是用户的异常，我们一个一个来看</p>
+<h3 id="Kernel"><a href="#Kernel" class="headerlink" title="Kernel"></a>Kernel</h3><p>但PreviousMode为0时，就会进入Kernel的异常分发，系统会维护一个KiDebugRoutine的函数，当内核的调试器启动时，它就帮我们把异常送往了内核调试器，而在未启动时，它只是一个“存根”函数（stub），返回一个False。这一步也就是图中的debug</p>
+<p>当第一次debug返回False后会接着调用RtlDispatchException，函数的原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">BOOLEAN <span class="title">RtlDispatchException</span><span class="params">(PEXCEPTION_RECORD ExceptionRecord,PCONTEXT ContextRecord)</span></span></span><br></pre></td></tr></table></figure>
+<p>两个参数就是异常的结构和上下文结构了，可以拿Windbg查看，函数的大致操作如下：</p>
+<ul>
+<li>取异常登记链表的头指针</li>
+<li>遍历异常登记记录</li>
+<li>检查异常登记记录的有效性，有效则执行<ul>
+<li>异常已处理，返回</li>
+<li>没有处理，返回并继续遍历</li>
+<li>如果是内嵌异常则进行特殊处理</li>
+</ul>
+</li>
+</ul>
+<p>取得异常登记链表的头指针的也就是上一篇文中提到的fs寄存器，fs:[00h]，fs指向了TEB结构，而TEB第一个offset又是一个TIB的结构，TIB的第一个也就是异常登记链表了</p>
+<p>经过上面的处理后，如果异常已经被处理了那也就结束了，如果没有处理的话就会进行第二轮调试，重复上面的debug内容，如果依然是没有启用调试器的话就那么就会把这个异常当作UnhandleException，也就是我们常说的未处理异常，在kernel下未处理异常可是个大问题，毕竟这可是操作系统最最重要的也最最完善的内核，这样的未处理异常一般都不是小问题，为了防止异常引发更大的问题，这时候系统就会调用KeBugCheckEx中止系统运行显示蓝屏，并将导致异常的地址打印在屏幕上。</p>
+<h3 id="user"><a href="#user" class="headerlink" title="user"></a>user</h3><p>当PreviousMode==1时就进入了用户态的异常分发，相较于Kernel来说，user的异常处理还包括了我们自己在编写程序的过程中用到的try catch，下面就具体来看看。</p>
+<p>首先还是检查是否有调试器，具体的措施和Kernel相仿，不过找的函数是内核的DbgForwardException，这个函数涉及到了用户态的调试，以后要有机会还会单独写这个的知识点。简单点说就是找找用户态的调试器是不是要接手这个异常，如果成了就交给它处理，如果没有的话那就会通过KeUserExceptionDispatcher来找到KiUserExceptionDispatcher函数，要注意，此时已经返回到了用户态，且异常的相关信息（比如KTRAP_FRAME）已经被放入了用户态的栈上。之后会调用了RtlDispatchException（注意，该函数依然名字和作用都与Kernel的几乎相同，但是它是位于NTDLL的，而Kernel的则是位于NTOSKRNL）来遍历异常处理器的链表，但这次的链表又了“保底措施”，在链表的最末尾是UnhandledExceptionFilter（未处理异常过滤函数），一旦走到了这里，那就会出现“应用程序错误”的对话框并强制结束程序（之后会写这个函数的详细分析），异常也就算是处理完成了。</p>
+<p>既然有了UnhandledExceptionFilter那岂不是所有的异常都会最终被直接处理了，那第二轮又是怎么回事？实际上如果在非调试状态下确实如此，用户态的异常如果在非调试状态下的话仅仅只有一轮的分发，而只有在调试状态下才会进行第二轮，再次判断调试器是否要接手异常。</p>
+<p>##格蠹汇编练习题</p>
+<p>下面是我选择的几个需要涉及到异常知识的《格蠹汇编》一书的课后题，通过这些实际的例子来看看异常在程序调试中的重要性，源文件大家可以自行百度下载。</p>
+<h3 id="调试笔记之侦查广告插件"><a href="#调试笔记之侦查广告插件" class="headerlink" title="调试笔记之侦查广告插件"></a>调试笔记之侦查广告插件</h3><p>首先我们要windbg设置为windows的JIT（just in time）调试器，最简单的方法是在管理员权限下cmd进入windbg所在的目录，直接运行下边的命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WinDbg -I</span><br></pre></td></tr></table></figure>
+<p>当然如今这种命令一步实现的可能性不大……因为我们大部分人的pc都是64位的windows10，并且还都装了vs，这种情况下我们会有x86和x64两种JIT默认，且默认都为vs的调试器，我们上面的操作仅仅是注册了其中的一种而已，这个时候我们就需要修改注册表了</p>
+<p>我们进入regedit后找到下面的两个路径（分别是64位和32位的）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug</span><br><span class="line">HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug</span><br></pre></td></tr></table></figure>
+<p>里面有Auto和debuger两项，Auto的意思是在程序出错时是否会调用调试器，而Debuger则是保存了我们指定的调试器的路径，这里直接删除掉就好，接着分别在x86和x64的windbg目录下运行上面的命令就好了</p>
+<p>再次打开程序发现直接打开了windbg</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tKfTcly1g0yzbgb18wj315k072q4n.jpg" alt="image-20190311172343208"></p>
+<p>我们可以看到Access violation，意思是访问违例，而下面的汇编代码就是具体的情况。可以看到执行的指令是将0赋予ecx的地址，当然只看这里我们还是看不出什么问题，接下来就进入正题了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.symfix 你的符号路径</span><br></pre></td></tr></table></figure>
+<p>set symbol store path的意思，也就是从微软那边将需要的符号信息下载到你指定的路径，便于调试</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kPL</span><br></pre></td></tr></table></figure>
+<p>k是用来展示给定的线程的栈帧并展示相关的信息，P能够显示每一个函数的所有的参数，包括参数的数据类型、名称和值，L的意思是隐藏source lines（源文件路径的意思），注意<strong>它们是大小写敏感的</strong></p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z32tvxr8j30po06k75m.jpg" alt="image-20190311193351960"></p>
+<h3 id="修复因误杀而瘫痪的系统"><a href="#修复因误杀而瘫痪的系统" class="headerlink" title="修复因误杀而瘫痪的系统"></a>修复因误杀而瘫痪的系统</h3><p>这一章节没有实验，但有一些很重要的知识点，简单总结一下</p>
+<p>作者的朋友电脑出了问题，最开始是菜单不见了，再之后仅仅是进入启动界面几秒就黑屏了，通过双机调试得到了以下的错误信息：</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g10z9pmlg9j30zi02wgng.jpg" alt="image-20190313105313024"></p>
+<p>第一串数字是Stop code（停止码，可通过帮助文档查询），大括号中第一串是有关进程的信息，第二串是错误码，可以通过!error指令查询。在这里Stop Code的意思是系统进程终止，错误码的意思是对象不存在，也就是说尝试bug的原因是因为有些必要的东西没有了，我们利用db指令来查询一下进程的信息</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g10zh4wr1jj30qc04a40u.jpg" alt="image-20190313110014109"></p>
+<p>发现有windows Logon Process的信息，这是关系到用户登录的一个进程，在windows启动过程中，第一个创建的用户态进程是SMSS.exe（session manager subsystem），之后的进程关系如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SMSS.exe -&gt; winlogon.exe -&gt; explore.exe</span><br><span class="line">		 -&gt; CSRSS.exe</span><br></pre></td></tr></table></figure>
+<p>而最后的explore是资源管理器，开始菜单就是它来维护的，而当SMSS创建这两个进程时，如果创建失败，就会进行bug check，如果有调试器的话就会调用系统中断连接到调试器，没有的话就会蓝屏重启。分析到这里，我们就有理由相信，电脑的重启很有可能是由于winlogon被删除而导致的。</p>
+<p>但winlogon这么容易被删除吗？首先它作为系统文件，是有一定的保护机制的，其次，作为一个一直在运行的程序，它的虚拟内存文件不可能被直接删除。所谓虚拟内存文件是基于虚拟内存机制的一类文件，它有两种，一种是专用的页面文件，一般在磁盘的根目录，文件名叫做pagefile.sys；第二种是文件映射机制加载过的磁盘文件本身，比如用户态的dll文件和exe文件，加载后充当了虚拟内存文件的角色，而之后内存管理器会和文件系统会达成“协议”，不再允许删除该文件。这也就是病毒文件绞尽脑汁也要加载到内存的原因，一旦运行了，拿它在某种程度上就“无敌”了</p>
+<p>作者根据电脑的故障时间进行了文件排查，最终将目光锁定在了一个名字中带有delay的反病毒软件的def文件，正是因为我们上面提到的问题，所以现在很多杀毒软件都支持“延时删除”的策略，但启动过程执行到SMSS.exe时会检查如下的注册表键执行操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager PendingFileRenameOperations</span><br></pre></td></tr></table></figure>
+<p>该键的构造为srcFilePath\dstFilePath\0，即移动文件，当我们将dstFilePath设置为0时，也就会将src文件删除了。经过作者修改该文件，也就解决了问题。</p>
+<p>由于书的年代过于久远所以采取了延时删除的策略，实际上在windwos8中已经引入了一种新的技术 – ELAM（Early Launch Anti-Malware），反病毒的驱动在得到微软的特殊数字签名（Microsoft Windows Early Launch Anti-malware Publisher）后可以在系统启动过程中优先加载并扫描接下来加载驱动的数字签名，如果判定为恶意代码的话就会在未启动前直接将其删除。</p>
+<p>###拯救发疯的Windows 7</p>
+<p>题目背景是作者的朋友电脑window7的操作系统崩溃，最后给了个dump出的文件.</p>
+<p>Windbg载入dump文件</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g0y1elp2dej31d003y750.jpg" alt="image-20190310215025587"></p>
+<p>可以很明显的看到报了个stack buffer overrun的提示，也就是说导致系统出问题的很可能是栈溢出，我们利用以下的命令查看一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kn</span><br></pre></td></tr></table></figure>
+<p>k是用来展示给定的线程的栈帧并展示相关的信息，n是显示栈的编号</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z3ajhkifj30wu0fcn1t.jpg" alt="image-20190311194115824"></p>
+<p>可以看到它调用了Werp开头的几个函数，全称是windows error report，也就是错误报告的意思，往下看有UnhandleExceptionFilter（未处理异常过滤函数），它是处理未处理异常的关键函数，同时也是系统终止掉一个进程前做最后处理的地方，应用程序错误（application error）和我们上面设置的JIT都是从这个函数发起的。根据栈回朔，往下就是引发这个未处理异常的函数了，也就是umpo模块里的某个函数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lmvm</span><br></pre></td></tr></table></figure>
+<p>lm的意思是list load modules，v显示了详细的信息，m是要进行模块名称的匹配，在这的目的主要是看看是不是正常的（也就是官方的）一个模块，因为它之后就是错误处理了，所以我们有必要检查他一下，可以看到这个模块是没有问题的</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tKfTcly1g0z3jshpabj31hi0d6diw.jpg" alt="image-20190311195009786"></p>
+<p>继续看栈回朔，发现了问题，umpo模块中的SendPowerMessage函数的ret地址和其他函数的差距很大，并且windbg提醒我们这个地址不是在任何一个已知的模块中的，很有可能是发生了溢出错误，而report_gsfailure也正是cookie被覆盖所产生的异常处理信息（也就是GS机制，做pwn的应该是很熟悉了，这里不再多说）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dd 009afb30-4</span><br></pre></td></tr></table></figure>
+<p>此处地址为ebp-4，实际上也就是cookie，我们检查一下cookie的内容，cookie和父函数的值都是00640064，明显不正常</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z40pgklzj30kw0283yj.jpg" alt="image-20190311200625444"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db 009afb30-204 L220</span><br></pre></td></tr></table></figure>
+<p>我们查看该函数的变量空间来看看到底读取了什么导致了发生溢出，这里的204是由两个函数地址之差算出来的，记得还要减去cookie和ebp的大小（注意L要稍大一些，因为溢出了所以要想看到网站的读取信息就要多读几个字节）</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0z498c157j30y00q4af1.jpg" alt="image-20190311201435830"></p>
+<p>可以看到确实是溢出了，而产生的原因就是因为c:\users\pictures\Sample Pictures\Desertddddd…d.jpg的文件路径字节数太多所导致的，我们手动改一下文件名就好了</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/15/windows调试艺术-LDR调试/" rel="next" title="windows调试艺术-LDR调试">
+                <i class="fa fa-chevron-left"></i> windows调试艺术-LDR调试
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/05/26/Windows调试艺术——从真实病毒学习消息机制/" rel="prev" title="Windows调试艺术——从真实病毒学习消息机制">
+                Windows调试艺术——从真实病毒学习消息机制 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Asa9ao</p>
+              <p class="site-description motion-element" itemprop="description">It's not who I am underneath, but it's what I do that defines me</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Windows调试-–-从0开始的异常处理（上）"><span class="nav-number">1.</span> <span class="nav-text">Windows调试 – 从0开始的异常处理（上）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是异常？"><span class="nav-number">1.1.</span> <span class="nav-text">什么是异常？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#硬件异常"><span class="nav-number">1.1.1.</span> <span class="nav-text">硬件异常</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#软件异常"><span class="nav-number">1.1.2.</span> <span class="nav-text">软件异常</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异常的的分发处理"><span class="nav-number">1.2.</span> <span class="nav-text">异常的的分发处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Kernel"><span class="nav-number">1.2.1.</span> <span class="nav-text">Kernel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user"><span class="nav-number">1.2.2.</span> <span class="nav-text">user</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调试笔记之侦查广告插件"><span class="nav-number">1.2.3.</span> <span class="nav-text">调试笔记之侦查广告插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修复因误杀而瘫痪的系统"><span class="nav-number">1.2.4.</span> <span class="nav-text">修复因误杀而瘫痪的系统</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Asa9ao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

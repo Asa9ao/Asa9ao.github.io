@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试艺术——从真实病毒学习消息机制要阅读本文章的小伙伴建议先看看《windows调试艺术》的这两篇文章来了解一下前置知识 Windows调试艺术——从0开始的异常处理（下） Windows调试艺术——从0开始的异常处理（上） 之前的时候偶然在某网站拿到一款很简单的病毒程序，虽然分析的难度不高，但是它巧妙的利用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows调试艺术——从真实病毒学习消息机制">
+<meta property="og:url" content="http://yoursite.com/2019/05/26/Windows调试艺术——从真实病毒学习消息机制/index.html">
+<meta property="og:site_name" content="Asa9ao">
+<meta property="og:description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试艺术——从真实病毒学习消息机制要阅读本文章的小伙伴建议先看看《windows调试艺术》的这两篇文章来了解一下前置知识 Windows调试艺术——从0开始的异常处理（下） Windows调试艺术——从0开始的异常处理（上） 之前的时候偶然在某网站拿到一款很简单的病毒程序，虽然分析的难度不高，但是它巧妙的利用">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1g1u2ppd15zj30ng05idgk.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1g1u2ozbjr7j30f40gcgot.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1g1u2s038ouj30rq0aoq5z.jpg">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1g1u37egsxcj313w0im493.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1g1u37mjyg7j317s0fedq4.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1g1u37w428jj317q0qw495.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1g1u3845bqgj312204m405.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1g1u396gcvuj30su06ognt.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1g1u39n0798j30sa07wq5u.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1g1u3dlnw9cj30u002ygms.jpg">
+<meta property="og:updated_time" content="2019-06-01T12:42:17.699Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Windows调试艺术——从真实病毒学习消息机制">
+<meta name="twitter:description" content="文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。 Windows调试艺术——从真实病毒学习消息机制要阅读本文章的小伙伴建议先看看《windows调试艺术》的这两篇文章来了解一下前置知识 Windows调试艺术——从0开始的异常处理（下） Windows调试艺术——从0开始的异常处理（上） 之前的时候偶然在某网站拿到一款很简单的病毒程序，虽然分析的难度不高，但是它巧妙的利用">
+<meta name="twitter:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1g1u2ppd15zj30ng05idgk.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/05/26/Windows调试艺术——从真实病毒学习消息机制/">
+
+
+
+
+
+  <title>Windows调试艺术——从真实病毒学习消息机制 | Asa9ao</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Asa9ao</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/26/Windows调试艺术——从真实病毒学习消息机制/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Windows调试艺术——从真实病毒学习消息机制</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-26T11:18:06+08:00">
+                2019-05-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows调试艺术/" itemprop="url" rel="index">
+                    <span itemprop="name">Windows调试艺术</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>文章在360的安全客上首发，搬运到自己博客上来，可以去安全客查看详细博文。</p>
+<h1 id="Windows调试艺术——从真实病毒学习消息机制"><a href="#Windows调试艺术——从真实病毒学习消息机制" class="headerlink" title="Windows调试艺术——从真实病毒学习消息机制"></a>Windows调试艺术——从真实病毒学习消息机制</h1><p>要阅读本文章的小伙伴建议先看看《windows调试艺术》的这两篇文章来了解一下前置知识</p>
+<p><a href="https://www.anquanke.com/post/id/175753" target="_blank" rel="noopener">Windows调试艺术——从0开始的异常处理（下）</a></p>
+<p><a href="https://www.anquanke.com/post/id/175293" target="_blank" rel="noopener">Windows调试艺术——从0开始的异常处理（上）</a></p>
+<p>之前的时候偶然在某网站拿到一款很简单的病毒程序，虽然分析的难度不高，但是它巧妙的利用了Windows的消息机制实现了恶意功能，正好可以用它做个例子来学习一下Windows的消息机制。</p>
+<p>##Windows 消息结构</p>
+<p>每一个程序猿都应该知道Windows是一个消息驱动的系统，可是真正提到什么是消息，消息又是如何组织的就一头雾水了。实际上Windows的应用内部的各个线程、各个应用、应用与操作系统之间都会通过消息来传递。消息就是一个信号，应用会根据收到的信号做出不同的反应，比如我们点击了窗口的关闭按钮，那么就会传递给应用一个”关闭”的消息，然后窗体关闭。</p>
+<p>Windows以窗口作为基础实现了可视化的交互，窗口是基于线程实现的，一个线程又维护着一个消息队列，每一个传递给这个窗口的消息都要依次进入队列进行”先进先出”的操作，不分轻重缓急，再紧急的情况也只能老老实实排队。</p>
+<p>###消息</p>
+<p>一个消息说白了就是一段数据，消息在Windows的定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">tagMsg</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">HWND hwnd;    <span class="comment">//目标的窗口句柄</span></span><br><span class="line">UINT message; <span class="comment">//消息的标识符</span></span><br><span class="line">WPARAM wParam;<span class="comment">//附加信息，与消息标识符有关</span></span><br><span class="line">LPARAM lParam;<span class="comment">//附加信息，与消息标识符有关</span></span><br><span class="line">DWORD time;   <span class="comment">//消息产生的时间</span></span><br><span class="line">POINT pt;     <span class="comment">//消息发生产生时的按屏幕坐标表示的鼠标光标的位置</span></span><br><span class="line">&#125;MSG,*PMSG;</span><br></pre></td></tr></table></figure>
+<p>消息按照用途可以分为：</p>
+<ul>
+<li>窗口消息，比如WM_PAINT窗口绘制、WM_CREATE窗口创建等等</li>
+<li>命令消息，一般是指WM_COMMAND，表示用户执行了一个命令，产生的对象一般是菜单或是控件</li>
+<li>通知消息，一般是指WM_NOTIFY，由公用控件发出</li>
+<li>反射消息，处理需要经过”反射”机制的消息，之后会详细说明</li>
+</ul>
+<p>消息按照区段可分为：</p>
+<ul>
+<li><p>标识符由0x0000到0x03ff的系统消息</p>
+</li>
+<li><p>0x0001-0x0087    窗口消息。<br>0x00A0-0x00A9    非客户区消息<br>0x0100-0x0108    键盘消息<br>0x0111-0x0126    菜单消息<br>0x0132-0x0138    颜色控制消息<br>0x0200-0x020A    鼠标消息<br>0x0211-0x0213    菜单循环消息<br>0x0220-0x0230    多文档消息<br>0x03E0-0x03E8    DDE消息</p>
+</li>
+<li><p>标识符由0x0400到0x7FFF的用户自定义消息，以VM_USER（0x0400）为基址，自定义偏移所对应的消息</p>
+</li>
+<li>标识符由0x8000到0xBFFF的用户自定语消息，一般是基于某一个窗口类。用作应用之间的通信</li>
+<li>标识符由0xC000到0xFFFF的来自于RegisterWindowMessage函数，它会将传入的字符串注册成一个信息</li>
+</ul>
+<h3 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h3><p>Windows维护了两种类型的队列，一种是<strong>系统消息队列</strong>，它是唯一的，用户的输入通过驱动程序转化为消息后会进入该队列，然后再将消息放入对应线程（窗口）的消息队列；另外一种是线程消息队列，在调用User或者GDI的函数时创建，队列中的消息会经过消息泵传递给窗口回调函数。</p>
+<p>消息也不都是这么”听话”，比如一下的几种</p>
+<ul>
+<li>WM_PAINT、WM_TIMER等，它们只有在队列中没有其他消息的时候才会处理，而VM_PAINT甚至还会进行合并来提高效率，这其实是因为它们消息的优先级较低</li>
+<li>WM_ACTIVATE、WM_SETFOCUS等，它们会绕过消息队列直接被目标窗口处理</li>
+<li>来自其他线程的消息，处理上还是一样，但是它们的优先级较高一些，在下边消息处理中会有所体现</li>
+</ul>
+<h2 id="消息的处理过程"><a href="#消息的处理过程" class="headerlink" title="消息的处理过程"></a>消息的处理过程</h2><p>消息首先由系统或应用产生，由于应用的消息可定制化程度太高，所以我们这里选择系统的消息来作为例子。</p>
+<p>消息的传递对应大体有两种方式，一种是POST，一种是SEND，涉及到了各种各样的发送形式</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">postMessage <span class="comment">//消息进入消息队列中后立即返回，消息可能不被处理。</span></span><br><span class="line">PostThreadMessage <span class="comment">//消息放入指定线程的消息队列中后立即返回，消息可能不被处理。</span></span><br><span class="line">SendMessage <span class="comment">//消息进入消息队列中，处理后才返回，如果消息不被处理，发送消息的线程将一直处于阻塞状态，等待消息返回。</span></span><br><span class="line">SendNotifyMessage<span class="comment">//如果消息进入本线程，则为SendMessage()，不是则采取postMessage()，当目标线程仍然依send处理</span></span><br><span class="line">SendMessageTimeout <span class="comment">//消息进入消息队列，处理或超时则返回，实际上SendMessage()就是建立在该函数上的</span></span><br><span class="line">SendMessageCallback <span class="comment">//在本线程再指定一个回调函数，当处理完后再次处理</span></span><br><span class="line">BroadcastSystemMessage <span class="comment">//发送目标为系统组件，比如驱动程序</span></span><br></pre></td></tr></table></figure>
+<p>消息发送处理时会先判定消息的目标是不是在同一线程而产生不同的结果</p>
+<ul>
+<li>是，SendMessage()发送的消息不进入消息队列直接处理，而postMessage()进入消息队列</li>
+<li>否，SendMessage()发送消息至目标线程的队列，然后监视直至处理，PostThreadMessage()进入队列后返回</li>
+</ul>
+<p>其实真正处理消息的就是一个窗口过程函数，它的参数实际上就是一个简化的MSG结构，包括了：对应窗口的句柄、消息的ID、消息的参数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LRESULT CALLBACK <span class="title">WndProc</span><span class="params">(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)</span></span></span><br></pre></td></tr></table></figure>
+<p>当我们创建一个窗口的时候有一个注册窗口的过程，代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ATOM <span class="title">MyRegisterClass</span><span class="params">(HINSTANCE hInstance)</span>  </span></span><br><span class="line"><span class="function"></span>&#123;  </span><br><span class="line">   WNDCLASSEX wcex;  </span><br><span class="line">  </span><br><span class="line">   wcex.cbSize = <span class="keyword">sizeof</span>(WNDCLASSEX);  </span><br><span class="line">  </span><br><span class="line">   wcex.style   = CS_HREDRAW | CS_VREDRAW;  </span><br><span class="line">   wcex.lpfnWndProc = WndProc; </span><br><span class="line">   wcex.cbClsExtra  = <span class="number">0</span>;  </span><br><span class="line">   wcex.cbWndExtra  = <span class="number">0</span>;  </span><br><span class="line">   wcex.hInstance  = hInstance;  </span><br><span class="line">   wcex.hIcon   = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSP));  </span><br><span class="line">   wcex.hCursor  = LoadCursor(<span class="literal">NULL</span>, IDC_ARROW);  </span><br><span class="line">   wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW+<span class="number">1</span>);  </span><br><span class="line">   wcex.lpszMenuName = MAKEINTRESOURCE(IDC_WINDOWSP);  </span><br><span class="line">   wcex.lpszClassName = szWindowClass;  </span><br><span class="line">   wcex.hIconSm  = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));  </span><br><span class="line">  </span><br><span class="line">   <span class="keyword">return</span> RegisterClassEx(&amp;wcex);  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很显然在注册时就绑定了上面的窗口过程函数，进而对各式各样的消息进行处理</p>
+<p>紧接着就到了从队列中接受消息的过程，消息队列中对消息的处理主要有以下三个函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">BOOL <span class="title">PeekMessage</span><span class="params">(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)</span></span>;</span><br><span class="line"><span class="function">BOOL <span class="title">GetMessage</span><span class="params">(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax)</span></span>;</span><br><span class="line"><span class="function">BOOL <span class="title">WaitMessage</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>PeekMessage用来判断队列中有没有消息，可通过设置wRemoveMsg来决定是否删除进行判断的消息</p>
+</li>
+<li><p>GetMessage会取出线程的消息到一个MSG结构中，如果调用了该函数且队列为空就会出现线程挂起，进入休眠状态，CPU会分配给其他线程。这里涉及到线程、进程方面的知识，以后再作详细说明</p>
+</li>
+<li><p>WaitMessage，当没有消息时使用，使线程挂起处于等待状态</p>
+</li>
+</ul>
+<p>当然有的消息中的内容并不能被直接识别，还需要一个翻译过程，也就是需要调用TranslateMessage、TranslateAccelerator两个函数进行处理，这里主要是键盘等外部设备用户的输入（后者是用来处理快捷键的），普通消息可以跳过</p>
+<p>接着就是重头戏了，DispatchMessage函数，看这个名字有没有想到之前DisPatchException？它们同样是用来分发的函数，则不过之前分发的是异常，现在分发的消息罢了</p>
+<ul>
+<li>检查目标窗口是否存在，不存在直接将消息丢弃</li>
+<li>是否为不必须处理的事件，举个栗子，比如窗口边框没左键的功能，你还疯狂点它。如果是的话进入DefWindowProc进行下一步处理，处理很简单，再生成一个新的消息传出去，重复过程</li>
+<li>调用相应的回调函数</li>
+</ul>
+<p>可以看到正儿八经的消息到这就告一段落了，反而是那些”不需要”的消息耽误事还要再走一遍……</p>
+<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p>死锁，即Message Deadlocks，这个词很好理解，生动点说就是暗恋的俩人都在等待对方给发消息，结果都不好意思发就一直等着。比如下面的例子：</p>
+<ul>
+<li><p>a线程发消息1给b线程</p>
+</li>
+<li><p>b线程处理消息1，回调函数中发了消息2给a</p>
+</li>
+<li><p>a接到消息2，但因为b对消息1的处理结果还没回来而等待</p>
+</li>
+<li><p>b因为消息2的处理结果还没回来而等待</p>
+</li>
+</ul>
+<p>好了，这哥俩现在就处于死锁状态了，俩人都干愣着。这是我们刻意的构造的一种情况，更多的时候死锁的产生还是由于发送的消息被处理时被”丢弃”了，而发送与接收的线程是同一队列，这就会导致该线程”死”了</p>
+<p>为了防止死锁现象的产生，我们可以使用上面提到的SendMessageTimeout来设置最大等待时间</p>
+<h3 id="反射"><a href="#反射" class="headerlink" title="反射"></a>反射</h3><p>从操作系统的角度讲，在Windows的世界里，一个按钮的改变应该发消息给父窗口，由父窗口操作；从编程语言的角度讲，C++的世界里，一个按钮就是一个类的具体对象，它应该自己处理自己的变化，这就有矛盾了，那这样是处理呢？</p>
+<p>这样的矛盾就让反射机制诞生了，对于控件自己应该处理的内容，当父窗口收到了相关消息时，重新发回给控件。</p>
+<h2 id="MFC消息映射"><a href="#MFC消息映射" class="headerlink" title="MFC消息映射"></a>MFC消息映射</h2><p>MFC的消息处理其实本质上并没有什么不同，但是MFC做了一定的封装，掩盖了一部分消息的处理，使用起来比Windows消息处理更加简洁，这个封装起来的过程也就是消息映射。我们在vs上试着编辑一个mfc程序，当我们手动添加一个控件并指定了它的OnLButtonDown时，会自动为我们添加三处代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CDrawView</span> :</span> <span class="keyword">public</span> CView</span><br><span class="line">&#123;</span><br><span class="line">    <span class="function">afx_msg <span class="keyword">void</span> <span class="title">OnLButtonDown</span><span class="params">(UINT nFlags, CPoint point)</span></span>;<span class="comment">//afx_msg指的是消息响应函数，此处也就是函数的声明</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ON_WM_LBUTTONDOWN()<span class="comment">//此处定义了消息的映射宏</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> CDrawView::OnLButtonDown(UINT nFlags, CPoint point)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> 在此添加消息处理程序代码和/或调用默认值</span></span><br><span class="line">    CView::OnLButtonDown(nFlags, point);<span class="comment">//此处为消息响应函数的定义</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上mfc为每一个要处理消息的类都维护了一个静态的消息映射表，一种消息对应了一种消息处理函数指针，不同的类因为要处理的消息不同，所以维护的表的大小也有差异，当该类的实例需要处理消息时，只需要搜索该表寻找相应的函数即可。上面为我们添加的消息的映射宏就是实现了高效的维护消息映射表的功能，实际上它展开后就是一个具体的消息结构</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">AFX_MSGMAP_ENTRY</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">	UINT nMessage;   <span class="comment">// windows message</span></span><br><span class="line">	UINT nCode;      <span class="comment">// control code or WM_NOTIFY code</span></span><br><span class="line">	UINT nID;        <span class="comment">// control ID (or 0 for windows messages)</span></span><br><span class="line">	UINT nLastID;    <span class="comment">// used for entries specifying a range of control id's</span></span><br><span class="line">	UINT_PTR nSig;       <span class="comment">// signature type (action) or pointer to message #</span></span><br><span class="line">	AFX_PMSG pfn;    <span class="comment">// routine to call (or special value)</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>消息的处理过程在一下函数中完成</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">LRESULT CWnd::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// OnWndMsg does most of the work, except for DefWindowProc call</span></span><br><span class="line">	LRESULT lResult = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">if</span> (!OnWndMsg(message, wParam, lParam, &amp;lResult))</span><br><span class="line">		lResult = DefWindowProc(message, wParam, lParam);</span><br><span class="line">	<span class="keyword">return</span> lResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中的关键函数也就是OnWndMsg</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">BOOL CWnd::OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)</span><br><span class="line">&#123;</span><br><span class="line">	LRESULT lResult = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">union</span> MessageMapFunctions mmf;</span><br><span class="line">	mmf.pfn = <span class="number">0</span>;</span><br><span class="line">	CInternalGlobalLock winMsgLock;</span><br><span class="line">	<span class="comment">// special case for commands</span></span><br><span class="line">	<span class="keyword">if</span> (message == WM_COMMAND)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span> (OnCommand(wParam, lParam))</span><br><span class="line">		&#123;</span><br><span class="line">			lResult = <span class="number">1</span>;</span><br><span class="line">			<span class="keyword">goto</span> LReturnTrue;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line"> </span><br><span class="line">	<span class="comment">// special case for notifies</span></span><br><span class="line">	<span class="keyword">if</span> (message == WM_NOTIFY)</span><br><span class="line">	&#123;</span><br><span class="line">		NMHDR* pNMHDR = (NMHDR*)lParam;</span><br><span class="line">		<span class="keyword">if</span> (pNMHDR-&gt;hwndFrom != <span class="literal">NULL</span> &amp;&amp; OnNotify(wParam, lParam, &amp;lResult))</span><br><span class="line">			<span class="keyword">goto</span> LReturnTrue;</span><br><span class="line">		<span class="keyword">return</span> FALSE;</span><br><span class="line">	&#125;</span><br><span class="line"> </span><br><span class="line">...</span><br><span class="line">LDispatch:</span><br><span class="line">	ASSERT(message &lt; <span class="number">0xC000</span>);</span><br><span class="line"> </span><br><span class="line">	mmf.pfn = lpEntry-&gt;pfn;</span><br><span class="line"> </span><br><span class="line">	<span class="keyword">switch</span> (lpEntry-&gt;nSig)</span><br><span class="line">	&#123;</span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		ASSERT(FALSE);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	<span class="keyword">case</span> AfxSig_l_p:</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="function">CPoint <span class="title">point</span><span class="params">(lParam)</span></span>;		</span><br><span class="line">			lResult = (<span class="keyword">this</span>-&gt;*mmf.pfn_l_p)(point);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>检查消息是否有对应的处理函数声明和消息映射宏</li>
+<li>检查相应的消息响应函数，存在则执行</li>
+<li>检查基类的消息响应函数，存在则执行</li>
+</ul>
+<p>当然这里只是简单的聊了一聊，关于MFC的消息映射实际上还有很多很多的门道，由于篇幅问题就不再说了，以后再做总结。最后还有个问题，同样是维护一张表，为什么不干脆就用c++的虚函数实现呢？其实答案很简单，上面也提到了，大家可以自己想一想。</p>
+<h2 id="实战病毒程序"><a href="#实战病毒程序" class="headerlink" title="实战病毒程序"></a>实战病毒程序</h2><p>由于实际分析一个病毒过程很繁琐，所以我们这里只说重点，其余的详细病毒行为不再赘述</p>
+<h3 id="病毒行为捕获"><a href="#病毒行为捕获" class="headerlink" title="病毒行为捕获"></a>病毒行为捕获</h3><p>利用云沙箱、虚拟机等对病毒的行为进行测试</p>
+<ul>
+<li>在C:\Users\xxx\AppData\Roaming\hao123释放hao123.exe，并创建桌面的快捷方式</li>
+<li>修改注册表、篡改首页</li>
+<li>自删除，但是云沙箱并没有检测到</li>
+</ul>
+<h3 id="逆向分析"><a href="#逆向分析" class="headerlink" title="逆向分析"></a>逆向分析</h3><p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g1u2ppd15zj30ng05idgk.jpg" alt="image-20190407145345811"></p>
+<p>通过od查询到了大量的可疑字符串，包括系统应用名、注册表项、网址等</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g1u2ozbjr7j30f40gcgot.jpg" alt="image-20190407145301954"></p>
+<p>看ida的反汇编结果，可以看到似乎病毒没有做什么恶意操作，虽然有几个call比较可疑，但点进去分析都没有发现和我们之前发现的恶意行为相关的代码，连之前发现的可以字符串都没有了踪迹，仿佛就是单单调用了几个常见的函数而已</p>
+<p>紧接着看一看od的载入情况，可疑字符串的调用似乎仍然和程序没关系，仅仅是有代码而已，但我们多次实验后，可以在某个call找到了程序唯一的行为，并且这里我们总算是发现了可疑之处</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g1u2s038ouj30rq0aoq5z.jpg" alt="image-20190407145558511"></p>
+<p>程序调用了CreateWindowEx函数，但却将窗口的样式被设置成为WS_EX_TOOLWINDOW，查阅资料我们可以发现带有这个属性的窗口有以下特点：</p>
+<ol>
+<li><p>不在任务栏显示。</p>
+</li>
+<li><p>不显示在Alt+Tab的切换列表中。</p>
+</li>
+<li><p>在任务管理器的窗口管理Tab中不显示。</p>
+</li>
+</ol>
+<p>换句话说，用户就基本上是发现不了病毒创建窗口这一操作的，那这又有什么用呢？</p>
+<p>我们用od在此处下断点，仔细观察，发现当od执行到该命令时会产生特别奇怪的现象，之前发现的那个hao123的exe竟然出现了，并且也成功在桌面创建了快捷方式，这就很让人疑惑了，明明前面的函数调用完全没有涉及这方面的操作，这是怎么实现的呢？</p>
+<p>实际上这就是通过消息机制调用回调函数实现的，因为回调函数是不需要我们去指定调用的时机，只要有相应的消息就会触发，病毒正是钻了这个空子，让我们第一时间无法发现函数的调用。</p>
+<p>程序调用的CreateWindows会发送一个名为WM_CREATE的消息，而既然有这个消息了，那我们的程序就要对这个消息有所反馈，在CreateWindows这个消息发出后，我们的恶意程序就接受了这个消息，紧接着按照程序设定的原始方案执行恶意代码。</p>
+<p>我们去找RegisterClass这个函数，这个函数就帮程序设置好了对应不同的消息要进行哪一些的处理。</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1g1u37egsxcj313w0im493.jpg" alt="image-20190407151046671"></p>
+<p>利用od找到函数的参数中包含的消息的结构体，结构体的第三个成员处下断，我们就可以截获到处理各个消息的switch语句了。进入即可找到恶意代码的位置了</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g1u37mjyg7j317s0fedq4.jpg" alt="image-20190407151059400"></p>
+<p>首先就是在此处修改了注册表，将目标网址添加了进去，从而实现了篡改主页的功能。</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g1u37w428jj317q0qw495.jpg" alt="image-20190407151114516"></p>
+<p>同样利用注册表修改了我们的收藏夹</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g1u3845bqgj312204m405.jpg" alt="image-20190407151127892"></p>
+<p>这里调用了SHGetFolderPathW这个函数，这个函数在病毒中很常见，是用来获取系统的特殊路径的，也就是上面提到的C:\Users\xxx\AppData\Roaming，紧接着又将hao123和上面的路径连接起来，这样就组成了之前释放的恶意文件的存储路径</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g1u396gcvuj30su06ognt.jpg" alt="image-20190407151228670"></p>
+<p>释放了另外一个恶意文件</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g1u39n0798j30sa07wq5u.jpg" alt="image-20190407151255735"></p>
+<p>创建快捷方式</p>
+<p>到这里该消息的响应操作就执行完了，但程序不应该结束啊，因为我们还是没有找到自删除相关的操作啊。这里大胆发挥想象力，会不会和开始一样，也是通过某个消息机制实现的呢？</p>
+<p>联系带程序非常诡异的自删除时间和之前那个用户“感受”不到的窗口，我们好像稍微有了一点点思路：既然开窗口有操作，那关闭窗口是不是也可以有操作呢？我们立刻着手寻找VM_DESTROY</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g1u3dlnw9cj30u002ygms.jpg" alt="image-20190407151620815"></p>
+<p>果然，它释放了一个bat批处理文件，内容很简单，删除恶意程序，然后把自己也删除。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/25/windows调试 - 从0开始的异常处理/" rel="next" title="Windows调试 -- 从0开始的异常处理（上）">
+                <i class="fa fa-chevron-left"></i> Windows调试 -- 从0开始的异常处理（上）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/05/27/Windows调试艺术——导入函数/" rel="prev" title="Windows调试艺术——导入函数和导出函数">
+                Windows调试艺术——导入函数和导出函数 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Asa9ao</p>
+              <p class="site-description motion-element" itemprop="description">It's not who I am underneath, but it's what I do that defines me</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Windows调试艺术——从真实病毒学习消息机制"><span class="nav-number">1.</span> <span class="nav-text">Windows调试艺术——从真实病毒学习消息机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#消息队列"><span class="nav-number">1.0.1.</span> <span class="nav-text">消息队列</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#消息的处理过程"><span class="nav-number">1.1.</span> <span class="nav-text">消息的处理过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#死锁"><span class="nav-number">1.1.1.</span> <span class="nav-text">死锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#反射"><span class="nav-number">1.1.2.</span> <span class="nav-text">反射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MFC消息映射"><span class="nav-number">1.2.</span> <span class="nav-text">MFC消息映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实战病毒程序"><span class="nav-number">1.3.</span> <span class="nav-text">实战病毒程序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#病毒行为捕获"><span class="nav-number">1.3.1.</span> <span class="nav-text">病毒行为捕获</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#逆向分析"><span class="nav-number">1.3.2.</span> <span class="nav-text">逆向分析</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Asa9ao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

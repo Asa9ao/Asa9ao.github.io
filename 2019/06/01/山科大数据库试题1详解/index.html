@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="选择题1、设关系R、S、W各有10个元组，那么这三个关系的自然连接的元组的个数为？ 不确定 所谓natural join就是将几个relation的同名attr作为纽带连接起对应的tuple，标准定义即为：R⋈S={t r⌒ts |tr∈R∧ts∈S∧tr[B]=ts[B]} 。比如我们有如下的两个relation： relation1 student表    id name     1533 z">
+<meta property="og:type" content="article">
+<meta property="og:title" content="山科大数据库试题1详解">
+<meta property="og:url" content="http://yoursite.com/2019/06/01/山科大数据库试题1详解/index.html">
+<meta property="og:site_name" content="Asa9ao">
+<meta property="og:description" content="选择题1、设关系R、S、W各有10个元组，那么这三个关系的自然连接的元组的个数为？ 不确定 所谓natural join就是将几个relation的同名attr作为纽带连接起对应的tuple，标准定义即为：R⋈S={t r⌒ts |tr∈R∧ts∈S∧tr[B]=ts[B]} 。比如我们有如下的两个relation： relation1 student表    id name     1533 z">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://raw.githubusercontent.com/Asa9ao/pic/master/20190531204403.png">
+<meta property="og:image" content="https://ws4.sinaimg.cn/large/006tNc79ly1g3lmwp8ozcj30a30573yq.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwq71ioj30a2053wep.jpg">
+<meta property="og:image" content="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwpounwj30a3057weq.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmworqq7j30a2057dg2.jpg">
+<meta property="og:image" content="https://ws1.sinaimg.cn/large/006tNc79ly1g3lmwqlqx8j30a2059dg2.jpg">
+<meta property="og:image" content="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmwr7v7dj30a2057glt.jpg">
+<meta property="og:updated_time" content="2019-06-01T12:35:09.870Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="山科大数据库试题1详解">
+<meta name="twitter:description" content="选择题1、设关系R、S、W各有10个元组，那么这三个关系的自然连接的元组的个数为？ 不确定 所谓natural join就是将几个relation的同名attr作为纽带连接起对应的tuple，标准定义即为：R⋈S={t r⌒ts |tr∈R∧ts∈S∧tr[B]=ts[B]} 。比如我们有如下的两个relation： relation1 student表    id name     1533 z">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Asa9ao/pic/master/20190531204403.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/06/01/山科大数据库试题1详解/">
+
+
+
+
+
+  <title>山科大数据库试题1详解 | Asa9ao</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Asa9ao</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/01/山科大数据库试题1详解/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">山科大数据库试题1详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-01T16:50:14+08:00">
+                2019-06-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据库/" itemprop="url" rel="index">
+                    <span itemprop="name">数据库</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="选择题"><a href="#选择题" class="headerlink" title="选择题"></a>选择题</h2><p><strong>1、设关系R、S、W各有10个元组，那么这三个关系的自然连接的元组的个数为？</strong></p>
+<p><em>不确定</em></p>
+<p>所谓natural join就是将几个relation的同名attr作为纽带连接起对应的tuple，标准定义即为：R⋈S={t r⌒ts |tr∈R∧ts∈S∧tr[B]=ts[B]} 。比如我们有如下的两个relation：</p>
+<p>relation1 student表</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1533</td>
+<td>zyh</td>
+</tr>
+<tr>
+<td>1532</td>
+<td>zx</td>
+</tr>
+</tbody>
+</table>
+<p>relation2 grade表</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1533</td>
+<td>A</td>
+</tr>
+<tr>
+<td>1532</td>
+<td>A</td>
+</tr>
+<tr>
+<td>1531</td>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<p>我们将两表进行natural join，id作为纽带，1533在两个表中的tuple，(1533，zyh)、(1533，A)就合并为了(1533，zyh，A)，而由于id为1531在student表中并没有instance，所以就被抛弃了。最终得到的表如下：</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>name</th>
+<th>grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1533</td>
+<td>zyh</td>
+<td>A</td>
+</tr>
+<tr>
+<td>1532</td>
+<td>zx</td>
+<td>A</td>
+</tr>
+</tbody>
+</table>
+<p>natural join也可以看作是两个relation先进行一次笛卡尔积，然后在进行一次select，筛选出同名attr相同的tuple，最后进行project将同名属性仅保留一项。由此也可以知道，两个relation进行natural join时，如果没有同名的attr，那么得到的tuple最多，即为x*y个，而如果对一个表进行relation，那么得到的tuple最少，就是x个。</p>
+<p><strong>2、若关系模式R（U，F）属于3NF，则</strong></p>
+<p><em>仍存在一定的插入和删除异常</em></p>
+<p>3NF实际上是BCNF的mini版，BCNF是用来消除冗余数据的，但由于BCNF无法保证function dependency，所以我们接受了一定的冗余，放宽了BCNF的要求，就有了3NF。BCNF一定是3NF，但3NF不一定是BCNF</p>
+<p>一般来说，我们在数据库中会遇到以下几个问题：</p>
+<ul>
+<li>数据冗余(想修改一个属性,就要更新多行数据)</li>
+<li>插入异常(想要插入数据,结构因为表设计的问题,导致不能成功插入)</li>
+<li>删除异常(只想删除其中的某些数据 ,结果把不该删的也删了)</li>
+<li>更新异常(想更新一条数据,结果工作量大,还容易出错)</li>
+</ul>
+<p><strong>3、DBMS中实现事务隔离性的子系统是</strong></p>
+<p><em>并发控制子系统</em></p>
+<p>事务transaction，是一组SQL操作的集合，这一组操作就相当于是被绑定到了一起，要执行就必须一起执行，只有都执行完才会进行保存或者撤销的操作，它具有四个特点：atomic原子性、consistency一致性、isolation隔离性、durability持久性</p>
+<ul>
+<li><p>atomic是指事务”不可分割”，它由事务管理子系统来实现</p>
+</li>
+<li><p>consistency是指事务前后的数据完整性，显然由完整性子系统实现</p>
+</li>
+<li>isolation是指多个用户之前的事务彼此独立，实现隔离，而一提到多用户，必然是涉及到并发性的问题，所以是并发控制子系统来实现的</li>
+<li>durability是指事务一旦进行了提交，那么就是不可逆的，后面的任何操作都不会影响已提交的事务，由恢复管理子系统实现</li>
+</ul>
+<p><strong>4、（）是数据库物理结构和存储方式的描述</strong></p>
+<p><em>内模式</em></p>
+<p>DBMS从三个层次来管理数据：外部层次(external level)、概念层次(conceptual level)、内部模式(internal level)，而这三个层次对应的不同的数据的结构描述也就称为三个模式，也就是外模式(用户模式)、模式(概念模式、逻辑模式)、内模式(物理模式)</p>
+<p><img src="https://raw.githubusercontent.com/Asa9ao/pic/master/20190531204403.png" alt=""></p>
+<p>如图所示，所谓的外模式可以看做是用户面对的一堆实际的表；模式也就是这些表文件逻辑结构，看到”逻辑”就想模式；而表最终落实到内模式，也就是物理意义上的存储，看到”物理”就想内模式。另外也可以知道，外模式可有多个，而内模式和模式只有一个。</p>
+<p><strong>5、设有关系R（A，B，C）如下，则</strong></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td>3</td>
+<td>3</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<p><em>函数依赖BC—&gt;A在R上成立</em></p>
+<p>函数依赖function dependency，简单来说就是attr1能决定attr2，则att1r—&gt;attr2，像是学生的id，它所对应的name是一定的（不考虑重名的情况），不管表中有多少个相同的id，只要id还是这个值，那么name就一定是那个它对应的name。primary key就是函数依赖的特殊情况，primary key—&gt;all attr。</p>
+<p>BC有三种情况，(2，3)、(3，4)、(3，5），而所对应的A都是确定的，必然有BC—&gt;A，再看一个A与B，A有两种情况，2或3，而B在A确定为2的情况下还有2或3两种取值，显然不能由A决定</p>
+<p><strong>6、在关系中，基数是指</strong></p>
+<p><em>行数</em></p>
+<p>基数，Cardinality ，在数据库中有两种意思</p>
+<ul>
+<li><p>当我们在构建数据库模型时，表与表之间可能会有关系，比如学生A表和老师B表有指导的关系，称为relationship，而关系可以是1对1，即1个学生有一个老师指导，写作A（1：1），也可以是多对1，即多个学生被一个老师所指导，写作A (N：1)，基数就是指这种关联方式，显然是考虑的行与行之间的关系。</p>
+</li>
+<li><p>基数在SQL查询优化时是指表中某列的数据具体有多少个唯一值，如果有大量重复数据(比如存储true false的列)，则它的基数较低，但如果是像primary key，则基数较高。</p>
+</li>
+</ul>
+<p><strong>7、数据库设计人员与用户沟通的桥梁是</strong></p>
+<p><em>ER图</em></p>
+<p>很显然。。。。</p>
+<p><strong>8、设有关系模式R（A，B，C，D），F为R上成立的函数依赖集，F={A—&gt;B，B—&gt;C，C—&gt;D，D—&gt;A}，p={AB，BC，AD}是R上的一个分解那么分解p相对于F</strong></p>
+<p><em>是无损连接，也是保持FD的分解</em></p>
+<p>无损连接lossless join有两种算法，R被分解成R1、R2两个relation时，R1⌒R2的attr，如A是R1或R2的key，即说明是无损连接。</p>
+<p>而当分解为多个relation时，则需要借助表格法，如下所示：</p>
+<p>已知R&lt;U,F&gt;，U={A,B,C,D,E}，F={A→C,B→C,C→D,DE→C,CE→A}，R的一个分解为R1(AD)，R2(AB)，R3(BE)，R4(CDE)，R5(AE)，判断这个分解是否具有无损连接性。</p>
+<p> ① 构造一个初始的二维表，若“属性”属于“模式”中的属性，则填aj，否则填bij</p>
+<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1g3lmwp8ozcj30a30573yq.jpg" alt="img"></p>
+<p>② 根据A→C，对上表进行处理，由于属性列A上第1、2、5行相同均为a1，所以将属性列C上的b13、b23、b53改为同一个符号b13（取行号最小值）。</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwq71ioj30a2053wep.jpg" alt="img"></p>
+<p>③ 根据B→C，对上表进行处理，由于属性列B上第2、3行相同均为a2，所以将属性列C上的b13、b33改为同一个符号b13（取行号最小值）。</p>
+<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwpounwj30a3057weq.jpg" alt="img"></p>
+<p>④ 根据C→D，对上表进行处理，由于属性列C上第1、2、3、5行相同均为b13，所以将属性列D上的值均改为同一个符号a4。</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmworqq7j30a2057dg2.jpg" alt="img"></p>
+<p>⑤ 根据DE→C，对上表进行处理，由于属性列DE上第3、4、5行相同均为a4a5，所以将属性列C上的值均改为同一个符号a3。</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g3lmwqlqx8j30a2059dg2.jpg" alt="img"></p>
+<p>⑥ 根据CE→A，对上表进行处理，由于属性列CE上第3、4、5行相同均为a3a5，所以将属性列A上的值均改为同一个符号a1。</p>
+<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmwr7v7dj30a2057glt.jpg" alt="img"></p>
+<p>⑦ 通过上述的修改，使第三行成为a1a2a3a4a5，则算法终止。且分解具有无损连接性。</p>
+<p>通过上述算法，很显然这个分解是lossless join的，而判断是否保持依赖以及什么是保持依赖可以参考下面的文章</p>
+<p><a href="https://www.cnblogs.com/MRRAOBX/articles/4157043.html" target="_blank" rel="noopener">https://www.cnblogs.com/MRRAOBX/articles/4157043.html</a></p>
+<p>对于此题来说，过程如下：</p>
+<ul>
+<li>AB对应A—&gt;B，BC对应B—&gt;C，而AD对应D—&gt;A，所以需要判断就是C—&gt;D了</li>
+<li><p>result = C</p>
+<ul>
+<li>对于R1没有intersect</li>
+<li>对于R2的intersect为C，求C的closure，然后再次和R2做intersect得到BC，新的result变为result与BC做union即BC</li>
+<li>重复直到result不再发生变化</li>
+</ul>
+</li>
+<li><p>result中包含D，则说明保持依赖</p>
+</li>
+</ul>
+<p><strong>9、在ER模型转换成关系模型的过程中，下列叙述不正确的是</strong></p>
+<p><em>一个1：n的联系可以转换成独立的关系模式，也可以与1端所对应的关系模式合并</em></p>
+<p>涉及到了ER图转换为关系模式的几个重要原则</p>
+<ul>
+<li>一个entity可以转换为一个relation，原来entity的attr变为relation的attr，原来的key变为relation的key</li>
+<li>一个relationship可以转换为一个relation，relationship所关联的entity的attr作为relation的attr，原来的attr同样作为attr<ul>
+<li>如果relationship为1：1，那么每个entity的key都是relation的candidate key</li>
+<li>如果为1：n，那么relation的candidate key为n端的key</li>
+<li>如果为m：n，那么relation的candidate key为各entity的key的组合</li>
+</ul>
+</li>
+<li>一个relationship如果为1：1的话，可以与任意一个entity组合为一个relation，relation需要加入另外一个entity的key以及relationship本身的attr</li>
+<li>一个relationship如果为1：n的话，可以与n端的entity组合为一个relation，relation需要加入另一个entity的key以及relationship本身的attr，另外，此relation的key应为n端entity的key</li>
+</ul>
+<p><strong>10、在数据库恢复时，对尚未完成的事务执行</strong></p>
+<p><em>undo</em></p>
+<p>数据库的恢复策略问题</p>
+<ul>
+<li>事务故障及其恢复：<br>　　事务故障表示由非预期的、不正常的程序结束所造成的故障。<br>　　造成程序非正常结束的原因包括输人数据错误、运算溢出、违反存储保护、并行事务发生死锁等。<br>　　发生事务故障时，被迫中断的事务可能已对数据库进行丁修改，为了消除该事务对数据库的影响，要利用日志文件中所记载的信息，强行回滚（RoLLBAcK）该事务，将数据库恢复到修改前的初始状态。<br>　　为此，要检查日志文件中由这些事务所引起的发生变化的记录，取消这些没有完成的事务所做的一切改变。<br>　　这类恢复操作称为事务撤销（uNDo），具体做法如下。<br>　　（1）反向扫描日志文件，查找该事务的更新操作。<br>　　（2）对该事务的更新操作执行反操作，即对已经插入的新记录进行删除操作，对己删除的记录进行插入操作，对修改的数据恢复旧值，用旧值代替新值。这样由后向前逐个扫描该事务已做的所有更新操作，并做同样处理，直到扫描到此事务的开始标记，事务故障恢复完毕为止。<br>　　因此，一个事务是一个工作单位，也是一个恢复单位。一个事务越短，越便于对它进行UNDO操作。如果一个应用程序运行时间较长，则应该把该应用程序分成多个事务，用明确的coMMIT语句来结束各个事务。</li>
+<li>系统故障及其恢复:</li>
+</ul>
+<p>系统故障是指系统在运行过程中，由于某种原因，造成系统停止运转，致使所有正在运行的事务都以非正常方式终止，要求系统重新启动。引起系统故障的原因可能有硬件错误（如CPu故障、操作系统）或DBMS代码错误、突然断电等。<br>　　这时，内存中数据库缓冲区的内容全部丢失，虽然存储在外部存储设备上的数据库并未破坏，但其内容不可靠了。系统故障发生后，对数据库的影响有以下两种情况。<br>　　一种情况是一些未完成事务对数据库的更新已写入数据库，这样在系统重新启动后，要强行撤销（uNDo）所有未完成的事务，清除这些事务对数据库所做的修改。这些末完成事务在日志文件中只有BEGIN TRANsLATl0N标记，而无COMMIT标记。<br>　　另一种情况是有些已提交的事务对数据库的更新结果还保留在缓冲区中，尚未写到磁盘上的物理数据库中，这也使数据库处于不一致状态，因此应将这些事务已提交的结果重新写入数据库。这类恢复操作称为事务的重做（REDo）。这种巳提交事务在日志文件中既有BGIN TRANSCATION标记，也有COMMIT标记。<br>　　因此，系统故障的恢复要完成两方面的工作，既要撤销所有末完成的事务，还要重做所有已提交的事务，这样才能将数据库真正恢复到一致的状态。具体做法如下。<br>　　（1）正向扫描日志文件，查找尚未提交的事务，将其事务标识记人撤销队列。同时查找已经提交的事务，将其事务标识记入重做队列。<br>　　（2）对撤销队列中的各个事务进行撤销处理。方法同事务故障中所介绍的撤销方法。<br>　　（3）对重做队列中的各个事务进行重做处理。进行重做处理的方法是正向扫描日志文件，按照日志文件中所登记的操作内容，重新执行操作，使数据库恢复到最近某个可用状态。<br>　　系统发生故障后，由于无法确定哪些末完成的事务已更新过数据库，哪些事务的提交结果尚未写入数据库，因此系统重新启动后，就要撤销所有的末完成的事务，重做所有的已经提交的事务。<br>　　但是，在故障发生前已经运行完毕的事务有些是正常结束的，有些是异常结束的。所以无须把它们全部撤销或重做。<br>　　通常采用设立检查点（checkPoint）的方法来判断事务是否正常结束。每隔一段时间，比如说5分钟，系统就产生一个检查点，做下面一些事情：a,把仍保留在日志缓冲区中的内容写到日志文件中；b,在日志文件中写一个“检查点记录”；c,把数据库缓冲区中的内容写到数据库中，即把更新的内容写到物理数据库中；d,把日志文件中检查点记录的地址写到“重新启动文件”中。<br>　　每个检查点记录包含的信息有在检查点时间的所有活动事务一览表、每个事务最近日志记录的地址。<br>　　在重新启动时，恢复管理程序先从“重新启动文件”中获得检查点记录的地址，从日志文件中找到该检查点记录的内容，通过日志往回找，就能决定哪些事务需要撤销，恢复到初始的状态，哪些事务需要重做。为此利用检查点信息能做到及时、有效、正确地完成恢复工作。</p>
+<p>　　- 介质故障及其恢复</p>
+<p>介质故障是指系统在运行过程中，由于辅助存储器介质受到破坏，使存储在外存中的数据部分或全部丢失。<br>　　这类故障比事务故障和系统故障发生的可能性要小，但这是最严重的一种故障，破坏性很大，磁盘上的物理数据和日志文件可能被破坏，这需要装入发生介质故障前最新的后备数据库副本，然后利用日志文件重做该副本后所运行的所有事务。<br>　　具体方法如下。<br>　　（1）装入最新的数据库副本，使数据库恢复到最近一次转储时的可用状态。<br>　　（2）装入最新的日志文件副本，根据日志文件中的内容重做已完成的事务。首先扫描日志文件，找出故障发生时己提交的事务，将其记入重做队列。然后正向扫描日志文件，对重做队列中的各个事务进行重做处理，方法是正向扫描日志文件，对每个重做事务重新执行登记的操作，即将日志记录中“更新后的值”写入数据库。<br>　　这样就可以将数据库恢复至故障前某一时刻的一致状态了。</p>
+<h2 id="填空题"><a href="#填空题" class="headerlink" title="填空题"></a>填空题</h2><p><strong>1、数据库系统具有较高的数据独立性，其原因是</strong></p>
+<p><em>三层模式间存在两级映像</em></p>
+<p>三层模式在之前的选择题中已有详细说明，映像相当于中间件，实现了模式与模式之间的隔离，在修改其中一个模式后，不需要对其他模式进行改动，两级映像分别是指：</p>
+<ul>
+<li>外模式 模式映像</li>
+<li>模式 内模式映像</li>
+</ul>
+<p><strong>2、两个函数依赖集F和G等价的充分必要条件是</strong></p>
+<p><em>F的closure等于G的closure</em></p>
+<p>不再解释</p>
+<p><strong>3、设关系模式R（A，B，C），F是R上成立的函数依赖集，F={AB—&gt;C，C—&gt;A}，那么R的候选码为</strong></p>
+<p><em>AB、BC</em></p>
+<p>AB—&gt;C，所以AB为candidate key。</p>
+<p>C—&gt;A，C—&gt;AC，BC—&gt;ABC，所以BC为candidate key</p>
+<p><strong>4、数据库设计中，用户子模式设计是在哪个阶段进行的？</strong></p>
+<p><em>逻辑结构设计</em></p>
+<p><strong>5、事务具有哪些特性？</strong></p>
+<ul>
+<li><p>atomic 原子性</p>
+</li>
+<li><p>consistency 一致性</p>
+</li>
+<li>isolation 隔离性</li>
+<li>durability 持续性</li>
+</ul>
+<p><strong>6、关系的两个不变性是？</strong></p>
+<p><em>实体完整性、参照完整性</em></p>
+<p>关系模型的完整性规则是对关系的某种约束条件。关系模型中有三类完整性约束：实体完整性规则，用户定义的完整性规则，和参照完整性规则。</p>
+<ul>
+<li><p>实体完整性也就是relation的primary key有not null等约束</p>
+</li>
+<li><p>用户定义的完整性比如check某个attr必须要大于100</p>
+</li>
+<li><p>参照完整性主要是foreign key，当某个attr reference了另外relation的attr时，删除和插入都需要进行完整性检查</p>
+</li>
+</ul>
+<p><strong>7、在关系表中，主码的概念体现在其值的非空和xx两个特性</strong></p>
+<p><em>唯一</em></p>
+<p>太简单不解释了</p>
+<h2 id="简答题"><a href="#简答题" class="headerlink" title="简答题"></a>简答题</h2><p><strong>1、数据模式的三要素是什么？</strong></p>
+<p>数据模式也叫做数据模型主要有三部分组成</p>
+<ul>
+<li><p>数据结构：数据结构主要描述数据的类型、内容、性质、以及数据之间的联系，是整个数据模型的基础，而针对数据的操作和数据之间的约束都是建立在数据结构的基础上的；</p>
+</li>
+<li><p>数据操作：主要定义了在相应的数据结构上的操作类型和操作方式（数据库中的增删改查等）；</p>
+</li>
+<li>数据约束：数据约束主要用来描述数据库中数据结构之间的语法、词义联系以及彼此之间的相互约束和制约关系（如MySQL中使用外键保证数据之间的数据完整性）；</li>
+</ul>
+<p><strong>2、什么是强制存储控制MAC</strong></p>
+<p>用户的权限和客体的安全属性都是系统管理员人为设置，或由操作系统自动地按照严格的安全策略与规则进行设置，用户和他们的进程不能修改这些属性。</p>
+<p>每一个数据对象被（强制地）标以一定的密集，每一个用户也被（强制地）授予某一个级别的许可证。系统规定只有具有谋一许可证级别的用户才能存取某一个密级的数据对象</p>
+<p><strong>3、关系模型中实体完整性规则和参照完整性规则分别是什么？</strong></p>
+<p>实体完整性：如果A是二维表的主码，那么A不能为空。 （若属性A是基本关系R的主属性，则属性A不能取空值）</p>
+<p>参照完整性：如果F是外码，那么他要么是空值，要么就是另一个表的主码.<br>（若属性（或属性组）F是基本关系R的外码，它与基本关系S的主码相对应（基本关系R和S不一定是不同的关系），则对于R中每个元祖在F上必须为：</p>
+<ol>
+<li>取空值（F的每个属性均为空值）</li>
+<li>等于S中某个tuple的主码值</li>
+</ol>
+<p><strong>4、并发控制会引起哪些不一致？</strong></p>
+<p>丢失修改；不可重复读；读”脏”数据</p>
+<p><strong>5、是什么是两段锁协议？</strong></p>
+<p>所有transaction必须分两个阶段对数据项加锁和解锁</p>
+<ol>
+<li>在对任何数据进行读写操作之前，首先要申请并获得对该数据的封锁。 </li>
+<li>在释放一个封锁之后，事务不再申请和获得任何其他封锁。 </li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/30/Windows调试艺术——PE文件变形（一）/" rel="next" title="Windows调试艺术——PE文件变形（一）调试艺术-LDR调试">
+                <i class="fa fa-chevron-left"></i> Windows调试艺术——PE文件变形（一）调试艺术-LDR调试
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Asa9ao</p>
+              <p class="site-description motion-element" itemprop="description">It's not who I am underneath, but it's what I do that defines me</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#选择题"><span class="nav-number">1.</span> <span class="nav-text">选择题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#填空题"><span class="nav-number">2.</span> <span class="nav-text">填空题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#简答题"><span class="nav-number">3.</span> <span class="nav-text">简答题</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Asa9ao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
