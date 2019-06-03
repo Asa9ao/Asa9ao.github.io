@@ -252,6 +252,221 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/02/山科大数据库试题2详解/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/06/02/山科大数据库试题2详解/" itemprop="url">山科大数据库试题2详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-02T11:18:06+08:00">
+                2019-06-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据库/" itemprop="url" rel="index">
+                    <span itemprop="name">数据库</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="选择题"><a href="#选择题" class="headerlink" title="选择题"></a>选择题</h2><p> <strong>1、数据的模式是</strong></p>
+<p><em>记录类型及其联系的集合</em></p>
+<p>概念题，不再多说</p>
+<p><strong>2、在视图上不能完成的操作是？</strong></p>
+<p><em>在视图上定义新的基本表</em></p>
+<p>视图是虚表，没有真正存储，而基本表是实表，是真正存储在物理介质上的，自然视图之上不可能定义基本表，关于视图的概念和相关知识点如下：</p>
+<p>（1）定义和概念         </p>
+<p>​        ①　从一个或几个基本表中根据用户需要而做成一个虚表 </p>
+<p>​        ②　视图是虚表,它在存储时只存储视图的定义,而没有存储对应的数据  </p>
+<p>​        ③　视图只在刚刚打开的一瞬间,通过定义从基表中搜集数据,并展现给用户 </p>
+<p>（2）视图的优点         </p>
+<p>​             ①　能分割数据,简化观点。可以通过select和where来定义视图,从而可以分割数据基表中某些对于用户不关心的数据,使用户把注意力集中到所关心的数据列.进一步简化浏览数据工作     </p>
+<p>​             ②　为数据提供一定的逻辑独立性。 如果为某一个基表定义一个视图,即使以后基本表的内容的发生改变了也不会影响“视图定义”所得到的数据     </p>
+<p>​             ③　提供自动的安全保护功能。 视图能像基本表一样授予或撤消访问许可权，给用户是表的一部分访问权限而不是全部。    </p>
+<p>​             ④　视图可以间接对表进行更新,因此视图的更新就是表的更新     </p>
+<p>（3）使用视图的一些限制和规则         </p>
+<p>​             ①　视图必须唯一命名，不能和表或者其他视图重名    </p>
+<p>​             ②　视图可以嵌套，可以从其他视图中构造视图    </p>
+<p>​             ③　order by可以用在视图定义中，但是如果select语句从视图中检索数据时候，在视图中order by将被覆盖。    </p>
+<p>（4）视图和基本表的区别    </p>
+<p>​        1、视图是已经编译好的sql语句。而表不是   </p>
+<p>​        2、视图没有实际的物理记录。而表有。 </p>
+<p>​        3、表是内容，视图是窗口 </p>
+<p>​        4、表只用物理空间而视图不占用物理空间，视图只是逻辑概念的存在，表可以及时对它进行修改，但视图只能有创建的语句来修改 </p>
+<p>​        5、表是内模式，视图是外模式 </p>
+<p>​        6、视图是查看数据表的一种方法，可以查询数据表中某些字段构成的数据，只是一些SQL语句的集合。从安全的角度说，视图可以不给用户接触数据表，从而不知道表结构。 </p>
+<p>​        7、表属于全局模式中的表，是实表；视图属于局部模式的表，是虚表。  </p>
+<p>​        8、视图的建立和删除只影响视图本身，不影响对应的基本表。</p>
+<p><strong>3、数据的正确性和相容性是指数据库的？</strong></p>
+<p><em>完整性</em></p>
+<p>数据库中完整性（Integrity）一词是指数据的正确性，相容性，防止错误的数据进入数据库。</p>
+<ul>
+<li>正确性：数据的合法性，例如数值型数据中只能含数字而不能含字母。</li>
+<li>相容性：表示同一事实的两个数据应相同，不一致就是不相容。</li>
+</ul>
+<p><strong>4、公司中有多个部门和多个职员，每个职员只能是一个部门，一个部门可以有多个职员，那么职员到部门的联系类型是？</strong></p>
+<p><em>多对一</em></p>
+<p>答案错了</p>
+<p><strong>5、在关系数据库的设计中，设计关系模式是xx的任务</strong></p>
+<p><em>逻辑设计阶段</em></p>
+<p>数据库的设计主要分为6个步骤</p>
+<ul>
+<li>需求分析，分析用户的需求</li>
+<li>概念结构设计，一句话，画ER图</li>
+<li>逻辑结构设计，ER图转换为关系模式</li>
+<li>物理结构设计，设计物理存储的结构、路径之类</li>
+<li>数据库的实施，包括编程、测试</li>
+<li>数据库的运维</li>
+</ul>
+<p><strong>6、下列规则错误的是</strong></p>
+<p>不说错的了，都是armstrong公理及其推论，总结一下正确的</p>
+<p>① A1自反律：若Y⊆X⊆U，则X→Y为F所蕴含；</p>
+<p>② A2增广律：若X→Y为F所蕴含，且Z⊆U，则XZ→YZ为F所蕴含；</p>
+<p>③ A3传递律：若X→Y，Y→Z为F所蕴含，则X→Z为F所蕴含。</p>
+<p>④ 合并规则：若X→Y，X→Z，则X→YZ为F所蕴含；</p>
+<p>⑤ 伪传递规则：若X→Y，WY→Z，则XW→Z为F所蕴含；</p>
+<p>⑥ 分解规则：若X→Y，Z⊆Y，则X→Z为F所蕴含。</p>
+<p><strong>7、若事务T对数据对象A加上锁X，则</strong></p>
+<p><em>只允许T读取和修改A，其他任何事务都不能再对A加任何类型的锁</em></p>
+<p>锁主要分为两种：</p>
+<ul>
+<li><p>Share锁，共享锁，又称读锁，若事务T对数据对象A加上S锁，则事务T可以读A但不能修改A，其他事务只能再对A加S锁，而不能加X锁，直到T释放A上的S锁。这保证了其他事务可以读A，但在T释放A上的S锁之前不能对A做任何修改。</p>
+</li>
+<li><p>Exclusive锁，排他锁，又称写锁。若事务T对数据对象A加上X锁，事务T可以读A也可以修改A，其他事务不能再对A加任何锁，直到T释放A上的锁。这保证了其他事务在T释放A上的锁之前不能再读取和修改A。</p>
+</li>
+</ul>
+<p><strong>8、数据库恢复的基础是利用转储的冗余数据。冗余的数据包括</strong></p>
+<p><em>日记文件、数据库后备副本</em></p>
+<p><strong>9、关系代数的五个基本操作可直接转换成元组关系演算表达式，他们是并、差、投影、选择</strong></p>
+<p><em>笛卡尔积</em></p>
+<p>数据库有五个基本的演算，四个扩展的演算，四个扩展分别是交、除、扩展投影、自然连接</p>
+<p><strong>10、若关系R（U，F）属于3NF，则</strong></p>
+<p><em>仍存在一定的插入和删除异常</em></p>
+<p>第一篇讲了，不再赘述</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/01/山科大数据库试题1详解/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -283,7 +498,7 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-01T16:50:14+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-01T11:18:06+08:00">
                 2019-06-01
               </time>
             
@@ -352,18 +567,18 @@
 <table>
 <thead>
 <tr>
-<th>id</th>
-<th>name</th>
+<th style="text-align:left">id</th>
+<th style="text-align:left">name</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1533</td>
-<td>zyh</td>
+<td style="text-align:left">1533</td>
+<td style="text-align:left">zyh</td>
 </tr>
 <tr>
-<td>1532</td>
-<td>zx</td>
+<td style="text-align:left">1532</td>
+<td style="text-align:left">zx</td>
 </tr>
 </tbody>
 </table>
@@ -371,22 +586,22 @@
 <table>
 <thead>
 <tr>
-<th>id</th>
-<th>grade</th>
+<th style="text-align:left">id</th>
+<th style="text-align:left">grade</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1533</td>
-<td>A</td>
+<td style="text-align:left">1533</td>
+<td style="text-align:left">A</td>
 </tr>
 <tr>
-<td>1532</td>
-<td>A</td>
+<td style="text-align:left">1532</td>
+<td style="text-align:left">A</td>
 </tr>
 <tr>
-<td>1531</td>
-<td>B</td>
+<td style="text-align:left">1531</td>
+<td style="text-align:left">B</td>
 </tr>
 </tbody>
 </table>
@@ -394,21 +609,21 @@
 <table>
 <thead>
 <tr>
-<th>id</th>
-<th>name</th>
-<th>grade</th>
+<th style="text-align:left">id</th>
+<th style="text-align:left">name</th>
+<th style="text-align:left">grade</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1533</td>
-<td>zyh</td>
-<td>A</td>
+<td style="text-align:left">1533</td>
+<td style="text-align:left">zyh</td>
+<td style="text-align:left">A</td>
 </tr>
 <tr>
-<td>1532</td>
-<td>zx</td>
-<td>A</td>
+<td style="text-align:left">1532</td>
+<td style="text-align:left">zx</td>
+<td style="text-align:left">A</td>
 </tr>
 </tbody>
 </table>
@@ -427,42 +642,40 @@
 <p><em>并发控制子系统</em></p>
 <p>事务transaction，是一组SQL操作的集合，这一组操作就相当于是被绑定到了一起，要执行就必须一起执行，只有都执行完才会进行保存或者撤销的操作，它具有四个特点：atomic原子性、consistency一致性、isolation隔离性、durability持久性</p>
 <ul>
-<li><p>atomic是指事务”不可分割”，它由事务管理子系统来实现</p>
-</li>
-<li><p>consistency是指事务前后的数据完整性，显然由完整性子系统实现</p>
-</li>
+<li>atomic是指事务”不可分割”，它由事务管理子系统来实现</li>
+<li>consistency是指事务前后的数据完整性，显然由完整性子系统实现</li>
 <li>isolation是指多个用户之前的事务彼此独立，实现隔离，而一提到多用户，必然是涉及到并发性的问题，所以是并发控制子系统来实现的</li>
 <li>durability是指事务一旦进行了提交，那么就是不可逆的，后面的任何操作都不会影响已提交的事务，由恢复管理子系统实现</li>
 </ul>
 <p><strong>4、（）是数据库物理结构和存储方式的描述</strong></p>
 <p><em>内模式</em></p>
 <p>DBMS从三个层次来管理数据：外部层次(external level)、概念层次(conceptual level)、内部模式(internal level)，而这三个层次对应的不同的数据的结构描述也就称为三个模式，也就是外模式(用户模式)、模式(概念模式、逻辑模式)、内模式(物理模式)</p>
-<p><img src="https://raw.githubusercontent.com/Asa9ao/pic/master/20190531204403.png" alt=""></p>
+<p><a href="https://raw.githubusercontent.com/Asa9ao/pic/master/20190531204403.png" target="_blank" rel="noopener"><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g3o8xtlh29j30hi08kwo5.jpg" alt="img"></a></p>
 <p>如图所示，所谓的外模式可以看做是用户面对的一堆实际的表；模式也就是这些表文件逻辑结构，看到”逻辑”就想模式；而表最终落实到内模式，也就是物理意义上的存储，看到”物理”就想内模式。另外也可以知道，外模式可有多个，而内模式和模式只有一个。</p>
 <p><strong>5、设有关系R（A，B，C）如下，则</strong></p>
 <table>
 <thead>
 <tr>
-<th>A</th>
-<th>B</th>
-<th>C</th>
+<th style="text-align:left">A</th>
+<th style="text-align:left">B</th>
+<th style="text-align:left">C</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>2</td>
-<td>2</td>
-<td>3</td>
+<td style="text-align:left">2</td>
+<td style="text-align:left">2</td>
+<td style="text-align:left">3</td>
 </tr>
 <tr>
-<td>2</td>
-<td>3</td>
-<td>4</td>
+<td style="text-align:left">2</td>
+<td style="text-align:left">3</td>
+<td style="text-align:left">4</td>
 </tr>
 <tr>
-<td>3</td>
-<td>3</td>
-<td>5</td>
+<td style="text-align:left">3</td>
+<td style="text-align:left">3</td>
+<td style="text-align:left">5</td>
 </tr>
 </tbody>
 </table>
@@ -473,10 +686,8 @@
 <p><em>行数</em></p>
 <p>基数，Cardinality ，在数据库中有两种意思</p>
 <ul>
-<li><p>当我们在构建数据库模型时，表与表之间可能会有关系，比如学生A表和老师B表有指导的关系，称为relationship，而关系可以是1对1，即1个学生有一个老师指导，写作A（1：1），也可以是多对1，即多个学生被一个老师所指导，写作A (N：1)，基数就是指这种关联方式，显然是考虑的行与行之间的关系。</p>
-</li>
-<li><p>基数在SQL查询优化时是指表中某列的数据具体有多少个唯一值，如果有大量重复数据(比如存储true false的列)，则它的基数较低，但如果是像primary key，则基数较高。</p>
-</li>
+<li>当我们在构建数据库模型时，表与表之间可能会有关系，比如学生A表和老师B表有指导的关系，称为relationship，而关系可以是1对1，即1个学生有一个老师指导，写作A（1：1），也可以是多对1，即多个学生被一个老师所指导，写作A (N：1)，基数就是指这种关联方式，显然是考虑的行与行之间的关系。</li>
+<li>基数在SQL查询优化时是指表中某列的数据具体有多少个唯一值，如果有大量重复数据(比如存储true false的列)，则它的基数较低，但如果是像primary key，则基数较高。</li>
 </ul>
 <p><strong>7、数据库设计人员与用户沟通的桥梁是</strong></p>
 <p><em>ER图</em></p>
@@ -486,33 +697,31 @@
 <p>无损连接lossless join有两种算法，R被分解成R1、R2两个relation时，R1⌒R2的attr，如A是R1或R2的key，即说明是无损连接。</p>
 <p>而当分解为多个relation时，则需要借助表格法，如下所示：</p>
 <p>已知R&lt;U,F&gt;，U={A,B,C,D,E}，F={A→C,B→C,C→D,DE→C,CE→A}，R的一个分解为R1(AD)，R2(AB)，R3(BE)，R4(CDE)，R5(AE)，判断这个分解是否具有无损连接性。</p>
-<p> ① 构造一个初始的二维表，若“属性”属于“模式”中的属性，则填aj，否则填bij</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tNc79ly1g3lmwp8ozcj30a30573yq.jpg" alt="img"></p>
+<p>① 构造一个初始的二维表，若“属性”属于“模式”中的属性，则填aj，否则填bij</p>
+<p><a href="https://ws4.sinaimg.cn/large/006tNc79ly1g3lmwp8ozcj30a30573yq.jpg" target="_blank" rel="noopener"><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g3o8xwpb9bj30a30573yu.jpg" alt="img"></a></p>
 <p>② 根据A→C，对上表进行处理，由于属性列A上第1、2、5行相同均为a1，所以将属性列C上的b13、b23、b53改为同一个符号b13（取行号最小值）。</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwq71ioj30a2053wep.jpg" alt="img"></p>
+<p><a href="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwq71ioj30a2053wep.jpg" target="_blank" rel="noopener"><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g3o8xw4d0wj30a2053q37.jpg" alt="img"></a></p>
 <p>③ 根据B→C，对上表进行处理，由于属性列B上第2、3行相同均为a2，所以将属性列C上的b13、b33改为同一个符号b13（取行号最小值）。</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwpounwj30a3057weq.jpg" alt="img"></p>
+<p><a href="https://ws3.sinaimg.cn/large/006tNc79ly1g3lmwpounwj30a3057weq.jpg" target="_blank" rel="noopener"><img src="https://ws4.sinaimg.cn/large/006tNc79ly1g3o8xu9gxbj30a3057jro.jpg" alt="img"></a></p>
 <p>④ 根据C→D，对上表进行处理，由于属性列C上第1、2、3、5行相同均为b13，所以将属性列D上的值均改为同一个符号a4。</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmworqq7j30a2057dg2.jpg" alt="img"></p>
+<p><a href="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmworqq7j30a2057dg2.jpg" target="_blank" rel="noopener"><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3o8xuphq5j30a20573yt.jpg" alt="img"></a></p>
 <p>⑤ 根据DE→C，对上表进行处理，由于属性列DE上第3、4、5行相同均为a4a5，所以将属性列C上的值均改为同一个符号a3。</p>
-<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g3lmwqlqx8j30a2059dg2.jpg" alt="img"></p>
+<p><a href="https://ws1.sinaimg.cn/large/006tNc79ly1g3lmwqlqx8j30a2059dg2.jpg" target="_blank" rel="noopener"><img src="https://ws3.sinaimg.cn/large/006tNc79ly1g3o8xvobrhj30a2059mxh.jpg" alt="img"></a></p>
 <p>⑥ 根据CE→A，对上表进行处理，由于属性列CE上第3、4、5行相同均为a3a5，所以将属性列A上的值均改为同一个符号a1。</p>
-<p><img src="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmwr7v7dj30a2057glt.jpg" alt="img"></p>
+<p><a href="https://ws2.sinaimg.cn/large/006tNc79ly1g3lmwr7v7dj30a2057glt.jpg" target="_blank" rel="noopener"><img src="https://ws4.sinaimg.cn/large/006tNc79ly1g3o8xvaqrpj30a20573ys.jpg" alt="img"></a></p>
 <p>⑦ 通过上述的修改，使第三行成为a1a2a3a4a5，则算法终止。且分解具有无损连接性。</p>
 <p>通过上述算法，很显然这个分解是lossless join的，而判断是否保持依赖以及什么是保持依赖可以参考下面的文章</p>
 <p><a href="https://www.cnblogs.com/MRRAOBX/articles/4157043.html" target="_blank" rel="noopener">https://www.cnblogs.com/MRRAOBX/articles/4157043.html</a></p>
 <p>对于此题来说，过程如下：</p>
 <ul>
 <li>AB对应A—&gt;B，BC对应B—&gt;C，而AD对应D—&gt;A，所以需要判断就是C—&gt;D了</li>
-<li><p>result = C</p>
-<ul>
+<li>result = C<ul>
 <li>对于R1没有intersect</li>
 <li>对于R2的intersect为C，求C的closure，然后再次和R2做intersect得到BC，新的result变为result与BC做union即BC</li>
 <li>重复直到result不再发生变化</li>
 </ul>
 </li>
-<li><p>result中包含D，则说明保持依赖</p>
-</li>
+<li>result中包含D，则说明保持依赖</li>
 </ul>
 <p><strong>9、在ER模型转换成关系模型的过程中，下列叙述不正确的是</strong></p>
 <p><em>一个1：n的联系可以转换成独立的关系模式，也可以与1端所对应的关系模式合并</em></p>
@@ -556,10 +765,8 @@
 <p><em>逻辑结构设计</em></p>
 <p><strong>5、事务具有哪些特性？</strong></p>
 <ul>
-<li><p>atomic 原子性</p>
-</li>
-<li><p>consistency 一致性</p>
-</li>
+<li>atomic 原子性</li>
+<li>consistency 一致性</li>
 <li>isolation 隔离性</li>
 <li>durability 持续性</li>
 </ul>
@@ -567,12 +774,9 @@
 <p><em>实体完整性、参照完整性</em></p>
 <p>关系模型的完整性规则是对关系的某种约束条件。关系模型中有三类完整性约束：实体完整性规则，用户定义的完整性规则，和参照完整性规则。</p>
 <ul>
-<li><p>实体完整性也就是relation的primary key有not null等约束</p>
-</li>
-<li><p>用户定义的完整性比如check某个attr必须要大于100</p>
-</li>
-<li><p>参照完整性主要是foreign key，当某个attr reference了另外relation的attr时，删除和插入都需要进行完整性检查</p>
-</li>
+<li>实体完整性也就是relation的primary key有not null等约束</li>
+<li>用户定义的完整性比如check某个attr必须要大于100</li>
+<li>参照完整性主要是foreign key，当某个attr reference了另外relation的attr时，删除和插入都需要进行完整性检查</li>
 </ul>
 <p><strong>7、在关系表中，主码的概念体现在其值的非空和xx两个特性</strong></p>
 <p><em>唯一</em></p>
@@ -580,10 +784,8 @@
 <h2 id="简答题"><a href="#简答题" class="headerlink" title="简答题"></a>简答题</h2><p><strong>1、数据模式的三要素是什么？</strong></p>
 <p>数据模式也叫做数据模型主要有三部分组成</p>
 <ul>
-<li><p>数据结构：数据结构主要描述数据的类型、内容、性质、以及数据之间的联系，是整个数据模型的基础，而针对数据的操作和数据之间的约束都是建立在数据结构的基础上的；</p>
-</li>
-<li><p>数据操作：主要定义了在相应的数据结构上的操作类型和操作方式（数据库中的增删改查等）；</p>
-</li>
+<li>数据结构：数据结构主要描述数据的类型、内容、性质、以及数据之间的联系，是整个数据模型的基础，而针对数据的操作和数据之间的约束都是建立在数据结构的基础上的；</li>
+<li>数据操作：主要定义了在相应的数据结构上的操作类型和操作方式（数据库中的增删改查等）；</li>
 <li>数据约束：数据约束主要用来描述数据库中数据结构之间的语法、词义联系以及彼此之间的相互约束和制约关系（如MySQL中使用外键保证数据之间的数据完整性）；</li>
 </ul>
 <p><strong>2、什么是强制存储控制MAC</strong></p>
@@ -601,8 +803,8 @@
 <p><strong>5、是什么是两段锁协议？</strong></p>
 <p>所有transaction必须分两个阶段对数据项加锁和解锁</p>
 <ol>
-<li>在对任何数据进行读写操作之前，首先要申请并获得对该数据的封锁。 </li>
-<li>在释放一个封锁之后，事务不再申请和获得任何其他封锁。 </li>
+<li>在对任何数据进行读写操作之前，首先要申请并获得对该数据的封锁。</li>
+<li>在释放一个封锁之后，事务不再申请和获得任何其他封锁。</li>
 </ol>
 
           
@@ -2496,179 +2698,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/01/windows安全保护机制-DEP浅析/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/01/windows安全保护机制-DEP浅析/" itemprop="url">windows安全保护机制--DEP浅析</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-01T17:23:43+08:00">
-                2019-03-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="windows安全保护机制–DEP浅析"><a href="#windows安全保护机制–DEP浅析" class="headerlink" title="windows安全保护机制–DEP浅析"></a>windows安全保护机制–DEP浅析</h3><p>在温哥华Pwn2Own黑客大赛中，微软windows 7系统的ASLR技术和DEP技术都被选手成功绕过，但不可否认，ASLR和DEP确实是如微软IE小组经理所说，是“非常有效的保护机制”。</p>
-<p>溢出攻击可谓是最常见的攻击手段之一，本质上溢出攻击都是利用了现代计算机体系结构上的设计缺陷，而重塑整个体系必然是不现实的，于是就有了各种各样的保护机制来弥补。<em>在Windows XP SP2之前，利用代码（exp）会在分配的内存页执行，不需要检查<a href="http://msdn.microsoft.com/en-us/library/aa366786%28VS.85%29.aspx" target="_blank" rel="noopener">内存保护常量</a>（Memory Protection Constants）。例如，如果使用指定分配权限为PAGE_READWRITE 的<a href="http://msdn.microsoft.com/en-us/library/aa366887.aspx" target="_blank" rel="noopener">VirtualAlloc ()</a>函数分配了内存页, 则仍然可以从该内存页执行代码。从 windows XP SP2 和 windows Server 2003 SP1 开始, 如果 CPU 支持执行禁用 (XD) （针对Intel CPU）或不可执行 (NX)（针对AMD CPU) 位，则任何从被标记为PAGE_READWRITE（例）的内存页执行代码的行为，都将触发 STATUS_ACCESS_VIOLATION (0xC0000005) 访问冲突异常。</em>而微软在windows xp sp2上开始提供的DEP，全称为数据执行保护，英文为Data Execution Prevention，则是一种更加有效的修补手段。</p>
-<p>DEP根据其实现机制的不同分为硬件DEP和软件DEP，linux上的NX即为硬件DEP，而windows提供NX和SafeSEH（即为软件DEP）两种机制。一句话概括其功能：对于部分内存页不给予执行权限。</p>
-<h2 id="硬件DEP"><a href="#硬件DEP" class="headerlink" title="硬件DEP"></a>硬件DEP</h2><p>硬件DEP的实现需要CPU的支持，其中AMD cpu提供了No-Execute Page-Protection（就是NX），而intel则是Execute Disable Bit（XD），可以在”我的电脑”-&gt;右键菜单”属性”-&gt;”高级”-&gt;”性能 - 设置”-&gt;”数据执行保护”或者是在C:\boot.ini来设置相关选项和查看cpu是否支持DEP，分为四种模式，一般计算机提供的是前两种：</p>
-<ul>
-<li>optout模式，除了指定的程序以外其他的程序都使用</li>
-<li><p>optin模式，只为windows的程序和服务开启</p>
-</li>
-<li><p>AlwaysOn模式，所有进程强制开启，仅支持64位（不建议开启，某些dll并不能开启）</p>
-</li>
-<li>AlwaysOff模式，所有进程强制关闭</li>
-</ul>
-<p>硬件DEP的实现机制是操作系统通过设置内存页的NX/XD属性标记，来指明不能从该内存执行代码。为了实现这个功能，需要在内存的页面表（Page Table）中加入一个特殊的标识位（NX/XD）来标识是否允许在该页上执行指令。当该标识位设置为0里表示这个页面允许执行指令，设置为1时表示该页面不允许执行指令。在64位的操作系统中也就是页表项的第63bit，而在32位的操作系统中略显复杂，因为32位的pte并没有多余的bit可以存放这个标识位，所以要利用PAE进行扩展，在没有PAE的情况下32位的系统不支持<em>硬件DEP</em></p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0mj4b63s0j31ci0u0tmy.jpg" alt="image-20190228225631962"></p>
-<p>那它在底层到底是如何实现的呢？我们可与通过VirtualProtect()这个api函数来深入探索，这个函数的具体功能就是改变指定的内存页的属性，该函数的调用链如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VirtualProtect() --&gt; VirtualProtectEx() --&gt; ZwProtectVirtualMemory()</span><br></pre></td></tr></table></figure>
-<p>接着通过sysenter进入内核，调用号为0x89，相应的调用是NtProtecVirtualMemory()，之后调用链如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NtProtecVirtualMemory() --&gt; MiProtectVirtualMemory() --&gt; MiFlushTbAndCapture() --&gt; KeInterlockedSwapPte()</span><br></pre></td></tr></table></figure>
-<p>注意，其中在MiProtectVirtualMemory()中，会计算出要改变其bit的内存页的PTE的地址，最后由KeInterlockedSwapPte()来改变指定PTE的属性。</p>
-<p>来看看其汇编代码进行分析</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">nt!KeInterlockedSwapPte:</span><br><span class="line">80541c08 53 push ebx</span><br><span class="line">80541c09 56 push esi</span><br><span class="line">80541c0a 8b5c2410 mov ebx,dword ptr [esp+10h] ;ebx为新的PTE的地址</span><br><span class="line">80541c0e 8b74240c mov esi,dword ptr [esp+0Ch] ;esi为旧的PTE地址</span><br><span class="line">80541c12 8b4b04 mov ecx,dword ptr [ebx+4] ;ecx为新PTE值高双字</span><br><span class="line">80541c15 8b1b mov ebx,dword ptr [ebx] ;ebx为PTE值低双字</span><br><span class="line">80541c17 8b5604 mov edx,dword ptr [esi+4] ;edx为旧PTE值高双字</span><br><span class="line">80541c1a 8b06 mov eax,dword ptr[esi] ;eax为旧PTE值低双字</span><br><span class="line">80541c1c 0fc70e cmpxchg8b qword ptr [esi];比较新旧是否相等，如果不想等用新的代替旧的</span><br></pre></td></tr></table></figure>
-<h2 id="软件DEP"><a href="#软件DEP" class="headerlink" title="软件DEP"></a>软件DEP</h2><p>SafeSEH则是一种在软件层面实现的对SEH的保护机制，它需要操作系统和编译器的双重支持，在vs2013及以后的版本中会自动启用 /SafeSEH 链接选项来使用SafeSEH。也正是因为该项技术使得以往简单的覆盖异常处理句柄的漏洞利用几乎失效了</p>
-<p>在加载PE文件时，SafeSEH将定位合法的SEH表的地址（如果该映像不支持SafeSEH的话则地址为0），然后是用共享内存中的一个随机数进行加密处理，程序中所有的异常处理函数的地址提取出来汇总放入SEH表，并将该表放入程序映像中，还会将将加密后的SEH函数表地址，IMAGE的开始地址，IMAGE的长度，合法SEH函数的个数，作为一条记录放入ntdll（ntdll模块是进行异常分发的模块）的加载模块数据内存中,每次调用异常处理函数时都会进行校验，只有二者一致才能够正常进行，该处理由RtlDispatchException() 开始，首先会经历两次检查，分别是：</p>
-<ul>
-<li>检查异常处理链是否在当前的栈中，不是则终止</li>
-<li>检查异常处理函数的指针是否指向栈，是则终止</li>
-</ul>
-<p>通过两次检查后会调用RtlIsValidHandler() 来进行异常的有效性检查，08年的black hat给出了该函数的细节</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">BOOL <span class="title">RtlIsValidHandler</span><span class="params">( handler )</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (handler is in the loaded image)      <span class="comment">// 是否在loaded的空间内</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (image has <span class="built_in">set</span> the IMAGE_DLLCHARACTERISTICS_NO_SEH flag) <span class="comment">//是否设置了忽略异常</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;                  </span><br><span class="line">        <span class="keyword">if</span> (image has a SafeSEH table)       <span class="comment">// 是否含有SEH表</span></span><br><span class="line">            <span class="keyword">if</span> (handler found in the table)  <span class="comment">// 异常处理函数地址是否表中</span></span><br><span class="line">                <span class="keyword">return</span> TRUE;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">        <span class="keyword">if</span> (image is a .NET assembly with the ILonl	y flag <span class="built_in">set</span>)</span><br><span class="line">            <span class="keyword">return</span> FALSE;                    </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is on non-executable page)   <span class="comment">// handler是否在不可执行页上</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ExecuteDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//DEP是否开启</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            raise ACCESS_VIOLATION;          </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is <span class="keyword">not</span> in an image)          <span class="comment">// handler是否在未加载空间</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ImageDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//设置的标志位是否允许</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> TRUE;                             /s/ 允许执行异常处理函数</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>代码中的ExecuteDispatchEnable和ImageDispatchEnable位标志是内核KPROCESS结构的一部分，这两个位用来控制当异常处理函数在不可以执行内存或者不在异常模块的映像（IMAGE）内时，是否执行异常处理函数。这两个位的值可以在运行时修改，不过默认情况下如果进程的DEP被关闭，则这两个位置1，如果进程的DEP是开启状态，则这两个位被置0。</p>
-<p>通过源码我们可以看出，RtlIsValidHandler() 函数只会在以下几种情况执行异常处理函数</p>
-<ul>
-<li><p>在进程的DEP是开启的情况下</p>
-<ul>
-<li><p>异常处理函数和进程映像的SafeSEH表匹配且没有NO_SEH标志。</p>
-</li>
-<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
-</li>
-</ul>
-</li>
-<li><p>在进程的DEP关闭的情况下</p>
-<ul>
-<li><p>异常处理函数和进程映像的SafeSEH表匹配没有NO_SEH标志。</p>
-</li>
-<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
-</li>
-<li><p>异常处理函数不在当前进程的映像里面，但是不在当前线程的堆栈上。</p>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>看雪翻译小组 <a href="https://bbs.pediy.com/thread-226625.htm" target="_blank" rel="noopener">https://bbs.pediy.com/thread-226625.htm</a></p>
-<p>safeSEH笔记<a href="http://pstgroup.blogspot.com/2007/08/tipssafeseh.html" target="_blank" rel="noopener">http://pstgroup.blogspot.com/2007/08/tipssafeseh.html</a></p>
-<p>DEP的保护原理<a href="http://netsecurity.51cto.com/art/201107/276497.htm" target="_blank" rel="noopener">http://netsecurity.51cto.com/art/201107/276497.htm</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2719,7 +2748,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

